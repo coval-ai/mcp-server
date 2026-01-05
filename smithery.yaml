@@ -1,0 +1,22 @@
+# Smithery configuration for MCP server registry
+# https://smithery.ai/
+
+startCommand:
+  type: stdio
+  configSchema:
+    type: object
+    properties:
+      COVAL_API_KEY:
+        type: string
+        description: Your Coval API key from https://dashboard.coval.dev
+        required: true
+    required:
+      - COVAL_API_KEY
+  commandFunction: |-
+    (config) => ({
+      command: 'npx',
+      args: ['-y', '@coval/mcp-server'],
+      env: {
+        COVAL_API_KEY: config.COVAL_API_KEY
+      }
+    })

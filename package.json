@@ -1,0 +1,72 @@
+{
+  "name": "@coval/mcp-server",
+  "version": "0.1.0",
+  "description": "Coval MCP Server - AI evaluation platform integration for Claude Desktop, Cursor, and other MCP clients",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "@coval/mcp-server": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts",
+    "start": "node dist/index.js",
+    "inspector": "npx @modelcontextprotocol/inspector",
+    "test": "NODE_OPTIONS=--experimental-vm-modules jest",
+    "test:unit": "npm test -- --testPathPattern=unit",
+    "test:e2e": "npm test -- --testPathPattern=e2e",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "coval",
+    "mcp",
+    "model-context-protocol",
+    "ai",
+    "claude",
+    "evaluation",
+    "testing",
+    "voice-ai"
+  ],
+  "author": {
+    "name": "Coval",
+    "url": "https://coval.dev"
+  },
+  "homepage": "https://github.com/coval-ai/mcp-server#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/coval-ai/mcp-server"
+  },
+  "bugs": {
+    "url": "https://github.com/coval-ai/mcp-server/issues"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.3",
+    "zod": "^3.24.2",
+    "zod-to-json-schema": "^3.24.5"
+  },
+  "devDependencies": {
+    "@modelcontextprotocol/inspector": "^0.14.2",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.14.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "jest": "^29.7.0",
+    "ts-jest": "^29.3.1",
+    "tsx": "^4.19.3",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ]
+}
