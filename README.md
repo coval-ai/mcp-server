@@ -13,7 +13,7 @@ This MCP server allows AI assistants like Claude Desktop and Cursor to interact 
 
 1. Get your Coval API key from [dashboard.coval.dev](https://dashboard.coval.dev)
 
-2. Add to your Claude Desktop config (`~/.claude/claude_desktop_config.json`):
+2. Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
 
 ```json
 {
@@ -56,9 +56,9 @@ This MCP server allows AI assistants like Claude Desktop and Cursor to interact 
 
 ### Runs
 - `list_runs` - List evaluation runs with filtering
-- `get_run` - Get details of a specific run
+- `get_run` - Get details of a specific run (includes metrics for completed runs)
 - `create_run` - Launch a new evaluation run
-- `cancel_run` - Cancel an in-progress run
+- `delete_run` - Cancel or delete a run
 
 ### Agents
 - `list_agents` - List configured agents
@@ -72,8 +72,12 @@ This MCP server allows AI assistants like Claude Desktop and Cursor to interact 
 - `create_test_set` - Create a new test set
 
 ### Metrics
-- `get_run_metrics` - Get metrics for a completed run
-- `list_metrics` - List available metric types
+- `list_metrics` - List available metric definitions
+- `get_metric` - Get metric details
+
+### Personas
+- `list_personas` - List simulated personas
+- `get_persona` - Get persona details
 
 ## Example Usage
 
