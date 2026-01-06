@@ -4,7 +4,6 @@ import {
   ListRunsInputSchema,
   GetRunInputSchema,
   CreateRunInputSchema,
-  DeleteRunInputSchema,
 } from '../schemas/index.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
@@ -46,20 +45,6 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
       try {
         const result = await client.createRun(params);
         return createSuccessResponse(result);
-      } catch (err) {
-        return handleApiError(err);
-      }
-    }
-  );
-
-  server.tool(
-    'delete_run',
-    'Cancel an in-progress run or delete a completed run. Use get_run first to check the current status.',
-    DeleteRunInputSchema.shape,
-    async (params) => {
-      try {
-        await client.deleteRun(params.run_id);
-        return createSuccessResponse({ status: 'deleted', run_id: params.run_id });
       } catch (err) {
         return handleApiError(err);
       }

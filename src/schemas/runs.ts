@@ -54,14 +54,6 @@ export const CreateRunInputSchema = z.object({
     .describe('Custom metadata for tracking purposes'),
 });
 
-export const DeleteRunInputSchema = z.object({
-  run_id: z
-    .string()
-    .min(1)
-    .describe('The unique ID of the run to cancel or delete.'),
-});
-
 export type ListRunsInput = z.infer<typeof ListRunsInputSchema>;
 export type GetRunInput = z.infer<typeof GetRunInputSchema>;
 export type CreateRunInput = z.infer<typeof CreateRunInputSchema>;
-export type DeleteRunInput = z.infer<typeof DeleteRunInputSchema>;
