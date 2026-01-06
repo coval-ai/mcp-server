@@ -7,7 +7,6 @@ function createMcpServer(_getApiKey?: () => string) {
   const mcpServer = new McpServer({
     name: 'Coval MCP',
     version: '0.1.0',
-    capabilities: [],
   });
 
   mcpServer.tool(
