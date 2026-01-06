@@ -39,6 +39,9 @@ terraform/terraform.tfvars
 *.tmp
 *.temp
 
+# Lambda build artifacts
+lambda-package/
+
 # Internal dev docs
 CLAUDE.md
 PROGRESS.md
