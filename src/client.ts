@@ -40,7 +40,7 @@ export class CovalApiClient {
     body?: unknown,
     params?: Record<string, string | number | boolean | undefined>
   ): Promise<T> {
-    const url = new URL(path, this.baseUrl);
+    const url = new URL(this.baseUrl + path);
 
     if (params) {
       Object.entries(params).forEach(([key, value]) => {
