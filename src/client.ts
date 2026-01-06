@@ -193,4 +193,44 @@ export class CovalApiClient {
   async getPersona(personaId: string) {
     return this.request<{ persona: unknown }>('GET', `/personas/${personaId}`);
   }
+
+  // Test Cases
+  async listTestCases(params?: PaginationParams) {
+    return this.request<{ test_cases: unknown[]; next_page_token?: string }>(
+      'GET',
+      '/test-cases',
+      undefined,
+      params as Record<string, string | number | boolean | undefined>
+    );
+  }
+
+  async getTestCase(testCaseId: string) {
+    return this.request<{ test_case: unknown }>('GET', `/test-cases/${testCaseId}`);
+  }
+
+  async createTestCase(data: {
+    test_set_id: string;
+    input_str: string;
+    expected_behaviors?: string[];
+    description?: string;
+    simulation_metadata_input?: Record<string, unknown>;
+    metric_input?: Record<string, unknown>;
+    user_notes?: string;
+  }) {
+    return this.request<{ test_case: unknown }>('POST', '/test-cases', data);
+  }
+
+  async updateTestCase(
+    testCaseId: string,
+    data: {
+      input_str?: string;
+      expected_behaviors?: string[];
+      description?: string;
+      simulation_metadata_input?: Record<string, unknown>;
+      metric_input?: Record<string, unknown>;
+      user_notes?: string;
+    }
+  ) {
+    return this.request<{ test_case: unknown }>('PATCH', `/test-cases/${testCaseId}`, data);
+  }
 }

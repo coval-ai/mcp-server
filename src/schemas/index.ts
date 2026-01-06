@@ -2,5 +2,6 @@ export * from './common.js';
 export * from './runs.js';
 export * from './agents.js';
 export * from './test-sets.js';
+export * from './test-cases.js';
 export * from './metrics.js';
 export * from './personas.js';
