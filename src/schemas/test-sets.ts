@@ -1,0 +1,46 @@
+import { z } from 'zod';
+import { PaginationInputSchema } from './common.js';
+
+export const ListTestSetsInputSchema = PaginationInputSchema.extend({}).describe(
+  'Input for listing test sets'
+);
+
+export const GetTestSetInputSchema = z.object({
+  test_set_id: z
+    .string()
+    .min(1)
+    .describe('The unique ID of the test set to retrieve. Get this from list_test_sets.'),
+});
+
+export const CreateTestSetInputSchema = z.object({
+  display_name: z
+    .string()
+    .min(1)
+    .max(100)
+    .describe('Human-readable name for the test set'),
+  slug: z
+    .string()
+    .max(100)
+    .optional()
+    .describe('URL-friendly identifier (auto-generated if not provided)'),
+  description: z
+    .string()
+    .optional()
+    .describe('Description of the test set'),
+  test_set_type: z
+    .string()
+    .optional()
+    .describe('Type of test set: DEFAULT, SCENARIO, TRANSCRIPT, WORKFLOW'),
+  test_set_metadata: z
+    .record(z.unknown())
+    .optional()
+    .describe('Additional configuration metadata'),
+  parameters: z
+    .record(z.unknown())
+    .optional()
+    .describe('Test case parameterization (e.g., {"name": ["Alice", "Bob"]})'),
+});
+
+export type ListTestSetsInput = z.infer<typeof ListTestSetsInputSchema>;
+export type GetTestSetInput = z.infer<typeof GetTestSetInputSchema>;
+export type CreateTestSetInput = z.infer<typeof CreateTestSetInputSchema>;
