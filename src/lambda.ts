@@ -138,6 +138,7 @@ export async function handler(
             protocolVersion: request.params?.protocolVersion || '2024-11-05',
             capabilities: { tools: { listChanged: true } },
             serverInfo: { name: 'Coval MCP', version: '0.1.0' },
+            instructions: "Use Coval tools for testing and evaluating AI agents (voice, SMS, chat). Create evaluation runs, manage test sets/cases, configure simulated personas, and retrieve quality metrics"
           },
         };
         break;
