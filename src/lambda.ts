@@ -8,11 +8,28 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { CovalApiClient } from './client.js';
 import { registerAllTools } from './tools/index.js';
 
+const COVAL_OVERVIEW = `Coval evaluates AI agents (voice, SMS, chat) by running simulated conversations.
+
+Entities:
+- Agent: The AI being evaluated (model_type: VOICE, OUTBOUND_VOICE, SMS, WEBSOCKET, CHAT)
+- Persona: Simulated user that calls/texts the agent (voice, language, background_sound, behavior prompt)
+- Test Set: Collection of test cases (scenarios)
+- Test Case: Single scenario with input_str (opening message or JSON message array)
+- Run: One evaluation = agent + persona + test_set → produces metrics
+- Metrics: Custom per organization (e.g., latency, accuracy, task completion)
+
+Workflow: list_agents → list_personas → list_test_sets → create_run → get_run (poll until COMPLETED)`;
+
 function createMcpServer(apiKey?: string): McpServer {
   const mcpServer = new McpServer({
     name: 'Coval MCP',
     version: '0.1.0',
   });
+
+  // Register system overview resource
+  mcpServer.resource('overview', 'coval://overview', async () => ({
+    contents: [{ uri: 'coval://overview', mimeType: 'text/plain', text: COVAL_OVERVIEW }],
+  }));
 
   if (apiKey) {
     const client = new CovalApiClient(apiKey);
@@ -136,7 +153,7 @@ export async function handler(
           id: request.id ?? null,
           result: {
             protocolVersion: request.params?.protocolVersion || '2024-11-05',
-            capabilities: { tools: { listChanged: true } },
+            capabilities: { tools: { listChanged: true }, resources: { listChanged: true } },
             serverInfo: { name: 'Coval MCP', version: '0.1.0' },
             instructions: "Use Coval tools for testing and evaluating AI agents (voice, SMS, chat). Create evaluation runs, manage test sets/cases, configure simulated personas, and retrieve quality metrics"
           },
@@ -167,6 +184,27 @@ export async function handler(
       case 'tools/call': {
         const params = request.params as { name: string; arguments?: Record<string, unknown> };
         const result = await client.callTool({ name: params.name, arguments: params.arguments || {} });
+        response = {
+          jsonrpc: '2.0',
+          id: request.id ?? null,
+          result,
+        };
+        break;
+      }
+
+      case 'resources/list': {
+        const resources = await client.listResources();
+        response = {
+          jsonrpc: '2.0',
+          id: request.id ?? null,
+          result: { resources: resources.resources },
+        };
+        break;
+      }
+
+      case 'resources/read': {
+        const params = request.params as { uri: string };
+        const result = await client.readResource({ uri: params.uri });
         response = {
           jsonrpc: '2.0',
           id: request.id ?? null,
