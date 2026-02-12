@@ -15,7 +15,7 @@ startCommand:
   commandFunction: |-
     (config) => ({
       command: 'npx',
-      args: ['-y', '@coval/mcp-server'],
+      args: ['-y', '@covalai/mcp-server'],
       env: {
         COVAL_API_KEY: config.COVAL_API_KEY
       }
