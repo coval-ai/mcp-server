@@ -12,7 +12,7 @@ import { handleApiError } from '../utils/errors.js';
 export function registerTestCaseTools(server: McpServer, client: CovalApiClient) {
   server.tool(
     'list_test_cases',
-    'List test cases. Filter by test set using filter="test_set_id=\\"abc12345\\"". Returns test case IDs, inputs, and expected behaviors.',
+    'List test cases. Filter by test_set_id. Each has input_str (scenario text or JSON message array) and optional expected_behaviors.',
     ListTestCasesInputSchema.shape,
     async (params) => {
       try {
@@ -26,7 +26,7 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
 
   server.tool(
     'get_test_case',
-    'Get detailed information about a specific test case including its input, expected behaviors, and metadata.',
+    'Get test case details: input_str (the scenario), expected_behaviors, and metadata.',
     GetTestCaseInputSchema.shape,
     async (params) => {
       try {
@@ -40,7 +40,7 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
 
   server.tool(
     'create_test_case',
-    'Create a new test case within a test set. Requires test_set_id and input_str. Optionally specify expected_behaviors for evaluation.',
+    'Create test case in a test set. input_str: single scenario message OR JSON array [{role,content},...] for multi-turn conversations.',
     CreateTestCaseInputSchema.shape,
     async (params) => {
       try {
@@ -54,7 +54,7 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
 
   server.tool(
     'update_test_case',
-    'Update an existing test case. Can modify input_str, expected_behaviors, description, and other fields.',
+    'Update test case input_str, expected_behaviors, or other fields.',
     UpdateTestCaseInputSchema.shape,
     async (params) => {
       try {

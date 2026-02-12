@@ -7,7 +7,7 @@ import { handleApiError } from '../utils/errors.js';
 export function registerPersonaTools(server: McpServer, client: CovalApiClient) {
   server.tool(
     'list_personas',
-    'List available simulated personas. Personas are required for creating runs - they define how the simulated user behaves.',
+    'List personas (simulated users). Each has voice_name, language_code, background_sound (off/office/crowd/airport/etc), and behavior prompt. Required for runs.',
     ListPersonasInputSchema.shape,
     async (params) => {
       try {
@@ -21,7 +21,7 @@ export function registerPersonaTools(server: McpServer, client: CovalApiClient) 
 
   server.tool(
     'get_persona',
-    'Get detailed information about a persona. Shows voice settings, language, background sound, and behavior configuration.',
+    'Get persona details: voice_name, language_code (BCP-47), background_sound, persona_prompt (behavior), wait_seconds, conversation_initiation (speak_first/wait_for_user).',
     GetPersonaInputSchema.shape,
     async (params) => {
       try {
