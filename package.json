@@ -1,12 +1,12 @@
 {
-  "name": "@coval/mcp-server",
+  "name": "@covalai/mcp-server",
   "version": "0.1.0",
   "description": "Coval MCP Server - AI evaluation platform integration for Claude Desktop, Cursor, and other MCP clients",
   "type": "module",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "@coval/mcp-server": "dist/index.js"
+    "coval-mcp-server": "dist/index.js"
   },
   "scripts": {
     "build": "tsc",
@@ -39,7 +39,7 @@
   "homepage": "https://github.com/coval-ai/mcp-server#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/coval-ai/mcp-server"
+    "url": "git+https://github.com/coval-ai/mcp-server.git"
   },
   "bugs": {
     "url": "https://github.com/coval-ai/mcp-server/issues"
