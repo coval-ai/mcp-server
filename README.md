@@ -1,5 +1,7 @@
 # Coval MCP Server
 
+[![npm version](https://img.shields.io/npm/v/@covalai/mcp-server.svg)](https://www.npmjs.com/package/@covalai/mcp-server)
+
 The official [Model Context Protocol](https://modelcontextprotocol.io/) server for [Coval](https://coval.dev) - the AI evaluation platform.
 
 This MCP server allows AI assistants like Claude Desktop and Cursor to interact with Coval's evaluation APIs, enabling you to:
@@ -7,20 +9,24 @@ This MCP server allows AI assistants like Claude Desktop and Cursor to interact 
 - Manage AI agents and test sets
 - Retrieve evaluation metrics and results
 
+## Installation
+
+```bash
+npx @covalai/mcp-server
+```
+
 ## Quick Start
 
-### Claude Desktop Setup
+### Claude Desktop
 
-1. Get your Coval API key from [dashboard.coval.dev](https://dashboard.coval.dev)
-
-2. Add to your Claude Desktop config (`~/Library/Application Support/Claude/claude_desktop_config.json`):
+Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
 
 ```json
 {
   "mcpServers": {
     "coval": {
       "command": "npx",
-      "args": ["-y", "@coval/mcp-server"],
+      "args": ["-y", "@covalai/mcp-server"],
       "env": {
         "COVAL_API_KEY": "your_api_key_here"
       }
@@ -29,9 +35,25 @@ This MCP server allows AI assistants like Claude Desktop and Cursor to interact 
 }
 ```
 
-3. Restart Claude Desktop
+### Cursor
 
-### Remote Connection (Recommended for Production)
+Add to `.cursor/mcp.json` in your project:
+
+```json
+{
+  "mcpServers": {
+    "coval": {
+      "command": "npx",
+      "args": ["-y", "@covalai/mcp-server"],
+      "env": {
+        "COVAL_API_KEY": "your_api_key_here"
+      }
+    }
+  }
+}
+```
+
+### Remote Connection (Alternative)
 
 ```json
 {
@@ -39,6 +61,7 @@ This MCP server allows AI assistants like Claude Desktop and Cursor to interact 
     "coval": {
       "command": "npx",
       "args": [
+        "-y",
         "mcp-remote",
         "https://mcp.coval.dev/mcp",
         "--header",
@@ -52,32 +75,23 @@ This MCP server allows AI assistants like Claude Desktop and Cursor to interact 
 }
 ```
 
+Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
+
 ## Available Tools
 
-### Runs
-- `list_runs` - List evaluation runs with filtering
-- `get_run` - Get details of a specific run (includes metrics for completed runs)
-- `create_run` - Launch a new evaluation run
-- `delete_run` - Cancel or delete a run
-
-### Agents
-- `list_agents` - List configured agents
-- `get_agent` - Get agent configuration
-- `create_agent` - Create a new agent
-- `update_agent` - Update agent configuration
-
-### Test Sets
-- `list_test_sets` - List available test sets
-- `get_test_set` - Get test set details
-- `create_test_set` - Create a new test set
-
-### Metrics
-- `list_metrics` - List available metric definitions
-- `get_metric` - Get metric details
-
-### Personas
-- `list_personas` - List simulated personas
-- `get_persona` - Get persona details
+| Tool | Description |
+|------|-------------|
+| `list_agents` | List all agents in your workspace |
+| `get_agent` | Get details of a specific agent |
+| `list_runs` | List evaluation runs |
+| `get_run` | Get details of a specific run |
+| `create_run` | Start a new evaluation run |
+| `list_test_sets` | List available test sets |
+| `get_test_set` | Get test set details |
+| `list_test_cases` | List test cases in a test set |
+| `create_test_case` | Add a test case to a test set |
+| `get_metrics` | Get metrics for a run |
+| `list_personas` | List available personas |
 
 ## Example Usage
 
