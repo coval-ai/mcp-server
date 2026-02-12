@@ -12,7 +12,7 @@ import { handleApiError } from '../utils/errors.js';
 export function registerAgentTools(server: McpServer, client: CovalApiClient) {
   server.tool(
     'list_agents',
-    'List all configured agents. Use this to find agent IDs for creating runs. Can filter by model_type (voice, chat, SMS, etc.).',
+    'List agents (AI systems to evaluate). Model types: VOICE, OUTBOUND_VOICE, SMS, WEBSOCKET, CHAT. Use agent_id when creating runs.',
     ListAgentsInputSchema.shape,
     async (params) => {
       try {
@@ -26,7 +26,7 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
 
   server.tool(
     'get_agent',
-    'Get detailed configuration for a specific agent. Shows model type, endpoint, prompt, associated metrics, and test sets.',
+    'Get agent config: model_type, phone_number (voice), endpoint (websocket/chat), and display_name.',
     GetAgentInputSchema.shape,
     async (params) => {
       try {

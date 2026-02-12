@@ -11,7 +11,7 @@ import { handleApiError } from '../utils/errors.js';
 export function registerRunTools(server: McpServer, client: CovalApiClient) {
   server.tool(
     'list_runs',
-    'List evaluation runs. Use this to see all runs, filter by status, or paginate through results. Returns run IDs, status, agent, and test set info.',
+    'List evaluation runs. Each run = agent + persona + test_set. Returns run_id, status (PENDING/RUNNING/COMPLETED), agent_id, persona_id, test_set_id.',
     ListRunsInputSchema.shape,
     async (params) => {
       try {
@@ -25,7 +25,7 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
 
   server.tool(
     'get_run',
-    'Get detailed information about a specific run. Use this to check run status, progress, and results (including metrics for completed runs).',
+    'Get run status/results. Status: PENDING→RUNNING→COMPLETED. Completed runs include metrics (custom per org) and output_ids for transcripts.',
     GetRunInputSchema.shape,
     async (params) => {
       try {
@@ -39,7 +39,7 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
 
   server.tool(
     'create_run',
-    'Launch a new evaluation run. Requires agent_id (from list_agents), persona_id (from list_personas), and test_set_id (from list_test_sets). Optionally specify metrics and run options.',
+    'Launch evaluation: agent + persona + test_set. Persona calls/texts the agent for each test case. Poll get_run until status=COMPLETED to see metrics.',
     CreateRunInputSchema.shape,
     async (params) => {
       try {

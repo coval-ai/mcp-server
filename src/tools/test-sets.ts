@@ -11,7 +11,7 @@ import { handleApiError } from '../utils/errors.js';
 export function registerTestSetTools(server: McpServer, client: CovalApiClient) {
   server.tool(
     'list_test_sets',
-    'List all test sets. Use this to find test set IDs for creating runs. Test sets contain test cases for evaluating agents.',
+    'List test sets (collections of test cases). Each contains scenarios to run against an agent. Use test_set_id when creating runs.',
     ListTestSetsInputSchema.shape,
     async (params) => {
       try {
@@ -25,7 +25,7 @@ export function registerTestSetTools(server: McpServer, client: CovalApiClient) 
 
   server.tool(
     'get_test_set',
-    'Get detailed information about a test set. Shows description, type, parameters, and test case count.',
+    'Get test set details: display_name, description, and test case count. Use list_test_cases to see individual scenarios.',
     GetTestSetInputSchema.shape,
     async (params) => {
       try {
@@ -39,7 +39,7 @@ export function registerTestSetTools(server: McpServer, client: CovalApiClient) 
 
   server.tool(
     'create_test_set',
-    'Create a new test set. Test sets organize test cases and can define parameters for test case generation.',
+    'Create a test set to organize test cases. After creating, use create_test_case to add scenarios.',
     CreateTestSetInputSchema.shape,
     async (params) => {
       try {
