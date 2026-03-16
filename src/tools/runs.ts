@@ -11,7 +11,7 @@ import { handleApiError } from '../utils/errors.js';
 export function registerRunTools(server: McpServer, client: CovalApiClient) {
   server.tool(
     'list_runs',
-    'List evaluation runs. Each run = agent + persona + test_set. Returns run_id, status (PENDING/RUNNING/COMPLETED), agent_id, persona_id, test_set_id.',
+    'List evaluation runs. Each run = agent + persona + test_set. Returns run_id, status, tags. Filter by tag: filter=\'tag="regression"\'.',
     ListRunsInputSchema.shape,
     async (params) => {
       try {
@@ -39,11 +39,19 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
 
   server.tool(
     'create_run',
-    'Launch evaluation: agent + persona + test_set. Persona calls/texts the agent for each test case. Poll get_run until status=COMPLETED to see metrics.',
+    'Launch evaluation: agent + persona + test_set. Optionally add tags for filtering. Poll get_run until status=COMPLETED to see metrics.',
     CreateRunInputSchema.shape,
     async (params) => {
       try {
-        const result = await client.createRun(params);
+        const { tags, ...rest } = params;
+        const payload = {
+          ...rest,
+          metadata: {
+            ...((rest.metadata as Record<string, unknown>) || {}),
+            ...(tags ? { tags } : {}),
+          },
+        };
+        const result = await client.createRun(payload);
         return createSuccessResponse(result);
       } catch (err) {
         return handleApiError(err);
