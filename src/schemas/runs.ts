@@ -48,6 +48,13 @@ export const CreateRunInputSchema = z.object({
     })
     .optional()
     .describe('Run configuration options'),
+  tags: z
+    .array(z.string().max(200))
+    .max(20)
+    .optional()
+    .describe(
+      'Tags for categorizing and filtering the run (max 20 tags, 200 chars each). Filter later with list_runs filter=\'tag="regression"\'.'
+    ),
   metadata: z
     .record(z.unknown())
     .optional()
