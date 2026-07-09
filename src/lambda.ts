@@ -33,7 +33,10 @@ function createMcpServer(apiKey?: string): McpServer {
 
   if (apiKey) {
     const client = new CovalApiClient(apiKey);
-    registerAllTools(mcpServer, client);
+    // The API Gateway Lambda transport has a 29-second integration ceiling. Covi can legitimately
+    // need longer for a model turn plus organization reads, so expose it only on stdio until the
+    // hosted MCP transport moves behind a long-lived service or gains durable async execution.
+    registerAllTools(mcpServer, client, { includeCovi: false });
   } else {
     mcpServer.tool('ping', 'Test tool to verify MCP server is working.', {}, async () => ({
       content: [

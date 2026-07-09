@@ -13,6 +13,23 @@ export interface ApiError {
   details?: Array<{ field?: string; description: string }>;
 }
 
+export interface CoviConversationMessage {
+  role: 'user' | 'assistant';
+  content: string;
+}
+
+export interface CoviConsultation {
+  answer: string;
+  toolSteps: Array<Record<string, unknown>>;
+}
+
+interface CoviDelegationTokenResponse {
+  delegation_token: string;
+  delegation_url: string;
+  expires_at: number;
+  mode: 'read_only';
+}
+
 export class CovalApiError extends Error {
   constructor(
     public readonly code: string,
@@ -234,4 +251,70 @@ export class CovalApiClient {
   ) {
     return this.request<{ test_case: unknown }>('PATCH', `/test-cases/${testCaseId}`, data);
   }
+
+  /**
+   * Ask the server-side Covi runtime for a read-only, organization-grounded consultation.
+   *
+   * The customer API key authenticates only the short token exchange. The key is never sent to
+   * Sofia; the returned token is audience-, org-, subject-, and time-bound and is used only for
+   * this read-only consultation request.
+   */
+  async consultCovi(input: {
+    prompt: string;
+    conversation?: CoviConversationMessage[];
+    sessionId?: string;
+  }): Promise<CoviConsultation> {
+    const tokenResponse = await this.request<CoviDelegationTokenResponse>('POST', '/covi/delegation-token', {
+      client_id: 'coval-mcp',
+      ...(input.sessionId ? { session_id: input.sessionId } : {})
+    });
+    if (tokenResponse.mode !== 'read_only' || !tokenResponse.delegation_token || !tokenResponse.delegation_url) {
+      throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation response was invalid');
+    }
+
+    const messages: CoviConversationMessage[] = [
+      ...(input.conversation || []),
+      { role: 'user', content: input.prompt }
+    ];
+    const response = await fetch(tokenResponse.delegation_url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokenResponse.delegation_token}`,
+        'Content-Type': 'application/json',
+        Accept: 'application/json'
+      },
+      body: JSON.stringify({ model: 'covi-external', messages })
+    });
+    const payload: unknown = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const error = (payload as { error?: ApiError }).error;
+      throw new CovalApiError(
+        error?.code || 'COVI_UNAVAILABLE',
+        error?.message || 'Covi consultation failed',
+        error?.details,
+        response.status
+      );
+    }
+    const answer = extractCoviAnswer(payload);
+    return {
+      answer,
+      toolSteps: extractCoviToolSteps(payload)
+    };
+  }
+}
+
+function extractCoviAnswer(payload: unknown): string {
+  const content = (payload as { choices?: Array<{ message?: { content?: unknown } }> }).choices?.[0]?.message?.content;
+  if (typeof content !== 'string' || !content.trim()) {
+    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Covi returned an invalid response');
+  }
+  return content;
+}
+
+function extractCoviToolSteps(payload: unknown): Array<Record<string, unknown>> {
+  const toolSteps = (payload as { tool_steps?: unknown }).tool_steps;
+  if (!Array.isArray(toolSteps)) {
+    return [];
+  }
+  return toolSteps.filter((step): step is Record<string, unknown> => typeof step === 'object' && step !== null);
 }

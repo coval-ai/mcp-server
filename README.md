@@ -92,6 +92,7 @@ Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
 | `create_test_case` | Add a test case to a test set |
 | `get_metrics` | Get metrics for a run |
 | `list_personas` | List available personas |
+| `consult_covi` | Delegate a read-only Coval evaluation question to Covi |
 
 ## Example Usage
 
@@ -104,6 +105,13 @@ Once connected, you can ask Claude things like:
 > "Run an evaluation of my customer-support-agent against the billing-inquiries test set"
 
 > "What are the metrics for run abc123?"
+
+> "Use `consult_covi` to analyze my latest failed run and recommend the most useful next test."
+
+`consult_covi` is available through the local stdio server (`npx @covalai/mcp-server`) in this
+initial release. The current remote MCP endpoint runs behind API Gateway, whose 29-second request
+limit is too short for reliable model-plus-data consultations; it will gain the tool when that
+transport is moved to a long-lived service.
 
 ## Development
 

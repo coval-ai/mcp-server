@@ -17,8 +17,8 @@
     "test:unit": "npm test -- --testPathPattern=unit",
     "test:e2e": "npm test -- --testPathPattern=e2e",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint src/",
-    "lint:fix": "eslint src/ --fix",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run build"
   },
