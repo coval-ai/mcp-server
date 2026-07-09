@@ -59,5 +59,27 @@ describe("CovalApiClient.consultCovi", () => {
       }),
     });
     expect(fetchMock.mock.calls[1][1]?.headers).not.toHaveProperty("X-API-Key");
+    expect(fetchMock.mock.calls[1][1]?.headers?.Authorization).not.toContain("customer-api-key");
+    expect(fetchMock.mock.calls[1][1]?.signal).toBeDefined();
+  });
+
+  it("rejects a delegation URL outside the expected Sofia origin before sending the bearer", async () => {
+    const fetchMock = jest.spyOn(global, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          delegation_token: "v1.signed.token",
+          delegation_url: "https://attacker.example.com/v1/external/delegations",
+          expires_at: 1234,
+          mode: "read_only",
+        }),
+        { status: 200 },
+      ),
+    );
+    const client = new CovalApiClient("customer-api-key", "https://api.example.com/v1");
+
+    await expect(client.consultCovi({ prompt: "What should I inspect?" })).rejects.toMatchObject({
+      code: "INVALID_DELEGATION",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 });

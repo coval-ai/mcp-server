@@ -1,4 +1,5 @@
 const DEFAULT_BASE_URL = 'https://api.coval.dev/v1';
+const COVI_DELEGATION_TIMEOUT_MS = 120_000;
 
 export interface PaginationParams {
   page_size?: number;
@@ -272,19 +273,26 @@ export class CovalApiClient {
       throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation response was invalid');
     }
 
+    const delegationUrl = validateCoviDelegationUrl(tokenResponse.delegation_url, this.baseUrl);
     const messages: CoviConversationMessage[] = [
       ...(input.conversation || []),
       { role: 'user', content: input.prompt }
     ];
-    const response = await fetch(tokenResponse.delegation_url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${tokenResponse.delegation_token}`,
-        'Content-Type': 'application/json',
-        Accept: 'application/json'
-      },
-      body: JSON.stringify({ model: 'covi-external', messages })
-    });
+    let response: Response;
+    try {
+      response = await fetch(delegationUrl, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${tokenResponse.delegation_token}`,
+          'Content-Type': 'application/json',
+          Accept: 'application/json'
+        },
+        body: JSON.stringify({ model: 'covi-external', messages }),
+        signal: AbortSignal.timeout(COVI_DELEGATION_TIMEOUT_MS)
+      });
+    } catch {
+      throw new CovalApiError('COVI_UNAVAILABLE', 'Covi consultation timed out or was unavailable');
+    }
     const payload: unknown = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = (payload as { error?: ApiError }).error;
@@ -301,6 +309,30 @@ export class CovalApiClient {
       toolSteps: extractCoviToolSteps(payload)
     };
   }
+}
+
+function validateCoviDelegationUrl(delegationUrl: string, apiBaseUrl: string): string {
+  let endpoint: URL;
+  let apiUrl: URL;
+  try {
+    endpoint = new URL(delegationUrl);
+    apiUrl = new URL(apiBaseUrl);
+  } catch {
+    throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation response was invalid');
+  }
+  const expectedHost = apiUrl.hostname.replace(/^api(?=[.-])/, 'sofia');
+  const expectedOrigin = `https://${expectedHost}`;
+  if (
+    apiUrl.protocol !== 'https:' ||
+    expectedHost === apiUrl.hostname ||
+    endpoint.origin !== expectedOrigin ||
+    endpoint.pathname !== '/v1/external/delegations' ||
+    endpoint.search ||
+    endpoint.hash
+  ) {
+    throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation response was invalid');
+  }
+  return endpoint.toString();
 }
 
 function extractCoviAnswer(payload: unknown): string {
