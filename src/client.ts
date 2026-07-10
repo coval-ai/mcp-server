@@ -20,8 +20,21 @@ export interface CoviConversationMessage {
 }
 
 export interface CoviConsultation {
-  answer: string;
-  toolSteps: Array<Record<string, unknown>>;
+  contractVersion: string;
+  requestId: string;
+  mode: 'read_only';
+  summary: string;
+  evidence: Array<{ name: string; status: string }>;
+  proposedActions: never[];
+}
+
+interface CoviConsultationResponse {
+  contract_version: string;
+  request_id: string;
+  mode: 'read_only';
+  summary: string;
+  evidence: Array<{ name: string; status: string }>;
+  proposed_actions: never[];
 }
 
 interface CoviDelegationTokenResponse {
@@ -274,10 +287,6 @@ export class CovalApiClient {
     }
 
     const delegationUrl = validateCoviDelegationUrl(tokenResponse.delegation_url, this.baseUrl);
-    const messages: CoviConversationMessage[] = [
-      ...(input.conversation || []),
-      { role: 'user', content: input.prompt }
-    ];
     let response: Response;
     try {
       response = await fetch(delegationUrl, {
@@ -287,7 +296,10 @@ export class CovalApiClient {
           'Content-Type': 'application/json',
           Accept: 'application/json'
         },
-        body: JSON.stringify({ model: 'covi-external', messages }),
+        body: JSON.stringify({
+          prompt: input.prompt,
+          conversation: input.conversation || []
+        }),
         signal: AbortSignal.timeout(COVI_DELEGATION_TIMEOUT_MS)
       });
     } catch {
@@ -303,10 +315,14 @@ export class CovalApiClient {
         response.status
       );
     }
-    const answer = extractCoviAnswer(payload);
+    const consultation = parseCoviConsultation(payload);
     return {
-      answer,
-      toolSteps: extractCoviToolSteps(payload)
+      contractVersion: consultation.contract_version,
+      requestId: consultation.request_id,
+      mode: consultation.mode,
+      summary: consultation.summary,
+      evidence: consultation.evidence,
+      proposedActions: consultation.proposed_actions
     };
   }
 }
@@ -320,11 +336,21 @@ function validateCoviDelegationUrl(delegationUrl: string, apiBaseUrl: string): s
   } catch {
     throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation response was invalid');
   }
-  const expectedHost = apiUrl.hostname.replace(/^api(?=[.-])/, 'sofia');
-  const expectedOrigin = `https://${expectedHost}`;
+  const environmentSuffix = apiUrl.pathname.includes('staging') ? '-staging' : '';
+  const expectedHost = apiUrl.hostname.replace(/^api(?=[.-])/, `sofia${environmentSuffix}`);
+  const configuredOrigin = process.env.COVI_DELEGATION_ORIGIN?.replace(/\/$/, '');
+  const expectedOrigin = configuredOrigin || `https://${expectedHost}`;
+  let expectedOriginUrl: URL;
+  try {
+    expectedOriginUrl = new URL(expectedOrigin);
+  } catch {
+    throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation origin is misconfigured');
+  }
   if (
     apiUrl.protocol !== 'https:' ||
-    expectedHost === apiUrl.hostname ||
+    expectedOriginUrl.protocol !== 'https:' ||
+    expectedOriginUrl.origin !== expectedOrigin ||
+    expectedOriginUrl.hostname === apiUrl.hostname ||
     endpoint.origin !== expectedOrigin ||
     endpoint.pathname !== '/v1/external/delegations' ||
     endpoint.search ||
@@ -335,18 +361,30 @@ function validateCoviDelegationUrl(delegationUrl: string, apiBaseUrl: string): s
   return endpoint.toString();
 }
 
-function extractCoviAnswer(payload: unknown): string {
-  const content = (payload as { choices?: Array<{ message?: { content?: unknown } }> }).choices?.[0]?.message?.content;
-  if (typeof content !== 'string' || !content.trim()) {
+function parseCoviConsultation(payload: unknown): CoviConsultationResponse {
+  const candidate = payload as Partial<CoviConsultationResponse>;
+  if (
+    candidate.contract_version !== '1' ||
+    typeof candidate.request_id !== 'string' ||
+    !candidate.request_id ||
+    candidate.mode !== 'read_only' ||
+    typeof candidate.summary !== 'string' ||
+    !candidate.summary.trim() ||
+    !Array.isArray(candidate.evidence) ||
+    !Array.isArray(candidate.proposed_actions) ||
+    candidate.proposed_actions.length !== 0
+  ) {
     throw new CovalApiError('INVALID_COVI_RESPONSE', 'Covi returned an invalid response');
   }
-  return content;
-}
-
-function extractCoviToolSteps(payload: unknown): Array<Record<string, unknown>> {
-  const toolSteps = (payload as { tool_steps?: unknown }).tool_steps;
-  if (!Array.isArray(toolSteps)) {
-    return [];
+  const evidence = candidate.evidence.filter(
+    (item): item is { name: string; status: string } =>
+      typeof item === 'object' &&
+      item !== null &&
+      typeof item.name === 'string' &&
+      typeof item.status === 'string'
+  );
+  if (evidence.length !== candidate.evidence.length) {
+    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Covi returned invalid evidence');
   }
-  return toolSteps.filter((step): step is Record<string, unknown> => typeof step === 'object' && step !== null);
+  return { ...candidate, evidence } as CoviConsultationResponse;
 }

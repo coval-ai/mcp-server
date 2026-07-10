@@ -1,0 +1,52 @@
+import type { AddressInfo } from 'node:net';
+import { createRemoteApp, organizationIdFromVerifiedToken } from '../../src/remote.js';
+
+describe('remote OAuth organization binding', () => {
+  it('extracts the selected organization from an already verified Clerk JWT', () => {
+    const payload = Buffer.from(JSON.stringify({ org_id: 'org_clerk_123' })).toString('base64url');
+    expect(organizationIdFromVerifiedToken(`header.${payload}.signature`)).toBe('org_clerk_123');
+  });
+
+  it('fails closed for opaque or organization-less tokens', () => {
+    expect(organizationIdFromVerifiedToken('oat_opaque')).toBeUndefined();
+    const payload = Buffer.from(JSON.stringify({ sub: 'user_123' })).toString('base64url');
+    expect(organizationIdFromVerifiedToken(`header.${payload}.signature`)).toBeUndefined();
+  });
+
+  it('serves the SDK Streamable HTTP transport for API-key migration clients', async () => {
+    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
+    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
+    process.env.CLERK_TELEMETRY_DISABLED = 'true';
+    const app = await createRemoteApp();
+    const server = app.listen(0, '127.0.0.1');
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    try {
+      const { port } = server.address() as AddressInfo;
+      const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json, text/event-stream',
+          'Content-Type': 'application/json',
+          'X-API-Key': 'customer-api-key',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-06-18',
+            capabilities: {},
+            clientInfo: { name: 'test', version: '1' },
+          },
+        }),
+      });
+
+      expect(response.status).toBe(200);
+      expect(await response.text()).toContain('Coval MCP');
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+});

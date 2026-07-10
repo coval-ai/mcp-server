@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CovalApiClient } from "../client.js";
 import { createSuccessResponse } from "../utils/response.js";
 import { handleApiError } from "../utils/errors.js";
+import { READ_ONLY_TOOL } from "./annotations.js";
 
 const CoviConsultInputSchema = {
   prompt: z
@@ -38,6 +39,7 @@ export function registerCoviTools(server: McpServer, client: CovalApiClient) {
     "consult_covi",
     "Delegate a read-only Coval evaluation question to Covi. Covi can use Coval playbooks and the authenticated organization's runs, simulations, conversations, metrics, agents, personas, test sets, and dashboards. It cannot create, modify, run, or delete anything.",
     CoviConsultInputSchema,
+    READ_ONLY_TOOL,
     async (params) => {
       try {
         const result = await client.consultCovi({
@@ -46,9 +48,12 @@ export function registerCoviTools(server: McpServer, client: CovalApiClient) {
           sessionId: params.session_id,
         });
         return createSuccessResponse({
-          answer: result.answer,
-          tool_steps: result.toolSteps,
-          mode: "read_only",
+          contract_version: result.contractVersion,
+          request_id: result.requestId,
+          mode: result.mode,
+          summary: result.summary,
+          evidence: result.evidence,
+          proposed_actions: result.proposedActions,
         });
       } catch (err) {
         return handleApiError(err);

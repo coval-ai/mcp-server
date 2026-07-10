@@ -23,8 +23,12 @@ describe("CovalApiClient.consultCovi", () => {
       .mockResolvedValueOnce(
         new Response(
           JSON.stringify({
-            choices: [{ message: { content: "Inspect run run_123 first." } }],
-            tool_steps: [{ name: "list_recent_runs", status: "succeeded" }],
+            contract_version: "1",
+            request_id: "request-123",
+            mode: "read_only",
+            summary: "Inspect run run_123 first.",
+            evidence: [{ name: "list_recent_runs", status: "succeeded" }],
+            proposed_actions: [],
           }),
           { status: 200 },
         ),
@@ -41,8 +45,12 @@ describe("CovalApiClient.consultCovi", () => {
     });
 
     expect(result).toEqual({
-      answer: "Inspect run run_123 first.",
-      toolSteps: [{ name: "list_recent_runs", status: "succeeded" }],
+      contractVersion: "1",
+      requestId: "request-123",
+      mode: "read_only",
+      summary: "Inspect run run_123 first.",
+      evidence: [{ name: "list_recent_runs", status: "succeeded" }],
+      proposedActions: [],
     });
     expect(fetchMock.mock.calls[0][0]).toBe(
       "https://api.example.com/v1/covi/delegation-token",
@@ -81,5 +89,41 @@ describe("CovalApiClient.consultCovi", () => {
       code: "INVALID_DELEGATION",
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts the dedicated staging Sofia origin for a staging API base path', async () => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            delegation_token: 'signed.jwt.token',
+            delegation_url: 'https://sofia-staging.coval.dev/v1/external/delegations',
+            expires_at: 1234,
+            mode: 'read_only',
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            contract_version: '1',
+            request_id: 'request-staging',
+            mode: 'read_only',
+            summary: 'Staging consultation.',
+            evidence: [],
+            proposed_actions: [],
+          }),
+          { status: 200 },
+        ),
+      );
+    const client = new CovalApiClient('staging-key', 'https://api.coval.dev/v1-staging');
+
+    await client.consultCovi({ prompt: 'Inspect staging.' });
+
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      'https://sofia-staging.coval.dev/v1/external/delegations',
+    );
   });
 });

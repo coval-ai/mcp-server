@@ -1,49 +1,13 @@
 #!/usr/bin/env node
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-import { CovalApiClient } from './client.js';
-import { registerAllTools } from './tools/index.js';
-
-function createMcpServer(getApiKey?: () => string) {
-  const mcpServer = new McpServer({
-    name: 'Coval MCP',
-    version: '0.1.0',
-  });
-
-  const apiKey = getApiKey?.() || process.env.COVAL_API_KEY;
-
-  if (apiKey) {
-    const client = new CovalApiClient(apiKey);
-    registerAllTools(mcpServer, client);
-  } else {
-    mcpServer.tool(
-      'ping',
-      'Test tool to verify MCP server is working.',
-      {},
-      async () => ({
-        content: [
-          {
-            type: 'text' as const,
-            text: JSON.stringify({
-              status: 'ok',
-              message: 'pong',
-              version: '0.1.0',
-              note: 'Set COVAL_API_KEY to enable all tools',
-            }),
-          },
-        ],
-      })
-    );
-  }
-
-  return mcpServer;
-}
+import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { createMcpServer } from './server.js';
 
 async function main() {
   try {
     console.error('Starting Coval MCP server...');
-    const mcpServer = createMcpServer();
+    const mcpServer = createMcpServer({ apiKey: process.env.COVAL_API_KEY });
     const transport = new StdioServerTransport();
     await mcpServer.connect(transport);
     console.error('Coval MCP server connected');
@@ -74,4 +38,4 @@ main().catch((err) => {
   process.exit(1);
 });
 
-export { createMcpServer };
+export { createMcpServer } from './server.js';

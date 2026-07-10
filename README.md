@@ -108,10 +108,16 @@ Once connected, you can ask Claude things like:
 
 > "Use `consult_covi` to analyze my latest failed run and recommend the most useful next test."
 
-`consult_covi` is available through the local stdio server (`npx @covalai/mcp-server`) in this
-initial release. The current remote MCP endpoint runs behind API Gateway, whose 29-second request
-limit is too short for reliable model-plus-data consultations; it will gain the tool when that
-transport is moved to a long-lived service.
+The same tools, including `consult_covi`, are available through both supported transports:
+
+- Remote Streamable HTTP: `https://mcp.coval.dev/mcp` using Clerk OAuth. This is the recommended
+  connection for Codex, Claude, and other hosted MCP clients.
+- Local stdio: `npx @covalai/mcp-server` with `COVAL_API_KEY`, for service accounts and local
+  development.
+
+Remote clients may continue to send `X-API-Key` during migration. OAuth access tokens terminate at
+the MCP server and are never forwarded to Coval APIs or Sofia; the server exchanges verified Clerk
+user and organization identity for Coval's existing managed per-user API key.
 
 ## Development
 
@@ -133,8 +139,12 @@ npm test
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `COVAL_API_KEY` | Yes | - | Your Coval API key |
+| `COVAL_API_KEY` | Stdio | - | Coval API key for the local stdio transport |
 | `COVAL_API_BASE_URL` | No | `https://api.coval.dev/v1` | API base URL |
+| `PORT` | Remote | `8080` | Streamable HTTP listen port |
+| `CLERK_PUBLISHABLE_KEY` | Remote | - | Clerk publishable key used for OAuth metadata |
+| `CLERK_SECRET_KEY` | Remote | - | Clerk server key used to verify OAuth access tokens |
+| `COVAL_INTERNAL_API_KEY` | Remote OAuth | - | Internal credential used only for managed user-key exchange |
 | `LOG_LEVEL` | No | `info` | Logging level |
 
 ## Documentation
