@@ -125,6 +125,9 @@ Before enabling or cutting traffic to the remote service, configure the Clerk OA
 issue JWT-format access tokens containing the selected organization in `org_id` or
 `organization_id`. Opaque `oat_` tokens and organization-less tokens are rejected with no fallback;
 this keeps organization selection bound to verified identity rather than request parameters.
+Enable Dynamic Client Registration for MCP clients that create their OAuth registration at connect
+time, and keep the Clerk consent screen enabled so the user explicitly selects the organization
+granted through `user:org:read`.
 
 Do not publish the remote-connection release or repoint `mcp.coval.dev` until the backend identity
 exchange and Sofia delegation endpoint are deployed, `consult_covi` succeeds through a real OAuth
