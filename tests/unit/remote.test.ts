@@ -1,4 +1,6 @@
 import type { AddressInfo } from 'node:net';
+import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { createRemoteApp, organizationIdFromVerifiedToken } from '../../src/remote.js';
 
 describe('remote OAuth organization binding', () => {
@@ -47,6 +49,32 @@ describe('remote OAuth organization binding', () => {
       expect(response.headers.get('access-control-expose-headers')).toContain('WWW-Authenticate');
       expect(await response.text()).toContain('Coval MCP');
     } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+
+  it('supports a stateless SDK client across initialize and tools/list requests', async () => {
+    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
+    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
+    process.env.CLERK_TELEMETRY_DISABLED = 'true';
+    const app = await createRemoteApp();
+    const server = app.listen(0, '127.0.0.1');
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    const { port } = server.address() as AddressInfo;
+    const transport = new StreamableHTTPClientTransport(
+      new URL(`http://127.0.0.1:${port}/mcp`),
+      { requestInit: { headers: { 'X-API-Key': 'customer-api-key' } } },
+    );
+    const client = new Client({ name: 'stateless-test-client', version: '1' });
+
+    try {
+      await client.connect(transport);
+      const tools = await client.listTools();
+      expect(tools.tools.map((tool) => tool.name)).toContain('consult_covi');
+    } finally {
+      await client.close();
       await new Promise<void>((resolve, reject) =>
         server.close((error) => (error ? reject(error) : resolve())),
       );
