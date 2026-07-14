@@ -81,7 +81,7 @@ export async function createRemoteApp(): Promise<express.Express> {
       next();
       return;
     }
-    void oauth(req, res, next);
+    void Promise.resolve(oauth(req, res, next)).catch(next);
   };
 
   app.get('/health', (_req, res) => {

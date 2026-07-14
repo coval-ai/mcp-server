@@ -119,6 +119,17 @@ Remote clients may continue to send `X-API-Key` during migration. OAuth access t
 the MCP server and are never forwarded to Coval APIs or Sofia; the server exchanges verified Clerk
 user and organization identity for Coval's existing managed per-user API key.
 
+### Remote OAuth operator requirements
+
+Before enabling or cutting traffic to the remote service, configure the Clerk OAuth application to
+issue JWT-format access tokens containing the selected organization in `org_id` or
+`organization_id`. Opaque `oat_` tokens and organization-less tokens are rejected with no fallback;
+this keeps organization selection bound to verified identity rather than request parameters.
+
+Do not publish the remote-connection release or repoint `mcp.coval.dev` until the backend identity
+exchange and Sofia delegation endpoint are deployed, `consult_covi` succeeds through a real OAuth
+connector, and the legacy API-key connector path has been regression-tested.
+
 ## Development
 
 ```bash
