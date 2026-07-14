@@ -1,4 +1,7 @@
 import { handler } from "../../src/lambda.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { jest } from "@jest/globals";
 
 describe("remote MCP Lambda", () => {
   it("uses the package version in health and initialize responses", async () => {
@@ -60,5 +63,43 @@ describe("remote MCP Lambda", () => {
     const unauthenticated = JSON.parse((await readOverview()).body).result.contents[0].text;
     expect(unauthenticated).toContain("Authenticate to access");
     expect(unauthenticated).not.toContain("direct tools");
+  });
+
+  it("closes the in-memory transport after notifications and request failures", async () => {
+    const clientClose = jest.spyOn(Client.prototype, "close");
+    const serverClose = jest.spyOn(McpServer.prototype, "close");
+    const handlerError = jest.spyOn(console, "error").mockImplementation(() => undefined);
+
+    const notification = await handler({
+      rawPath: "/mcp",
+      requestContext: { http: { method: "POST" } },
+      headers: { accept: "application/json", "x-api-key": "customer-api-key" },
+      body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }),
+      isBase64Encoded: false,
+    } as Parameters<typeof handler>[0]);
+
+    expect(notification.statusCode).toBe(202);
+    expect(clientClose).toHaveBeenCalledTimes(1);
+    expect(serverClose).toHaveBeenCalledTimes(1);
+
+    const listTools = jest
+      .spyOn(Client.prototype, "listTools")
+      .mockRejectedValueOnce(new Error("request failed"));
+    const failure = await handler({
+      rawPath: "/mcp",
+      requestContext: { http: { method: "POST" } },
+      headers: { accept: "application/json", "x-api-key": "customer-api-key" },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "tools/list" }),
+      isBase64Encoded: false,
+    } as Parameters<typeof handler>[0]);
+
+    expect(JSON.parse(failure.body).error.message).toBe("request failed");
+    expect(clientClose).toHaveBeenCalledTimes(2);
+    expect(serverClose).toHaveBeenCalledTimes(2);
+
+    listTools.mockRestore();
+    clientClose.mockRestore();
+    serverClose.mockRestore();
+    handlerError.mockRestore();
   });
 });

@@ -78,6 +78,8 @@ export async function handler(
     event.headers['X-API-Key'] ||
     event.headers['X-Api-Key'];
 
+  let mcpServer: ReturnType<typeof createMcpServer> | undefined;
+  let client: Client | undefined;
   try {
     const bodyStr = event.isBase64Encoded
       ? Buffer.from(event.body || '', 'base64').toString('utf-8')
@@ -86,10 +88,10 @@ export async function handler(
     const request: JsonRpcRequest = JSON.parse(bodyStr);
 
     // Create server and connect via in-memory transport
-    const mcpServer = createMcpServer({ apiKey, includeCovi: false });
+    mcpServer = createMcpServer({ apiKey, includeCovi: false });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
-    const client = new Client({ name: 'lambda-client', version: '1.0.0' }, {});
+    client = new Client({ name: 'lambda-client', version: '1.0.0' }, {});
 
     await Promise.all([
       mcpServer.connect(serverTransport),
@@ -175,10 +177,6 @@ export async function handler(
       }
     }
 
-    // Cleanup
-    await client.close();
-    await mcpServer.close();
-
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -198,5 +196,10 @@ export async function handler(
         id: null,
       }),
     };
+  } finally {
+    await Promise.allSettled([
+      ...(client ? [client.close()] : []),
+      ...(mcpServer ? [mcpServer.close()] : []),
+    ]);
   }
 }
