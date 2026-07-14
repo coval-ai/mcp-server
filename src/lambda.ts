@@ -4,7 +4,7 @@ import type {
 } from 'aws-lambda';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { createMcpServer } from './server.js';
+import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -38,7 +38,7 @@ export async function handler(
       body: JSON.stringify({
         status: 'healthy',
         service: 'coval-mcp-server',
-        version: '0.1.0',
+        version: COVAL_MCP_SERVER_VERSION,
       }),
     };
   }
@@ -107,7 +107,7 @@ export async function handler(
           result: {
             protocolVersion: request.params?.protocolVersion || '2024-11-05',
             capabilities: { tools: { listChanged: true }, resources: { listChanged: true } },
-            serverInfo: { name: 'Coval MCP', version: '0.1.0' },
+            serverInfo: { name: 'Coval MCP', version: COVAL_MCP_SERVER_VERSION },
             instructions: "Use Coval tools for testing and evaluating AI agents (voice, SMS, chat). Create evaluation runs, manage test sets/cases, configure simulated personas, and retrieve quality metrics"
           },
         };

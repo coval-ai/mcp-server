@@ -1,5 +1,6 @@
 const DEFAULT_BASE_URL = 'https://api.coval.dev/v1';
 const COVI_DELEGATION_TIMEOUT_MS = 120_000;
+const COVI_TOKEN_EXCHANGE_TIMEOUT_MS = 15_000;
 
 export interface PaginationParams {
   page_size?: number;
@@ -69,7 +70,8 @@ export class CovalApiClient {
     method: string,
     path: string,
     body?: unknown,
-    params?: Record<string, string | number | boolean | undefined>
+    params?: Record<string, string | number | boolean | undefined>,
+    signal?: AbortSignal,
   ): Promise<T> {
     const url = new URL(this.baseUrl + path);
 
@@ -88,6 +90,7 @@ export class CovalApiClient {
         'Content-Type': 'application/json',
       },
       body: body ? JSON.stringify(body) : undefined,
+      signal,
     });
 
     const data = await response.json();
@@ -278,10 +281,22 @@ export class CovalApiClient {
     conversation?: CoviConversationMessage[];
     sessionId?: string;
   }): Promise<CoviConsultation> {
-    const tokenResponse = await this.request<CoviDelegationTokenResponse>('POST', '/covi/delegation-token', {
-      client_id: 'coval-mcp',
-      ...(input.sessionId ? { session_id: input.sessionId } : {})
-    });
+    let tokenResponse: CoviDelegationTokenResponse;
+    try {
+      tokenResponse = await this.request<CoviDelegationTokenResponse>(
+        'POST',
+        '/covi/delegation-token',
+        {
+          client_id: 'coval-mcp',
+          ...(input.sessionId ? { session_id: input.sessionId } : {}),
+        },
+        undefined,
+        AbortSignal.timeout(COVI_TOKEN_EXCHANGE_TIMEOUT_MS),
+      );
+    } catch (error) {
+      if (error instanceof CovalApiError) throw error;
+      throw new CovalApiError('COVI_UNAVAILABLE', 'Covi delegation was unavailable');
+    }
     if (tokenResponse.mode !== 'read_only' || !tokenResponse.delegation_token || !tokenResponse.delegation_url) {
       throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation response was invalid');
     }
@@ -362,6 +377,9 @@ function validateCoviDelegationUrl(delegationUrl: string, apiBaseUrl: string): s
 }
 
 function parseCoviConsultation(payload: unknown): CoviConsultationResponse {
+  if (typeof payload !== 'object' || payload === null) {
+    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Covi returned an invalid response');
+  }
   const candidate = payload as Partial<CoviConsultationResponse>;
   if (
     candidate.contract_version !== '1' ||

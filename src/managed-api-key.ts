@@ -12,8 +12,19 @@ interface CacheEntry {
   expiresAt: number;
 }
 
+export class ManagedApiKeyError extends Error {
+  constructor(
+    message: string,
+    public readonly status: number,
+  ) {
+    super(message);
+    this.name = 'ManagedApiKeyError';
+  }
+}
+
 export class ManagedApiKeyProvider {
   private readonly cache = new Map<string, CacheEntry>();
+  private readonly inFlight = new Map<string, Promise<string>>();
 
   constructor(
     private readonly internalApiKey: string,
@@ -32,7 +43,23 @@ export class ManagedApiKeyProvider {
       this.cache.set(cacheKey, cached);
       return cached.apiKey;
     }
+    this.cache.delete(cacheKey);
 
+    const existingRequest = this.inFlight.get(cacheKey);
+    if (existingRequest) return existingRequest;
+
+    const request = this.fetchApiKey(cacheKey, clerkOrganizationId, clerkUserId).finally(() => {
+      this.inFlight.delete(cacheKey);
+    });
+    this.inFlight.set(cacheKey, request);
+    return request;
+  }
+
+  private async fetchApiKey(
+    cacheKey: string,
+    clerkOrganizationId: string,
+    clerkUserId: string,
+  ): Promise<string> {
     const response = await fetch(`${this.apiBaseUrl.replace(/\/$/, '')}/internal/mcp/api-key`, {
       method: 'POST',
       headers: {
@@ -49,13 +76,15 @@ export class ManagedApiKeyProvider {
       error?: string;
     };
     if (!response.ok || typeof payload.api_key !== 'string' || !payload.api_key) {
-      throw new Error(
+      throw new ManagedApiKeyError(
         response.status === 404
           ? 'The selected Coval organization or user is not available'
           : 'Unable to establish a Coval MCP session',
+        response.status === 404 ? 404 : 502,
       );
     }
 
+    this.cache.delete(cacheKey);
     this.cache.set(cacheKey, { apiKey: payload.api_key, expiresAt: Date.now() + CACHE_TTL_MS });
     while (this.cache.size > CACHE_MAX_ENTRIES) {
       const oldest = this.cache.keys().next().value as string | undefined;

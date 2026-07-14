@@ -9,12 +9,20 @@ import {
 } from '@clerk/mcp-tools/express';
 import { verifyClerkToken } from '@clerk/mcp-tools/server';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
+import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
-import { ManagedApiKeyProvider } from './managed-api-key.js';
-import { createMcpServer } from './server.js';
+import { ManagedApiKeyError, ManagedApiKeyProvider } from './managed-api-key.js';
+import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
 
 const PORT = Number.parseInt(process.env.PORT || '8080', 10);
 const REQUIRED_ORG_SCOPE = 'user:org:read';
+
+class OAuthOrganizationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'OAuthOrganizationError';
+  }
+}
 
 function headerValue(req: Request, name: string): string | undefined {
   const value = req.header(name)?.trim();
@@ -27,7 +35,7 @@ function oauthIdentity(req: Request): { clerkUserId: string; clerkOrganizationId
   const clerkOrganizationId =
     typeof extra?.clerkOrganizationId === 'string' ? extra.clerkOrganizationId : '';
   if (!clerkUserId || !clerkOrganizationId) {
-    throw new Error('OAuth connection must select a Coval organization');
+    throw new OAuthOrganizationError('OAuth connection must select a Coval organization');
   }
   return { clerkUserId, clerkOrganizationId };
 }
@@ -55,6 +63,7 @@ export async function createRemoteApp(): Promise<express.Express> {
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
   app.use(express.json({ limit: '1mb' }));
+  app.use(cors({ exposedHeaders: ['WWW-Authenticate'] }));
   app.use(clerkMiddleware());
 
   const managedKeys = new ManagedApiKeyProvider(process.env.COVAL_INTERNAL_API_KEY || '');
@@ -85,7 +94,11 @@ export async function createRemoteApp(): Promise<express.Express> {
   };
 
   app.get('/health', (_req, res) => {
-    res.json({ status: 'healthy', service: 'coval-mcp-server', version: '0.2.0' });
+    res.json({
+      status: 'healthy',
+      service: 'coval-mcp-server',
+      version: COVAL_MCP_SERVER_VERSION,
+    });
   });
   app.get('/.well-known/oauth-protected-resource', protectedResourceHandlerClerk({
     service_documentation: 'https://docs.coval.dev',
@@ -117,11 +130,9 @@ export async function createRemoteApp(): Promise<express.Express> {
     } catch (error) {
       console.error('MCP request failed', error instanceof Error ? error.message : 'unknown error');
       if (!res.headersSent) {
-        res.status(502).json({
-          error:
-            error instanceof Error && error.message.includes('organization')
-              ? error.message
-              : 'Unable to serve MCP request',
+        const isKnownError = error instanceof OAuthOrganizationError || error instanceof ManagedApiKeyError;
+        res.status(error instanceof ManagedApiKeyError ? error.status : isKnownError ? 400 : 502).json({
+          error: isKnownError ? error.message : 'Unable to serve MCP request',
         });
       }
     }

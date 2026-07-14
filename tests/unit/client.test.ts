@@ -58,6 +58,7 @@ describe("CovalApiClient.consultCovi", () => {
     expect(fetchMock.mock.calls[0][1]).toMatchObject({
       headers: expect.objectContaining({ "X-API-Key": "customer-api-key" }),
     });
+    expect(fetchMock.mock.calls[0][1]?.signal).toBeDefined();
     expect(fetchMock.mock.calls[1][0]).toBe(
       "https://sofia.example.com/v1/external/delegations",
     );
@@ -125,5 +126,37 @@ describe("CovalApiClient.consultCovi", () => {
     expect(fetchMock.mock.calls[1][0]).toBe(
       'https://sofia-staging.coval.dev/v1/external/delegations',
     );
+  });
+
+  it('bounds the delegation-token exchange', async () => {
+    jest.spyOn(global, 'fetch').mockRejectedValueOnce(new DOMException('timed out', 'AbortError'));
+    const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
+
+    await expect(client.consultCovi({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
+      code: 'COVI_UNAVAILABLE',
+      message: 'Covi delegation was unavailable',
+    });
+  });
+
+  it('rejects null consultation payloads with the typed response error', async () => {
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            delegation_token: 'signed.jwt.token',
+            delegation_url: 'https://sofia.example.com/v1/external/delegations',
+            expires_at: 1234,
+            mode: 'read_only',
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response('null', { status: 200 }));
+    const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
+
+    await expect(client.consultCovi({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
+      code: 'INVALID_COVI_RESPONSE',
+    });
   });
 });

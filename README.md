@@ -155,6 +155,7 @@ npm test
 |----------|----------|---------|-------------|
 | `COVAL_API_KEY` | Stdio | - | Coval API key for the local stdio transport |
 | `COVAL_API_BASE_URL` | No | `https://api.coval.dev/v1` | API base URL |
+| `COVI_DELEGATION_ORIGIN` | No | Derived from `COVAL_API_BASE_URL` | Overrides the expected Sofia origin used to validate delegation URLs |
 | `PORT` | Remote | `8080` | Streamable HTTP listen port |
 | `CLERK_PUBLISHABLE_KEY` | Remote | - | Clerk publishable key used for OAuth metadata |
 | `CLERK_SECRET_KEY` | Remote | - | Clerk server key used to verify OAuth access tokens |

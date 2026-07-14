@@ -27,6 +27,8 @@ jobs:
       MCP_ENVIRONMENT: ${{ inputs.environment }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::851725437270:role/sofia-${{ env.MCP_ENVIRONMENT }}-mcp-github-actions-deploy

@@ -27,6 +27,7 @@ describe('remote OAuth organization binding', () => {
         headers: {
           Accept: 'application/json, text/event-stream',
           'Content-Type': 'application/json',
+          Origin: 'https://client.example.com',
           'X-API-Key': 'customer-api-key',
         },
         body: JSON.stringify({
@@ -42,6 +43,8 @@ describe('remote OAuth organization binding', () => {
       });
 
       expect(response.status).toBe(200);
+      expect(response.headers.get('access-control-allow-origin')).toBe('*');
+      expect(response.headers.get('access-control-expose-headers')).toContain('WWW-Authenticate');
       expect(await response.text()).toContain('Coval MCP');
     } finally {
       await new Promise<void>((resolve, reject) =>
