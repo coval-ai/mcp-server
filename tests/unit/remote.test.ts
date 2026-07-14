@@ -3,6 +3,23 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { createRemoteApp, organizationIdFromVerifiedToken } from '../../src/remote.js';
 
+async function withRemoteServer(run: (baseUrl: string) => Promise<void>): Promise<void> {
+  process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
+  process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
+  process.env.CLERK_TELEMETRY_DISABLED = 'true';
+  const app = await createRemoteApp();
+  const server = app.listen(0, '127.0.0.1');
+  await new Promise<void>((resolve) => server.once('listening', resolve));
+  try {
+    const { port } = server.address() as AddressInfo;
+    await run(`http://127.0.0.1:${port}`);
+  } finally {
+    await new Promise<void>((resolve, reject) =>
+      server.close((error) => (error ? reject(error) : resolve())),
+    );
+  }
+}
+
 describe('remote OAuth organization binding', () => {
   it('extracts the selected organization from an already verified Clerk JWT', () => {
     const payload = Buffer.from(JSON.stringify({ org_id: 'org_clerk_123' })).toString('base64url');
@@ -16,15 +33,8 @@ describe('remote OAuth organization binding', () => {
   });
 
   it('challenges unauthenticated requests with protected resource metadata', async () => {
-    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
-    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
-    process.env.CLERK_TELEMETRY_DISABLED = 'true';
-    const app = await createRemoteApp();
-    const server = app.listen(0, '127.0.0.1');
-    await new Promise<void>((resolve) => server.once('listening', resolve));
-    try {
-      const { port } = server.address() as AddressInfo;
-      const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+    await withRemoteServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
           Accept: 'application/json, text/event-stream',
@@ -37,25 +47,14 @@ describe('remote OAuth organization binding', () => {
       const challenge = response.headers.get('www-authenticate');
       expect(challenge).toContain('Bearer resource_metadata=');
       expect(challenge).toContain('/.well-known/oauth-protected-resource/mcp');
-    } finally {
-      await new Promise<void>((resolve, reject) =>
-        server.close((error) => (error ? reject(error) : resolve())),
-      );
-    }
+    });
   });
 
   it('terminates malformed Authorization headers with a 4xx instead of hanging', async () => {
-    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
-    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
-    process.env.CLERK_TELEMETRY_DISABLED = 'true';
-    const app = await createRemoteApp();
-    const server = app.listen(0, '127.0.0.1');
-    await new Promise<void>((resolve) => server.once('listening', resolve));
-    try {
-      const { port } = server.address() as AddressInfo;
+    await withRemoteServer(async (baseUrl) => {
       // "Bearer" with no token makes @clerk/mcp-tools' mcpAuth throw rather than respond; the
       // rejection must be caught and answered or the client hangs with no response at all.
-      const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
           Accept: 'application/json, text/event-stream',
@@ -71,25 +70,14 @@ describe('remote OAuth organization binding', () => {
       expect(await response.json()).toEqual({
         error: 'Invalid Authorization header, expected Bearer <token>',
       });
-    } finally {
-      await new Promise<void>((resolve, reject) =>
-        server.close((error) => (error ? reject(error) : resolve())),
-      );
-    }
+    });
   });
 
   it('rejects POST requests that do not accept text/event-stream', async () => {
-    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
-    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
-    process.env.CLERK_TELEMETRY_DISABLED = 'true';
-    const app = await createRemoteApp();
-    const server = app.listen(0, '127.0.0.1');
-    await new Promise<void>((resolve) => server.once('listening', resolve));
-    try {
-      const { port } = server.address() as AddressInfo;
+    await withRemoteServer(async (baseUrl) => {
       // Regression guard for the documented breaking change: legacy clients sending only
       // `Accept: application/json` are refused by the Streamable HTTP transport.
-      const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+      const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
           Accept: 'application/json',
@@ -111,23 +99,12 @@ describe('remote OAuth organization binding', () => {
       expect(response.status).toBe(406);
       const body = (await response.json()) as { error?: { code?: number } };
       expect(body.error?.code).toBe(-32000);
-    } finally {
-      await new Promise<void>((resolve, reject) =>
-        server.close((error) => (error ? reject(error) : resolve())),
-      );
-    }
+    });
   });
 
   it('serves the SDK Streamable HTTP transport for API-key migration clients', async () => {
-    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
-    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
-    process.env.CLERK_TELEMETRY_DISABLED = 'true';
-    const app = await createRemoteApp();
-    const server = app.listen(0, '127.0.0.1');
-    await new Promise<void>((resolve) => server.once('listening', resolve));
-    try {
-      const { port } = server.address() as AddressInfo;
-      const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+    await withRemoteServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/mcp`, {
         method: 'POST',
         headers: {
           Accept: 'application/json, text/event-stream',
@@ -151,36 +128,24 @@ describe('remote OAuth organization binding', () => {
       expect(response.headers.get('access-control-allow-origin')).toBe('*');
       expect(response.headers.get('access-control-expose-headers')).toContain('WWW-Authenticate');
       expect(await response.text()).toContain('Coval MCP');
-    } finally {
-      await new Promise<void>((resolve, reject) =>
-        server.close((error) => (error ? reject(error) : resolve())),
-      );
-    }
+    });
   });
 
   it('supports a stateless SDK client across initialize and tools/list requests', async () => {
-    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
-    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
-    process.env.CLERK_TELEMETRY_DISABLED = 'true';
-    const app = await createRemoteApp();
-    const server = app.listen(0, '127.0.0.1');
-    await new Promise<void>((resolve) => server.once('listening', resolve));
-    const { port } = server.address() as AddressInfo;
-    const transport = new StreamableHTTPClientTransport(
-      new URL(`http://127.0.0.1:${port}/mcp`),
-      { requestInit: { headers: { 'X-API-Key': 'customer-api-key' } } },
-    );
-    const client = new Client({ name: 'stateless-test-client', version: '1' });
-
-    try {
-      await client.connect(transport);
-      const tools = await client.listTools();
-      expect(tools.tools.map((tool) => tool.name)).toContain('consult_covi');
-    } finally {
-      await client.close();
-      await new Promise<void>((resolve, reject) =>
-        server.close((error) => (error ? reject(error) : resolve())),
+    await withRemoteServer(async (baseUrl) => {
+      const transport = new StreamableHTTPClientTransport(
+        new URL(`${baseUrl}/mcp`),
+        { requestInit: { headers: { 'X-API-Key': 'customer-api-key' } } },
       );
-    }
+      const client = new Client({ name: 'stateless-test-client', version: '1' });
+
+      try {
+        await client.connect(transport);
+        const tools = await client.listTools();
+        expect(tools.tools.map((tool) => tool.name)).toContain('consult_covi');
+      } finally {
+        await client.close();
+      }
+    });
   });
 });
