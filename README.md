@@ -121,10 +121,13 @@ user and organization identity for Coval's existing managed per-user API key.
 
 ### Remote OAuth operator requirements
 
-Before enabling or cutting traffic to the remote service, configure the Clerk OAuth application to
-issue JWT-format access tokens containing the selected organization in `org_id` or
-`organization_id`. Opaque `oat_` tokens and organization-less tokens are rejected with no fallback;
-this keeps organization selection bound to verified identity rather than request parameters.
+**Staging-enable prerequisite:** the Clerk OAuth application MUST be configured to issue
+JWT-format access tokens containing the selected organization in `org_id` or `organization_id`.
+The server reads the organization only from that signature-verified token claim (Clerk's verified
+OAuth auth object does not expose an organization id), so opaque `oat_` tokens and
+organization-less tokens are rejected with 401 and no fallback — every OAuth connection fails
+until this is configured. This keeps organization selection bound to verified identity rather
+than request parameters.
 Enable Dynamic Client Registration for MCP clients that create their OAuth registration at connect
 time, and keep the Clerk consent screen enabled so the user explicitly selects the organization
 granted through `user:org:read`.

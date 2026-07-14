@@ -40,6 +40,15 @@ function oauthIdentity(req: Request): { clerkUserId: string; clerkOrganizationId
   return { clerkUserId, clerkOrganizationId };
 }
 
+function protectedResourceMetadataUrl(req: Request): string {
+  return `${req.protocol}://${req.get('host')}/.well-known/oauth-protected-resource${req.originalUrl}`;
+}
+
+// Clerk's verified `oauth_token` auth object exposes only `userId` and `clientId`, so the selected
+// organization must come from the already signature-verified access token's claims. This requires
+// the Clerk OAuth application to mint JWT-format access tokens carrying `org_id` or
+// `organization_id`; opaque `oat_` tokens fail closed (401). See "Remote OAuth operator
+// requirements" in the README.
 export function organizationIdFromVerifiedToken(token: string): string | undefined {
   const parts = token.split('.');
   if (parts.length !== 3) return undefined;
@@ -136,6 +145,33 @@ export async function createRemoteApp(): Promise<express.Express> {
         });
       }
     }
+  });
+
+  // Rejections forwarded from middleware land here (e.g. @clerk/mcp-tools' mcpAuth throws on a
+  // malformed Authorization header such as a bare "Bearer") so clients get a terminated JSON
+  // error instead of hanging on an unhandled rejection or receiving Express's HTML error page.
+  app.use((error: unknown, req: Request, res: Response, next: NextFunction): void => {
+    if (res.headersSent) {
+      next(error);
+      return;
+    }
+    console.error(
+      'Request failed before MCP handling',
+      error instanceof Error ? error.message : 'unknown error',
+    );
+    const status = (error as { status?: unknown } | null)?.status;
+    if (typeof status === 'number' && status >= 400 && status < 500) {
+      res.status(status).json({ error: 'Invalid request' });
+      return;
+    }
+    if (headerValue(req, 'Authorization')) {
+      res
+        .status(401)
+        .set('WWW-Authenticate', `Bearer resource_metadata=${protectedResourceMetadataUrl(req)}`)
+        .json({ error: 'Invalid Authorization header, expected Bearer <token>' });
+      return;
+    }
+    res.status(500).json({ error: 'Unable to serve MCP request' });
   });
 
   return app;

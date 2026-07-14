@@ -15,6 +15,109 @@ describe('remote OAuth organization binding', () => {
     expect(organizationIdFromVerifiedToken(`header.${payload}.signature`)).toBeUndefined();
   });
 
+  it('challenges unauthenticated requests with protected resource metadata', async () => {
+    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
+    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
+    process.env.CLERK_TELEMETRY_DISABLED = 'true';
+    const app = await createRemoteApp();
+    const server = app.listen(0, '127.0.0.1');
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    try {
+      const { port } = server.address() as AddressInfo;
+      const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json, text/event-stream',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }),
+      });
+
+      expect(response.status).toBe(401);
+      const challenge = response.headers.get('www-authenticate');
+      expect(challenge).toContain('Bearer resource_metadata=');
+      expect(challenge).toContain('/.well-known/oauth-protected-resource/mcp');
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+
+  it('terminates malformed Authorization headers with a 4xx instead of hanging', async () => {
+    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
+    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
+    process.env.CLERK_TELEMETRY_DISABLED = 'true';
+    const app = await createRemoteApp();
+    const server = app.listen(0, '127.0.0.1');
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    try {
+      const { port } = server.address() as AddressInfo;
+      // "Bearer" with no token makes @clerk/mcp-tools' mcpAuth throw rather than respond; the
+      // rejection must be caught and answered or the client hangs with no response at all.
+      const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json, text/event-stream',
+          'Content-Type': 'application/json',
+          Authorization: 'Bearer',
+        },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }),
+        signal: AbortSignal.timeout(3000),
+      });
+
+      expect(response.status).toBe(401);
+      expect(response.headers.get('www-authenticate')).toContain('Bearer resource_metadata=');
+      expect(await response.json()).toEqual({
+        error: 'Invalid Authorization header, expected Bearer <token>',
+      });
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+
+  it('rejects POST requests that do not accept text/event-stream', async () => {
+    process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
+    process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
+    process.env.CLERK_TELEMETRY_DISABLED = 'true';
+    const app = await createRemoteApp();
+    const server = app.listen(0, '127.0.0.1');
+    await new Promise<void>((resolve) => server.once('listening', resolve));
+    try {
+      const { port } = server.address() as AddressInfo;
+      // Regression guard for the documented breaking change: legacy clients sending only
+      // `Accept: application/json` are refused by the Streamable HTTP transport.
+      const response = await fetch(`http://127.0.0.1:${port}/mcp`, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-API-Key': 'customer-api-key',
+        },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'initialize',
+          params: {
+            protocolVersion: '2025-06-18',
+            capabilities: {},
+            clientInfo: { name: 'test', version: '1' },
+          },
+        }),
+      });
+
+      expect(response.status).toBe(406);
+      const body = (await response.json()) as { error?: { code?: number } };
+      expect(body.error?.code).toBe(-32000);
+    } finally {
+      await new Promise<void>((resolve, reject) =>
+        server.close((error) => (error ? reject(error) : resolve())),
+      );
+    }
+  });
+
   it('serves the SDK Streamable HTTP transport for API-key migration clients', async () => {
     process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
     process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';

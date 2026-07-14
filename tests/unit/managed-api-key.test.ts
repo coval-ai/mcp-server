@@ -46,6 +46,40 @@ describe('ManagedApiKeyProvider', () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it('isolates cached managed keys across different organization and user identities', async () => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockImplementation(async (_url, init): Promise<Response> => {
+        const body = JSON.parse(String(init?.body)) as {
+          clerk_organization_id: string;
+          user_id: string;
+        };
+        return new Response(
+          JSON.stringify({
+            api_key: `key:${body.clerk_organization_id}:${body.user_id}`,
+            organization_id: body.clerk_organization_id,
+          }),
+          { status: 200 },
+        );
+      });
+    const provider = new ManagedApiKeyProvider('internal-service-key', 'https://api.example.com/v1');
+
+    await expect(provider.getApiKey('clerk_org_a', 'clerk_user_1')).resolves.toBe(
+      'key:clerk_org_a:clerk_user_1',
+    );
+    await expect(provider.getApiKey('clerk_org_b', 'clerk_user_1')).resolves.toBe(
+      'key:clerk_org_b:clerk_user_1',
+    );
+    await expect(provider.getApiKey('clerk_org_a', 'clerk_user_2')).resolves.toBe(
+      'key:clerk_org_a:clerk_user_2',
+    );
+    // Cached lookups stay bound to their own (organization, user) pair.
+    await expect(provider.getApiKey('clerk_org_a', 'clerk_user_1')).resolves.toBe(
+      'key:clerk_org_a:clerk_user_1',
+    );
+    expect(fetchMock).toHaveBeenCalledTimes(3);
+  });
+
   it('coalesces concurrent identity exchanges for the same user and organization', async () => {
     let resolveFetch!: (response: Response) => void;
     const response = new Promise<Response>((resolve) => {
