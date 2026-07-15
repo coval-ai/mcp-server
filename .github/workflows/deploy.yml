@@ -1,0 +1,56 @@
+name: Deploy remote MCP
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Target Sofia environment
+        type: choice
+        options: [staging, v1]
+        default: staging
+        required: true
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: mcp-${{ inputs.environment }}-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment == 'v1' && 'production' || 'staging' }}
+    env:
+      AWS_REGION: us-east-2
+      MCP_ENVIRONMENT: ${{ inputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::851725437270:role/sofia-${{ env.MCP_ENVIRONMENT }}-mcp-github-actions-deploy
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+      - name: Build and push immutable and current tags
+        env:
+          REPOSITORY: sofia-${{ env.MCP_ENVIRONMENT }}-mcp
+        run: |
+          set -euo pipefail
+          account_id="$(aws sts get-caller-identity --query Account --output text)"
+          image="${account_id}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY}"
+          docker build -t "${image}:${GITHUB_SHA}" -t "${image}:latest" .
+          docker push "${image}:${GITHUB_SHA}"
+          docker push "${image}:latest"
+      - name: Roll MCP service
+        run: |
+          set -euo pipefail
+          aws ecs update-service \
+            --cluster "sofia-${MCP_ENVIRONMENT}-cluster" \
+            --service "sofia-${MCP_ENVIRONMENT}-mcp" \
+            --force-new-deployment >/dev/null
+          aws ecs wait services-stable \
+            --cluster "sofia-${MCP_ENVIRONMENT}-cluster" \
+            --services "sofia-${MCP_ENVIRONMENT}-mcp"

@@ -1,0 +1,162 @@
+import { CovalApiClient } from "../../src/client.js";
+import { jest } from "@jest/globals";
+
+describe("CovalApiClient.consultCovi", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("exchanges the API key for a delegation token and never forwards that key to Sofia", async () => {
+    const fetchMock = jest
+      .spyOn(global, "fetch")
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            delegation_token: "v1.signed.token",
+            delegation_url: "https://sofia.example.com/v1/external/delegations",
+            expires_at: 1234,
+            mode: "read_only",
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            contract_version: "1",
+            request_id: "request-123",
+            mode: "read_only",
+            summary: "Inspect run run_123 first.",
+            evidence: [{ name: "list_recent_runs", status: "succeeded" }],
+            proposed_actions: [],
+          }),
+          { status: 200 },
+        ),
+      );
+
+    const client = new CovalApiClient(
+      "customer-api-key",
+      "https://api.example.com/v1",
+    );
+    const result = await client.consultCovi({
+      prompt: "What should I inspect?",
+      conversation: [{ role: "assistant", content: "I can help." }],
+      sessionId: "codex-session-1",
+    });
+
+    expect(result).toEqual({
+      contractVersion: "1",
+      requestId: "request-123",
+      mode: "read_only",
+      summary: "Inspect run run_123 first.",
+      evidence: [{ name: "list_recent_runs", status: "succeeded" }],
+      proposedActions: [],
+    });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      "https://api.example.com/v1/covi/delegation-token",
+    );
+    expect(fetchMock.mock.calls[0][1]).toMatchObject({
+      headers: expect.objectContaining({ "X-API-Key": "customer-api-key" }),
+    });
+    expect(fetchMock.mock.calls[0][1]?.signal).toBeDefined();
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      "https://sofia.example.com/v1/external/delegations",
+    );
+    expect(fetchMock.mock.calls[1][1]).toMatchObject({
+      headers: expect.objectContaining({
+        Authorization: "Bearer v1.signed.token",
+      }),
+    });
+    expect(fetchMock.mock.calls[1][1]?.headers).not.toHaveProperty("X-API-Key");
+    expect(fetchMock.mock.calls[1][1]?.headers?.Authorization).not.toContain("customer-api-key");
+    expect(fetchMock.mock.calls[1][1]?.signal).toBeDefined();
+  });
+
+  it("rejects a delegation URL outside the expected Sofia origin before sending the bearer", async () => {
+    const fetchMock = jest.spyOn(global, "fetch").mockResolvedValueOnce(
+      new Response(
+        JSON.stringify({
+          delegation_token: "v1.signed.token",
+          delegation_url: "https://attacker.example.com/v1/external/delegations",
+          expires_at: 1234,
+          mode: "read_only",
+        }),
+        { status: 200 },
+      ),
+    );
+    const client = new CovalApiClient("customer-api-key", "https://api.example.com/v1");
+
+    await expect(client.consultCovi({ prompt: "What should I inspect?" })).rejects.toMatchObject({
+      code: "INVALID_DELEGATION",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('accepts the dedicated staging Sofia origin for a staging API base path', async () => {
+    const fetchMock = jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            delegation_token: 'signed.jwt.token',
+            delegation_url: 'https://sofia-staging.coval.dev/v1/external/delegations',
+            expires_at: 1234,
+            mode: 'read_only',
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            contract_version: '1',
+            request_id: 'request-staging',
+            mode: 'read_only',
+            summary: 'Staging consultation.',
+            evidence: [],
+            proposed_actions: [],
+          }),
+          { status: 200 },
+        ),
+      );
+    const client = new CovalApiClient('staging-key', 'https://api.coval.dev/v1-staging');
+
+    await client.consultCovi({ prompt: 'Inspect staging.' });
+
+    expect(fetchMock.mock.calls[1][0]).toBe(
+      'https://sofia-staging.coval.dev/v1/external/delegations',
+    );
+  });
+
+  it('bounds the delegation-token exchange', async () => {
+    jest.spyOn(global, 'fetch').mockRejectedValueOnce(new DOMException('timed out', 'AbortError'));
+    const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
+
+    await expect(client.consultCovi({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
+      code: 'COVI_UNAVAILABLE',
+      message: 'Covi delegation was unavailable',
+    });
+  });
+
+  it('rejects null consultation payloads with the typed response error', async () => {
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            delegation_token: 'signed.jwt.token',
+            delegation_url: 'https://sofia.example.com/v1/external/delegations',
+            expires_at: 1234,
+            mode: 'read_only',
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockResolvedValueOnce(new Response('null', { status: 200 }));
+    const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
+
+    await expect(client.consultCovi({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
+      code: 'INVALID_COVI_RESPONSE',
+    });
+  });
+});

@@ -2,56 +2,9 @@ import type {
   APIGatewayProxyEventV2,
   APIGatewayProxyResultV2,
 } from 'aws-lambda';
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
-import { CovalApiClient } from './client.js';
-import { registerAllTools } from './tools/index.js';
-
-const COVAL_OVERVIEW = `Coval evaluates AI agents (voice, SMS, chat) by running simulated conversations.
-
-Entities:
-- Agent: The AI being evaluated (model_type: VOICE, OUTBOUND_VOICE, SMS, WEBSOCKET, CHAT)
-- Persona: Simulated user that calls/texts the agent (voice, language, background_sound, behavior prompt)
-- Test Set: Collection of test cases (scenarios)
-- Test Case: Single scenario with input_str (opening message or JSON message array)
-- Run: One evaluation = agent + persona + test_set → produces metrics
-- Metrics: Custom per organization (e.g., latency, accuracy, task completion)
-
-Workflow: list_agents → list_personas → list_test_sets → create_run → get_run (poll until COMPLETED)`;
-
-function createMcpServer(apiKey?: string): McpServer {
-  const mcpServer = new McpServer({
-    name: 'Coval MCP',
-    version: '0.1.0',
-  });
-
-  // Register system overview resource
-  mcpServer.resource('overview', 'coval://overview', async () => ({
-    contents: [{ uri: 'coval://overview', mimeType: 'text/plain', text: COVAL_OVERVIEW }],
-  }));
-
-  if (apiKey) {
-    const client = new CovalApiClient(apiKey);
-    registerAllTools(mcpServer, client);
-  } else {
-    mcpServer.tool('ping', 'Test tool to verify MCP server is working.', {}, async () => ({
-      content: [
-        {
-          type: 'text' as const,
-          text: JSON.stringify({
-            status: 'ok',
-            message: 'pong',
-            version: '0.1.0',
-            note: 'Provide X-API-Key header to enable all tools',
-          }),
-        },
-      ],
-    }));
-  }
-
-  return mcpServer;
-}
+import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
 
 interface JsonRpcRequest {
   jsonrpc: '2.0';
@@ -85,7 +38,7 @@ export async function handler(
       body: JSON.stringify({
         status: 'healthy',
         service: 'coval-mcp-server',
-        version: '0.1.0',
+        version: COVAL_MCP_SERVER_VERSION,
       }),
     };
   }
@@ -125,6 +78,8 @@ export async function handler(
     event.headers['X-API-Key'] ||
     event.headers['X-Api-Key'];
 
+  let mcpServer: ReturnType<typeof createMcpServer> | undefined;
+  let client: Client | undefined;
   try {
     const bodyStr = event.isBase64Encoded
       ? Buffer.from(event.body || '', 'base64').toString('utf-8')
@@ -133,10 +88,10 @@ export async function handler(
     const request: JsonRpcRequest = JSON.parse(bodyStr);
 
     // Create server and connect via in-memory transport
-    const mcpServer = createMcpServer(apiKey);
+    mcpServer = createMcpServer({ apiKey, includeCovi: false });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
-    const client = new Client({ name: 'lambda-client', version: '1.0.0' }, {});
+    client = new Client({ name: 'lambda-client', version: '1.0.0' }, {});
 
     await Promise.all([
       mcpServer.connect(serverTransport),
@@ -154,7 +109,7 @@ export async function handler(
           result: {
             protocolVersion: request.params?.protocolVersion || '2024-11-05',
             capabilities: { tools: { listChanged: true }, resources: { listChanged: true } },
-            serverInfo: { name: 'Coval MCP', version: '0.1.0' },
+            serverInfo: { name: 'Coval MCP', version: COVAL_MCP_SERVER_VERSION },
             instructions: "Use Coval tools for testing and evaluating AI agents (voice, SMS, chat). Create evaluation runs, manage test sets/cases, configure simulated personas, and retrieve quality metrics"
           },
         };
@@ -222,10 +177,6 @@ export async function handler(
       }
     }
 
-    // Cleanup
-    await client.close();
-    await mcpServer.close();
-
     return {
       statusCode: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -245,5 +196,10 @@ export async function handler(
         id: null,
       }),
     };
+  } finally {
+    await Promise.allSettled([
+      ...(client ? [client.close()] : []),
+      ...(mcpServer ? [mcpServer.close()] : []),
+    ]);
   }
 }
