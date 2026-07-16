@@ -1,6 +1,6 @@
 # Coval MCP Server
 
-[![npm version](https://img.shields.io/npm/v/@covalai/mcp-server.svg)](https://www.npmjs.com/package/@covalai/mcp-server)
+[![npm version](https://img.shields.io/npm/v/@coval/mcp-server.svg)](https://www.npmjs.com/package/@coval/mcp-server)
 
 The official [Model Context Protocol](https://modelcontextprotocol.io/) server for [Coval](https://coval.dev) - the AI evaluation platform.
 
@@ -12,7 +12,7 @@ This MCP server allows AI assistants like Claude Desktop and Cursor to interact 
 ## Installation
 
 ```bash
-npx @covalai/mcp-server
+npx @coval/mcp-server
 ```
 
 ## Quick Start
@@ -26,7 +26,7 @@ Add to `~/Library/Application Support/Claude/claude_desktop_config.json`:
   "mcpServers": {
     "coval": {
       "command": "npx",
-      "args": ["-y", "@covalai/mcp-server"],
+      "args": ["-y", "@coval/mcp-server"],
       "env": {
         "COVAL_API_KEY": "your_api_key_here"
       }
@@ -44,7 +44,7 @@ Add to `.cursor/mcp.json` in your project:
   "mcpServers": {
     "coval": {
       "command": "npx",
-      "args": ["-y", "@covalai/mcp-server"],
+      "args": ["-y", "@coval/mcp-server"],
       "env": {
         "COVAL_API_KEY": "your_api_key_here"
       }
@@ -112,7 +112,7 @@ The same tools, including `consult_covi`, are available through both supported t
 
 - Remote Streamable HTTP: `https://mcp.coval.dev/mcp` using Clerk OAuth. This is the recommended
   connection for Codex, Claude, and other hosted MCP clients.
-- Local stdio: `npx @covalai/mcp-server` with `COVAL_API_KEY`, for service accounts and local
+- Local stdio: `npx @coval/mcp-server` with `COVAL_API_KEY`, for service accounts and local
   development.
 
 Remote clients may continue to send `X-API-Key` during migration. OAuth access tokens terminate at
