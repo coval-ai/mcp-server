@@ -42,11 +42,14 @@ export function createMcpServer(options: CovalMcpServerOptions = {}): McpServer 
       includeCovi: options.includeCovi,
     });
   } else {
-    server.tool(
+    server.registerTool(
       'ping',
-      'Test whether the Coval MCP server is available.',
-      {},
-      readOnlyTool('Check server availability'),
+      {
+        title: 'Check server availability',
+        description: 'Test whether the Coval MCP server is available.',
+        inputSchema: {},
+        annotations: readOnlyTool(),
+      },
       async () => ({
         content: [
           {

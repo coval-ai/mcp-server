@@ -10,11 +10,15 @@ import { handleApiError } from '../utils/errors.js';
 import { readOnlyTool, writeTool } from './annotations.js';
 
 export function registerRunTools(server: McpServer, client: CovalApiClient) {
-  server.tool(
+  server.registerTool(
     'list_runs',
-    'List evaluation runs. Each run = agent + persona + test_set. Returns run_id, status, tags. Filter by tag: filter=\'tag="regression"\'.',
-    ListRunsInputSchema.shape,
-    readOnlyTool('List runs'),
+    {
+      title: 'List runs',
+      description:
+        'List evaluation runs. Each run = agent + persona + test_set. Returns run_id, status, tags. Filter by tag: filter=\'tag="regression"\'.',
+      inputSchema: ListRunsInputSchema.shape,
+      annotations: readOnlyTool(),
+    },
     async (params) => {
       try {
         const result = await client.listRuns(params);
@@ -25,11 +29,15 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'get_run',
-    'Get run status/results. Status: PENDING→RUNNING→COMPLETED. Completed runs include metrics (custom per org) and output_ids for transcripts.',
-    GetRunInputSchema.shape,
-    readOnlyTool('Get run'),
+    {
+      title: 'Get run',
+      description:
+        'Get run status/results. Status: PENDING→RUNNING→COMPLETED. Completed runs include metrics (custom per org) and output_ids for transcripts.',
+      inputSchema: GetRunInputSchema.shape,
+      annotations: readOnlyTool(),
+    },
     async (params) => {
       try {
         const result = await client.getRun(params.run_id);
@@ -40,11 +48,15 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'create_run',
-    'Launch evaluation: agent + persona + test_set. Optionally add tags for filtering. Poll get_run until status=COMPLETED to see metrics.',
-    CreateRunInputSchema.shape,
-    writeTool('Create run'),
+    {
+      title: 'Create run',
+      description:
+        'Launch evaluation: agent + persona + test_set. Optionally add tags for filtering. Poll get_run until status=COMPLETED to see metrics.',
+      inputSchema: CreateRunInputSchema.shape,
+      annotations: writeTool(),
+    },
     async (params) => {
       try {
         const { tags, ...rest } = params;

@@ -1,8 +1,7 @@
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
-export function readOnlyTool(title: string): ToolAnnotations {
+export function readOnlyTool(): ToolAnnotations {
   return {
-    title,
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
@@ -10,9 +9,8 @@ export function readOnlyTool(title: string): ToolAnnotations {
   };
 }
 
-export function writeTool(title: string): ToolAnnotations {
+export function writeTool(): ToolAnnotations {
   return {
-    title,
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
@@ -20,9 +18,8 @@ export function writeTool(title: string): ToolAnnotations {
   };
 }
 
-export function updateTool(title: string): ToolAnnotations {
+export function updateTool(): ToolAnnotations {
   return {
-    title,
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: false,

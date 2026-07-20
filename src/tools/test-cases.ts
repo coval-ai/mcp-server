@@ -11,11 +11,15 @@ import { handleApiError } from '../utils/errors.js';
 import { readOnlyTool, updateTool, writeTool } from './annotations.js';
 
 export function registerTestCaseTools(server: McpServer, client: CovalApiClient) {
-  server.tool(
+  server.registerTool(
     'list_test_cases',
-    'List test cases. Filter by test_set_id. Each has input_str (scenario text or JSON message array) and optional expected_behaviors.',
-    ListTestCasesInputSchema.shape,
-    readOnlyTool('List test cases'),
+    {
+      title: 'List test cases',
+      description:
+        'List test cases. Filter by test_set_id. Each has input_str (scenario text or JSON message array) and optional expected_behaviors.',
+      inputSchema: ListTestCasesInputSchema.shape,
+      annotations: readOnlyTool(),
+    },
     async (params) => {
       try {
         const result = await client.listTestCases(params);
@@ -26,11 +30,15 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
     }
   );
 
-  server.tool(
+  server.registerTool(
     'get_test_case',
-    'Get test case details: input_str (the scenario), expected_behaviors, and metadata.',
-    GetTestCaseInputSchema.shape,
-    readOnlyTool('Get test case'),
+    {
+      title: 'Get test case',
+      description:
+        'Get test case details: input_str (the scenario), expected_behaviors, and metadata.',
+      inputSchema: GetTestCaseInputSchema.shape,
+      annotations: readOnlyTool(),
+    },
     async (params) => {
       try {
         const result = await client.getTestCase(params.test_case_id);
@@ -41,11 +49,15 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
     }
   );
 
-  server.tool(
+  server.registerTool(
     'create_test_case',
-    'Create test case in a test set. input_str: single scenario message OR JSON array [{role,content},...] for multi-turn conversations.',
-    CreateTestCaseInputSchema.shape,
-    writeTool('Create test case'),
+    {
+      title: 'Create test case',
+      description:
+        'Create test case in a test set. input_str: single scenario message OR JSON array [{role,content},...] for multi-turn conversations.',
+      inputSchema: CreateTestCaseInputSchema.shape,
+      annotations: writeTool(),
+    },
     async (params) => {
       try {
         const result = await client.createTestCase(params);
@@ -56,11 +68,14 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
     }
   );
 
-  server.tool(
+  server.registerTool(
     'update_test_case',
-    'Update test case input_str, expected_behaviors, or other fields.',
-    UpdateTestCaseInputSchema.shape,
-    updateTool('Update test case'),
+    {
+      title: 'Update test case',
+      description: 'Update test case input_str, expected_behaviors, or other fields.',
+      inputSchema: UpdateTestCaseInputSchema.shape,
+      annotations: updateTool(),
+    },
     async (params) => {
       try {
         const { test_case_id, ...updateData } = params;
