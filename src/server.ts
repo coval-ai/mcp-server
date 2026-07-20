@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CovalApiClient } from './client.js';
 import { registerAllTools } from './tools/index.js';
+import { readOnlyTool } from './tools/annotations.js';
 
 export const COVAL_MCP_SERVER_VERSION = '0.2.0';
 
@@ -41,14 +42,20 @@ export function createMcpServer(options: CovalMcpServerOptions = {}): McpServer 
       includeCovi: options.includeCovi,
     });
   } else {
-    server.tool('ping', 'Test whether the Coval MCP server is available.', {}, async () => ({
-      content: [
-        {
-          type: 'text' as const,
-          text: JSON.stringify({ status: 'ok', version: COVAL_MCP_SERVER_VERSION }),
-        },
-      ],
-    }));
+    server.tool(
+      'ping',
+      'Test whether the Coval MCP server is available.',
+      {},
+      readOnlyTool('Check server availability'),
+      async () => ({
+        content: [
+          {
+            type: 'text' as const,
+            text: JSON.stringify({ status: 'ok', version: COVAL_MCP_SERVER_VERSION }),
+          },
+        ],
+      })
+    );
   }
 
   return server;
