@@ -39,6 +39,37 @@ for current plan and administration requirements.
 See [ChatGPT's MCP app guide](https://help.openai.com/en/articles/12584461-developer-mode-and-full-mcp-connectors-in-chatgpt-beta)
 for current plan and workspace requirements.
 
+### Codex
+
+Use Codex `0.144.2` or newer. Current Codex Desktop releases include a compatible client. For the
+CLI, update before connecting:
+
+```bash
+npm install -g @openai/codex@latest
+codex mcp add coval --url https://mcp.coval.dev/mcp
+```
+
+When the browser opens, sign in to Coval, select the organization Codex should access, and select
+**Allow**. Codex Desktop, the Codex CLI, and the IDE extension share MCP configuration on the same
+machine, so the connection is available across those clients after they restart.
+
+In Codex Desktop, you can also add Coval from **Settings > MCP servers** as a **Streamable HTTP**
+server using `https://mcp.coval.dev/mcp`, then select **Authenticate**.
+
+If OAuth returns `invalid_scope`, first confirm `codex --version` is `0.144.2` or newer. Older
+clients registered a dynamic OAuth client without all the scopes they requested during consent.
+After updating, clear the stale registration and reconnect:
+
+```bash
+codex mcp logout coval
+codex mcp remove coval
+codex mcp add coval --url https://mcp.coval.dev/mcp
+```
+
+No API key, manual scope list, or `oauth_resource` override is required. See
+[Codex's MCP documentation](https://learn.chatgpt.com/docs/extend/mcp.md) for current client setup
+details.
+
 ## Local installation
 
 ```bash
