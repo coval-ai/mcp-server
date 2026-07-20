@@ -3,21 +3,44 @@ import { CovalApiClient } from '../../src/client.js';
 import { registerAllTools } from '../../src/tools/index.js';
 
 describe('registerAllTools', () => {
-  it('registers consult_covi for the local stdio server by default', () => {
+  it('registers complete directory metadata for every tool', () => {
     const toolNames: string[] = [];
-    const annotations = new Map<string, { readOnlyHint?: boolean }>();
+    const registrations = new Map<
+      string,
+      {
+        title?: string;
+        annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean };
+      }
+    >();
     const server = {
-      tool: (name: string, _description: string, _schema: unknown, hints: { readOnlyHint?: boolean }) => {
+      registerTool: (
+        name: string,
+        config: {
+          title?: string;
+          annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean };
+        }
+      ) => {
         toolNames.push(name);
-        annotations.set(name, hints);
+        registrations.set(name, config);
       }
     } as unknown as McpServer;
 
     registerAllTools(server, new CovalApiClient('customer-api-key'));
 
     expect(toolNames).toContain('consult_covi');
-    expect(annotations.get('consult_covi')?.readOnlyHint).toBe(true);
-    expect(annotations.get('list_runs')?.readOnlyHint).toBe(true);
-    expect(annotations.get('create_run')?.readOnlyHint).toBe(false);
+    expect(registrations.get('consult_covi')?.annotations?.readOnlyHint).toBe(true);
+    expect(registrations.get('list_runs')?.annotations?.readOnlyHint).toBe(true);
+    expect(registrations.get('create_run')?.annotations?.readOnlyHint).toBe(false);
+    expect(registrations.get('create_run')?.annotations?.destructiveHint).toBe(false);
+    expect(registrations.get('update_agent')?.annotations?.destructiveHint).toBe(true);
+    expect(registrations.get('update_test_case')?.annotations?.destructiveHint).toBe(true);
+    expect(toolNames).toHaveLength(19);
+
+    for (const name of toolNames) {
+      const registration = registrations.get(name);
+      expect(registration?.title).toBeTruthy();
+      expect(typeof registration?.annotations?.readOnlyHint).toBe('boolean');
+      expect(typeof registration?.annotations?.destructiveHint).toBe('boolean');
+    }
   });
 });

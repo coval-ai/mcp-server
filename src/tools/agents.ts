@@ -8,14 +8,18 @@ import {
 } from '../schemas/index.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
-import { READ_ONLY_TOOL, WRITE_TOOL } from './annotations.js';
+import { readOnlyTool, updateTool, writeTool } from './annotations.js';
 
 export function registerAgentTools(server: McpServer, client: CovalApiClient) {
-  server.tool(
+  server.registerTool(
     'list_agents',
-    'List agents (AI systems to evaluate). Model types: VOICE, OUTBOUND_VOICE, SMS, WEBSOCKET, CHAT. Use agent_id when creating runs.',
-    ListAgentsInputSchema.shape,
-    READ_ONLY_TOOL,
+    {
+      title: 'List agents',
+      description:
+        'List agents (AI systems to evaluate). Model types: VOICE, OUTBOUND_VOICE, SMS, WEBSOCKET, CHAT. Use agent_id when creating runs.',
+      inputSchema: ListAgentsInputSchema.shape,
+      annotations: readOnlyTool(),
+    },
     async (params) => {
       try {
         const result = await client.listAgents(params);
@@ -26,11 +30,15 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'get_agent',
-    'Get agent config: model_type, phone_number (voice), endpoint (websocket/chat), and display_name.',
-    GetAgentInputSchema.shape,
-    READ_ONLY_TOOL,
+    {
+      title: 'Get agent',
+      description:
+        'Get agent config: model_type, phone_number (voice), endpoint (websocket/chat), and display_name.',
+      inputSchema: GetAgentInputSchema.shape,
+      annotations: readOnlyTool(),
+    },
     async (params) => {
       try {
         const result = await client.getAgent(params.agent_id);
@@ -41,11 +49,15 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'create_agent',
-    'Create a new agent configuration. Specify the model type (voice, chat, SMS, websocket) and connection details.',
-    CreateAgentInputSchema.shape,
-    WRITE_TOOL,
+    {
+      title: 'Create agent',
+      description:
+        'Create a new agent configuration. Specify the model type (voice, chat, SMS, websocket) and connection details.',
+      inputSchema: CreateAgentInputSchema.shape,
+      annotations: writeTool(),
+    },
     async (params) => {
       try {
         const result = await client.createAgent(params);
@@ -56,11 +68,14 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     'update_agent',
-    'Update an existing agent configuration. Only provided fields will be updated.',
-    UpdateAgentInputSchema.shape,
-    WRITE_TOOL,
+    {
+      title: 'Update agent',
+      description: 'Update an existing agent configuration. Only provided fields will be updated.',
+      inputSchema: UpdateAgentInputSchema.shape,
+      annotations: updateTool(),
+    },
     async (params) => {
       try {
         const { agent_id, ...updateData } = params;
