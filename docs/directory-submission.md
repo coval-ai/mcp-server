@@ -43,6 +43,29 @@ authenticated tools.
 Never commit test credentials, access tokens, customer data, or private infrastructure details to
 this public repository.
 
+## Draft listing copy
+
+**Name:** Coval
+
+**Tagline:** Evaluate and improve voice and chat agents
+
+**Description:** Connect Claude to your Coval workspace to inspect agents, test sets, personas,
+metrics, and evaluation runs. Launch evaluations and update supported resources through explicit
+write tools, or consult Covi for read-only analysis grounded in your organization's evaluation data
+and Coval's evaluation workflows.
+
+**Primary use cases:**
+
+- Inspect recent evaluation runs and diagnose performance or configuration issues.
+- Create and refine agents, test sets, and test cases, then launch evaluation runs.
+- Ask Covi for read-only, organization-grounded evaluation guidance.
+
+**Connection requirements:** A Coval account with access to the organization being connected. The
+review account must also have access to `consult_covi` so every submitted tool can be exercised.
+
+**Data access:** Both read and write. Write operations are exposed as separate tools and carry
+write or destructive annotations as applicable.
+
 ## Platform references
 
 - [Claude connector submission](https://claude.com/docs/connectors/building/submission)
