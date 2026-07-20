@@ -143,6 +143,11 @@ describe('remote OAuth organization binding', () => {
         await client.connect(transport);
         const tools = await client.listTools();
         expect(tools.tools.map((tool) => tool.name)).toContain('consult_covi');
+        for (const tool of tools.tools) {
+          expect(tool.title).toBeTruthy();
+          expect(typeof tool.annotations?.readOnlyHint).toBe('boolean');
+          expect(typeof tool.annotations?.destructiveHint).toBe('boolean');
+        }
       } finally {
         await client.close();
       }
