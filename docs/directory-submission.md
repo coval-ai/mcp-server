@@ -93,12 +93,12 @@ after each review run.
    - Expected result: one new test set and one linked test case matching the requested scenario.
    - Fixture: permission to create disposable test data; the named test set must not already exist.
 4. **Evaluation launch**
-   - Prompt: "Run the Directory Review Billing test set against Review Voice Agent using Review
-     Caller, then report the new run ID and initial status."
+   - Prompt: "Run the Directory Review Billing test set against Review Voice Agent using Standard
+     Customer, then report the new run ID and initial status."
    - Expected behavior: resolve the named agent, test set, and persona with list tools; call
      `create_run` once.
    - Expected result: one new run with its identifier and initial status.
-   - Fixture: the resources from case 3 plus a persona named "Review Caller".
+   - Fixture: the resources from case 3 plus a persona named "Standard Customer".
 5. **Covi diagnosis**
    - Prompt: "Ask Covi to inspect my most recent unsuccessful run and recommend the next test I
      should add."
