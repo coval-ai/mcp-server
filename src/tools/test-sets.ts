@@ -13,11 +13,10 @@ export function registerTestSetTools(server: McpServer, client: CovalApiClient) 
   server.registerTool(
     'list_test_sets',
     {
-      title: 'List test sets',
+      ...readOnlyTool('List test sets'),
       description:
         'List test sets (collections of test cases). Each contains scenarios to run against an agent. Use test_set_id when creating runs.',
       inputSchema: ListTestSetsInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {
@@ -32,11 +31,10 @@ export function registerTestSetTools(server: McpServer, client: CovalApiClient) 
   server.registerTool(
     'get_test_set',
     {
-      title: 'Get test set',
+      ...readOnlyTool('Get test set'),
       description:
         'Get test set details: display_name, description, and test case count. Use list_test_cases to see individual scenarios.',
       inputSchema: GetTestSetInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {
@@ -51,11 +49,10 @@ export function registerTestSetTools(server: McpServer, client: CovalApiClient) 
   server.registerTool(
     'create_test_set',
     {
-      title: 'Create test set',
+      ...writeTool('Create test set'),
       description:
         'Create a test set to organize test cases. After creating, use create_test_case to add scenarios.',
       inputSchema: CreateTestSetInputSchema.shape,
-      annotations: writeTool(),
     },
     async (params) => {
       try {

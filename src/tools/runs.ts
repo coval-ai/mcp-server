@@ -13,11 +13,10 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'list_runs',
     {
-      title: 'List runs',
+      ...readOnlyTool('List runs'),
       description:
         'List evaluation runs. Each run = agent + persona + test_set. Returns run_id, status, tags. Filter by tag: filter=\'tag="regression"\'.',
       inputSchema: ListRunsInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {
@@ -32,11 +31,10 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'get_run',
     {
-      title: 'Get run',
+      ...readOnlyTool('Get run'),
       description:
         'Get run status/results. Status: PENDING→RUNNING→COMPLETED. Completed runs include metrics (custom per org) and output_ids for transcripts.',
       inputSchema: GetRunInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {
@@ -51,11 +49,10 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'create_run',
     {
-      title: 'Create run',
+      ...writeTool('Create run', { openWorldHint: true }),
       description:
         'Launch evaluation: agent + persona + test_set. Optionally add tags for filtering. Poll get_run until status=COMPLETED to see metrics.',
       inputSchema: CreateRunInputSchema.shape,
-      annotations: writeTool({ openWorldHint: true }),
     },
     async (params) => {
       try {

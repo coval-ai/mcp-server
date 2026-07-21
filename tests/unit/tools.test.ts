@@ -9,7 +9,12 @@ describe('registerAllTools', () => {
       string,
       {
         title?: string;
-        annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; openWorldHint?: boolean };
+        annotations?: {
+          title?: string;
+          readOnlyHint?: boolean;
+          destructiveHint?: boolean;
+          openWorldHint?: boolean;
+        };
       }
     >();
     const server = {
@@ -17,7 +22,12 @@ describe('registerAllTools', () => {
         name: string,
         config: {
           title?: string;
-          annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; openWorldHint?: boolean };
+          annotations?: {
+            title?: string;
+            readOnlyHint?: boolean;
+            destructiveHint?: boolean;
+            openWorldHint?: boolean;
+          };
         }
       ) => {
         toolNames.push(name);
@@ -40,6 +50,7 @@ describe('registerAllTools', () => {
     for (const name of toolNames) {
       const registration = registrations.get(name);
       expect(registration?.title).toBeTruthy();
+      expect(registration?.annotations?.title).toBe(registration?.title);
       expect(typeof registration?.annotations?.readOnlyHint).toBe('boolean');
       expect(typeof registration?.annotations?.destructiveHint).toBe('boolean');
       expect(typeof registration?.annotations?.openWorldHint).toBe('boolean');

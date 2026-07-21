@@ -45,10 +45,9 @@ export function createMcpServer(options: CovalMcpServerOptions = {}): McpServer 
     server.registerTool(
       'ping',
       {
-        title: 'Check server availability',
+        ...readOnlyTool('Check server availability'),
         description: 'Test whether the Coval MCP server is available.',
         inputSchema: {},
-        annotations: readOnlyTool(),
       },
       async () => ({
         content: [

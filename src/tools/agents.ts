@@ -14,11 +14,10 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'list_agents',
     {
-      title: 'List agents',
+      ...readOnlyTool('List agents'),
       description:
         'List agents (AI systems to evaluate). Model types: VOICE, OUTBOUND_VOICE, SMS, WEBSOCKET, CHAT. Use agent_id when creating runs.',
       inputSchema: ListAgentsInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {
@@ -33,11 +32,10 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'get_agent',
     {
-      title: 'Get agent',
+      ...readOnlyTool('Get agent'),
       description:
         'Get agent config: model_type, phone_number (voice), endpoint (websocket/chat), and display_name.',
       inputSchema: GetAgentInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {
@@ -52,11 +50,10 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'create_agent',
     {
-      title: 'Create agent',
+      ...writeTool('Create agent'),
       description:
-        'Create a new agent configuration. Specify the model type (voice, chat, SMS, websocket) and connection details.',
+        'Create a new agent configuration. Specify the model type (voice, chat, SMS, websocket) and connection details. API reference: https://docs.coval.dev/api-reference/agents/connect-an-agent',
       inputSchema: CreateAgentInputSchema.shape,
-      annotations: writeTool(),
     },
     async (params) => {
       try {
@@ -71,10 +68,10 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'update_agent',
     {
-      title: 'Update agent',
-      description: 'Update an existing agent configuration. Only provided fields will be updated.',
+      ...updateTool('Update agent'),
+      description:
+        'Update an existing agent configuration. Only provided fields will be updated. API reference: https://docs.coval.dev/api-reference/agents/update-agent',
       inputSchema: UpdateAgentInputSchema.shape,
-      annotations: updateTool(),
     },
     async (params) => {
       try {

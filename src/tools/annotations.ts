@@ -1,28 +1,48 @@
 import type { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 
-export function readOnlyTool(): ToolAnnotations {
+interface ToolMetadata {
+  title: string;
+  annotations: ToolAnnotations;
+}
+
+export function readOnlyTool(title: string): ToolMetadata {
   return {
-    readOnlyHint: true,
-    destructiveHint: false,
-    idempotentHint: true,
-    openWorldHint: false,
+    title,
+    annotations: {
+      title,
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    },
   };
 }
 
-export function writeTool({ openWorldHint = false }: { openWorldHint?: boolean } = {}): ToolAnnotations {
+export function writeTool(
+  title: string,
+  { openWorldHint = false }: { openWorldHint?: boolean } = {}
+): ToolMetadata {
   return {
-    readOnlyHint: false,
-    destructiveHint: false,
-    idempotentHint: false,
-    openWorldHint,
+    title,
+    annotations: {
+      title,
+      readOnlyHint: false,
+      destructiveHint: false,
+      idempotentHint: false,
+      openWorldHint,
+    },
   };
 }
 
-export function updateTool(): ToolAnnotations {
+export function updateTool(title: string): ToolMetadata {
   return {
-    readOnlyHint: false,
-    destructiveHint: true,
-    idempotentHint: false,
-    openWorldHint: false,
+    title,
+    annotations: {
+      title,
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    },
   };
 }
