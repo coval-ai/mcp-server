@@ -1,4 +1,5 @@
 import type { AddressInfo } from 'node:net';
+import { jest } from '@jest/globals';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { allowedOrigins, createRemoteApp, organizationIdFromVerifiedToken } from '../../src/remote.js';
@@ -40,6 +41,7 @@ describe('remote OAuth organization binding', () => {
       new Set(['https://client.example.com', 'https://other.example.com']),
     );
     expect(() => allowedOrigins('https://client.example.com/path')).toThrow('Invalid origin');
+    expect(() => allowedOrigins('ftp://client.example.com')).toThrow('Invalid origin');
   });
 
   it('extracts the selected organization from an already verified Clerk JWT', () => {
@@ -91,27 +93,33 @@ describe('remote OAuth organization binding', () => {
     });
   });
 
-  it('terminates malformed Authorization headers with a 4xx instead of hanging', async () => {
-    await withRemoteServer(async (baseUrl) => {
-      // "Bearer" with no token makes @clerk/mcp-tools' mcpAuth throw rather than respond; the
-      // rejection must be caught and answered or the client hangs with no response at all.
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json, text/event-stream',
-          'Content-Type': 'application/json',
-          Authorization: 'Bearer',
-        },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }),
-        signal: AbortSignal.timeout(3000),
-      });
+  it('terminates malformed Authorization headers without logging their values', async () => {
+    const malformedAuthorization = 'Bearer';
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    try {
+      await withRemoteServer(async (baseUrl) => {
+        const response = await fetch(`${baseUrl}/mcp`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json, text/event-stream',
+            'Content-Type': 'application/json',
+            Authorization: malformedAuthorization,
+          },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }),
+          signal: AbortSignal.timeout(3000),
+        });
 
-      expect(response.status).toBe(401);
-      expect(response.headers.get('www-authenticate')).toContain('Bearer resource_metadata=');
-      expect(await response.json()).toEqual({
-        error: 'Invalid Authorization header, expected Bearer <token>',
+        expect(response.status).toBe(401);
+        expect(response.headers.get('www-authenticate')).toContain('Bearer resource_metadata=');
+        expect(await response.json()).toEqual({
+          error: 'Invalid Authorization header, expected Bearer <token>',
+        });
       });
-    });
+      expect(errorSpy).toHaveBeenCalledWith('Request failed before MCP handling');
+      expect(JSON.stringify(errorSpy.mock.calls)).not.toContain(malformedAuthorization);
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   it('rejects POST requests that do not accept text/event-stream', async () => {
@@ -187,6 +195,22 @@ describe('remote OAuth organization binding', () => {
 
       expect(response.status).toBe(403);
       expect(response.headers.get('access-control-allow-origin')).toBeNull();
+      expect(await response.json()).toEqual({ error: 'Request origin is not allowed' });
+    });
+  });
+
+  it('rejects an unknown browser origin before parsing its request body', async () => {
+    await withRemoteServer(async (baseUrl) => {
+      const response = await fetch(`${baseUrl}/mcp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Origin: 'https://attacker.example.com',
+        },
+        body: '{',
+      });
+
+      expect(response.status).toBe(403);
       expect(await response.json()).toEqual({ error: 'Request origin is not allowed' });
     });
   });

@@ -44,7 +44,11 @@ export function allowedOrigins(raw = process.env.MCP_ALLOWED_ORIGINS): ReadonlyS
     if (!candidate) continue;
     try {
       const parsed = new URL(candidate);
-      if (parsed.origin === 'null' || parsed.origin !== candidate.replace(/\/$/, '')) {
+      if (
+        !['http:', 'https:'].includes(parsed.protocol) ||
+        parsed.origin === 'null' ||
+        parsed.origin !== candidate.replace(/\/$/, '')
+      ) {
         throw new Error('origin must not include a path, query, or fragment');
       }
       origins.add(parsed.origin);
@@ -120,8 +124,8 @@ export async function createRemoteApp(): Promise<express.Express> {
   const origins = allowedOrigins();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
-  app.use(express.json({ limit: '1mb' }));
   app.use('/mcp', validateOrigin(origins));
+  app.use(express.json({ limit: '1mb' }));
   app.use(
     cors({
       origin: (origin, callback) => callback(null, !origin || origins.has(origin)),
@@ -200,7 +204,7 @@ export async function createRemoteApp(): Promise<express.Express> {
         await server.close();
       }
     } catch (error) {
-      console.error('MCP request failed', error instanceof Error ? error.message : 'unknown error');
+      console.error('MCP request failed', error instanceof Error ? error.name : 'UnknownError');
       if (!res.headersSent) {
         const isKnownError = error instanceof OAuthOrganizationError || error instanceof ManagedApiKeyError;
         res.status(error instanceof ManagedApiKeyError ? error.status : isKnownError ? 400 : 502).json({
@@ -218,10 +222,7 @@ export async function createRemoteApp(): Promise<express.Express> {
       next(error);
       return;
     }
-    console.error(
-      'Request failed before MCP handling',
-      error instanceof Error ? error.message : 'unknown error',
-    );
+    console.error('Request failed before MCP handling');
     const status = (error as { status?: unknown } | null)?.status;
     if (typeof status === 'number' && status >= 400 && status < 500) {
       res.status(status).json({ error: 'Invalid request' });
