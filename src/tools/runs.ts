@@ -55,7 +55,7 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
       description:
         'Launch evaluation: agent + persona + test_set. Optionally add tags for filtering. Poll get_run until status=COMPLETED to see metrics.',
       inputSchema: CreateRunInputSchema.shape,
-      annotations: writeTool(),
+      annotations: writeTool({ openWorldHint: true }),
     },
     async (params) => {
       try {

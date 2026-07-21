@@ -9,7 +9,7 @@ describe('registerAllTools', () => {
       string,
       {
         title?: string;
-        annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean };
+        annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; openWorldHint?: boolean };
       }
     >();
     const server = {
@@ -17,7 +17,7 @@ describe('registerAllTools', () => {
         name: string,
         config: {
           title?: string;
-          annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean };
+          annotations?: { readOnlyHint?: boolean; destructiveHint?: boolean; openWorldHint?: boolean };
         }
       ) => {
         toolNames.push(name);
@@ -32,6 +32,7 @@ describe('registerAllTools', () => {
     expect(registrations.get('list_runs')?.annotations?.readOnlyHint).toBe(true);
     expect(registrations.get('create_run')?.annotations?.readOnlyHint).toBe(false);
     expect(registrations.get('create_run')?.annotations?.destructiveHint).toBe(false);
+    expect(registrations.get('create_run')?.annotations?.openWorldHint).toBe(true);
     expect(registrations.get('update_agent')?.annotations?.destructiveHint).toBe(true);
     expect(registrations.get('update_test_case')?.annotations?.destructiveHint).toBe(true);
     expect(toolNames).toHaveLength(19);
@@ -41,6 +42,10 @@ describe('registerAllTools', () => {
       expect(registration?.title).toBeTruthy();
       expect(typeof registration?.annotations?.readOnlyHint).toBe('boolean');
       expect(typeof registration?.annotations?.destructiveHint).toBe('boolean');
+      expect(typeof registration?.annotations?.openWorldHint).toBe('boolean');
+      if (name !== 'create_run') {
+        expect(registration?.annotations?.openWorldHint).toBe(false);
+      }
     }
   });
 });
