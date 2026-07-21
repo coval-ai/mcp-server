@@ -61,4 +61,35 @@ if (!authenticate?.includes('/.well-known/oauth-protected-resource/mcp')) {
   throw new Error('MCP challenge does not point to protected-resource metadata');
 }
 
+const acceptedOrigin = await fetch(endpoint, {
+  method: 'POST',
+  headers: {
+    Accept: 'application/json, text/event-stream',
+    'Content-Type': 'application/json',
+    Origin: 'https://claude.ai',
+  },
+  body: JSON.stringify({ jsonrpc: '2.0', id: 2, method: 'ping' }),
+  signal: AbortSignal.timeout(10_000),
+});
+if (acceptedOrigin.status !== 401) {
+  throw new Error(`Trusted-origin initialize returned ${acceptedOrigin.status}, expected 401`);
+}
+if (acceptedOrigin.headers.get('access-control-allow-origin') !== 'https://claude.ai') {
+  throw new Error('Trusted browser origin was not reflected by CORS');
+}
+
+const rejectedOrigin = await fetch(endpoint, {
+  method: 'POST',
+  headers: {
+    Accept: 'application/json, text/event-stream',
+    'Content-Type': 'application/json',
+    Origin: 'https://attacker.example.com',
+  },
+  body: JSON.stringify({ jsonrpc: '2.0', id: 3, method: 'ping' }),
+  signal: AbortSignal.timeout(10_000),
+});
+if (rejectedOrigin.status !== 403) {
+  throw new Error(`Untrusted-origin initialize returned ${rejectedOrigin.status}, expected 403`);
+}
+
 console.log(`Coval remote MCP preflight passed for ${endpoint.href}`);

@@ -191,6 +191,8 @@ npm run check:remote
 | `COVAL_API_KEY` | Stdio | - | Coval API key for the local stdio transport |
 | `COVAL_API_BASE_URL` | No | `https://api.coval.dev/v1` | API base URL |
 | `LOG_LEVEL` | No | `info` | Logging level |
+| `MCP_ALLOWED_ORIGINS` | No | Claude and OpenAI web origins | Comma-separated exact browser origins allowed to call `/mcp`; clients that omit `Origin` remain supported |
+| `OPENAI_APPS_CHALLENGE` | No | - | OpenAI plugin-portal domain verification token served as plain text from `/.well-known/openai-apps-challenge` |
 
 ## Documentation
 

@@ -5,16 +5,16 @@ export function readOnlyTool(): ToolAnnotations {
     readOnlyHint: true,
     destructiveHint: false,
     idempotentHint: true,
-    openWorldHint: true,
+    openWorldHint: false,
   };
 }
 
-export function writeTool(): ToolAnnotations {
+export function writeTool({ openWorldHint = false }: { openWorldHint?: boolean } = {}): ToolAnnotations {
   return {
     readOnlyHint: false,
     destructiveHint: false,
     idempotentHint: false,
-    openWorldHint: true,
+    openWorldHint,
   };
 }
 
@@ -23,6 +23,6 @@ export function updateTool(): ToolAnnotations {
     readOnlyHint: false,
     destructiveHint: true,
     idempotentHint: false,
-    openWorldHint: true,
+    openWorldHint: false,
   };
 }
