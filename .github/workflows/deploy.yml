@@ -1,34 +1,69 @@
 name: Deploy remote MCP
+run-name: Deploy remote MCP - ${{ github.event.client_payload.environment }} - ${{ github.event.client_payload.release_correlation_id }}
 
 on:
-  workflow_dispatch:
-    inputs:
-      environment:
-        description: Target Sofia environment
-        type: choice
-        options: [staging, v1]
-        default: staging
-        required: true
+  repository_dispatch:
+    types: [coval_mcp_release]
 
 permissions:
   contents: read
   id-token: write
 
-concurrency:
-  group: mcp-${{ inputs.environment }}-deploy
-  cancel-in-progress: false
-
 jobs:
-  deploy:
+  validate:
     runs-on: ubuntu-latest
-    environment: ${{ inputs.environment == 'v1' && 'production' || 'staging' }}
+    outputs:
+      deploy_ref: ${{ steps.release.outputs.deploy_ref }}
+      environment: ${{ steps.release.outputs.environment }}
+      release_correlation_id: ${{ steps.release.outputs.release_correlation_id }}
+    steps:
+      - name: Validate release dispatch
+        id: release
+        env:
+          DEPLOY_REF: ${{ github.event.client_payload.deploy_ref }}
+          MCP_ENVIRONMENT: ${{ github.event.client_payload.environment }}
+          RELEASE_CORRELATION_ID: ${{ github.event.client_payload.release_correlation_id }}
+        run: |
+          set -euo pipefail
+          case "$MCP_ENVIRONMENT" in
+            staging|v1) ;;
+            *)
+              echo "::error::Unsupported MCP environment."
+              exit 1
+              ;;
+          esac
+          if ! [[ "$DEPLOY_REF" =~ ^[0-9a-fA-F]{40}$ ]]; then
+            echo "::error::Release deploy ref must be an immutable 40-character commit SHA."
+            exit 1
+          fi
+          if [ -z "$RELEASE_CORRELATION_ID" ]; then
+            echo "::error::Release correlation id is required."
+            exit 1
+          fi
+          {
+            echo "deploy_ref=${DEPLOY_REF}"
+            echo "environment=${MCP_ENVIRONMENT}"
+            echo "release_correlation_id=${RELEASE_CORRELATION_ID}"
+          } >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: validate
+    runs-on: ubuntu-latest
+    environment: ${{ needs.validate.outputs.environment == 'v1' && 'production' || 'staging' }}
+    concurrency:
+      group: mcp-${{ needs.validate.outputs.environment }}-deploy
+      cancel-in-progress: false
     env:
       AWS_REGION: us-east-2
-      MCP_ENVIRONMENT: ${{ inputs.environment }}
+      MCP_ENVIRONMENT: ${{ needs.validate.outputs.environment }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ needs.validate.outputs.deploy_ref }}
           persist-credentials: false
+      - name: Resolve deployed source
+        id: source
+        run: echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::851725437270:role/sofia-${{ env.MCP_ENVIRONMENT }}-mcp-github-actions-deploy
@@ -36,13 +71,14 @@ jobs:
       - uses: aws-actions/amazon-ecr-login@v2
       - name: Build and push immutable and current tags
         env:
+          IMAGE_TAG: ${{ steps.source.outputs.sha }}
           REPOSITORY: sofia-${{ env.MCP_ENVIRONMENT }}-mcp
         run: |
           set -euo pipefail
           account_id="$(aws sts get-caller-identity --query Account --output text)"
           image="${account_id}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY}"
-          docker build -t "${image}:${GITHUB_SHA}" -t "${image}:latest" .
-          docker push "${image}:${GITHUB_SHA}"
+          docker build -t "${image}:${IMAGE_TAG}" -t "${image}:latest" .
+          docker push "${image}:${IMAGE_TAG}"
           docker push "${image}:latest"
       - name: Roll MCP service
         run: |
