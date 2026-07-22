@@ -11,6 +11,7 @@ import { verifyClerkToken } from '@clerk/mcp-tools/server';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
+import { rewriteLegacyToolCalls } from './compatibility.js';
 import { ManagedApiKeyError, ManagedApiKeyProvider } from './managed-api-key.js';
 import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
 
@@ -197,7 +198,8 @@ export async function createRemoteApp(): Promise<express.Express> {
         const identity = oauthIdentity(req);
         apiKey = await managedKeys.getApiKey(identity.clerkOrganizationId, identity.clerkUserId);
       }
-      const server = createMcpServer({ apiKey, includeCovi: true });
+      req.body = rewriteLegacyToolCalls(req.body);
+      const server = createMcpServer({ apiKey, includeSofia: true });
       try {
         await streamableHttpHandler(server)(req, res);
       } finally {

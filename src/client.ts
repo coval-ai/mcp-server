@@ -1,6 +1,6 @@
 const DEFAULT_BASE_URL = 'https://api.coval.dev/v1';
-const COVI_DELEGATION_TIMEOUT_MS = 120_000;
-const COVI_TOKEN_EXCHANGE_TIMEOUT_MS = 15_000;
+const SOFIA_DELEGATION_TIMEOUT_MS = 120_000;
+const SOFIA_TOKEN_EXCHANGE_TIMEOUT_MS = 15_000;
 
 export interface PaginationParams {
   page_size?: number;
@@ -15,12 +15,12 @@ export interface ApiError {
   details?: Array<{ field?: string; description: string }>;
 }
 
-export interface CoviConversationMessage {
+export interface SofiaConversationMessage {
   role: 'user' | 'assistant';
   content: string;
 }
 
-export interface CoviConsultation {
+export interface SofiaConsultation {
   contractVersion: string;
   requestId: string;
   mode: 'read_only';
@@ -29,7 +29,7 @@ export interface CoviConsultation {
   proposedActions: never[];
 }
 
-interface CoviConsultationResponse {
+interface SofiaConsultationResponse {
   contract_version: string;
   request_id: string;
   mode: 'read_only';
@@ -38,7 +38,7 @@ interface CoviConsultationResponse {
   proposed_actions: never[];
 }
 
-interface CoviDelegationTokenResponse {
+interface SofiaDelegationTokenResponse {
   delegation_token: string;
   delegation_url: string;
   expires_at: number;
@@ -270,38 +270,39 @@ export class CovalApiClient {
   }
 
   /**
-   * Ask the server-side Covi runtime for a read-only, organization-grounded consultation.
+   * Ask the server-side Sofia runtime for a read-only, organization-grounded consultation.
    *
    * The customer API key authenticates only the short token exchange. The key is never sent to
    * Sofia; the returned token is audience-, org-, subject-, and time-bound and is used only for
    * this read-only consultation request.
    */
-  async consultCovi(input: {
+  async consultSofia(input: {
     prompt: string;
-    conversation?: CoviConversationMessage[];
+    conversation?: SofiaConversationMessage[];
     sessionId?: string;
-  }): Promise<CoviConsultation> {
-    let tokenResponse: CoviDelegationTokenResponse;
+  }): Promise<SofiaConsultation> {
+    let tokenResponse: SofiaDelegationTokenResponse;
     try {
-      tokenResponse = await this.request<CoviDelegationTokenResponse>(
+      tokenResponse = await this.request<SofiaDelegationTokenResponse>(
         'POST',
+        // Keep using the legacy backend route until every deployed minter supports the Sofia alias.
         '/covi/delegation-token',
         {
           client_id: 'coval-mcp',
           ...(input.sessionId ? { session_id: input.sessionId } : {}),
         },
         undefined,
-        AbortSignal.timeout(COVI_TOKEN_EXCHANGE_TIMEOUT_MS),
+        AbortSignal.timeout(SOFIA_TOKEN_EXCHANGE_TIMEOUT_MS),
       );
     } catch (error) {
       if (error instanceof CovalApiError) throw error;
-      throw new CovalApiError('COVI_UNAVAILABLE', 'Covi delegation was unavailable');
+      throw new CovalApiError('COVI_UNAVAILABLE', 'Sofia delegation was unavailable');
     }
     if (tokenResponse.mode !== 'read_only' || !tokenResponse.delegation_token || !tokenResponse.delegation_url) {
-      throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation response was invalid');
+      throw new CovalApiError('INVALID_DELEGATION', 'Sofia delegation response was invalid');
     }
 
-    const delegationUrl = validateCoviDelegationUrl(tokenResponse.delegation_url, this.baseUrl);
+    const delegationUrl = validateSofiaDelegationUrl(tokenResponse.delegation_url, this.baseUrl);
     let response: Response;
     try {
       response = await fetch(delegationUrl, {
@@ -315,22 +316,22 @@ export class CovalApiClient {
           prompt: input.prompt,
           conversation: input.conversation || []
         }),
-        signal: AbortSignal.timeout(COVI_DELEGATION_TIMEOUT_MS)
+        signal: AbortSignal.timeout(SOFIA_DELEGATION_TIMEOUT_MS)
       });
     } catch {
-      throw new CovalApiError('COVI_UNAVAILABLE', 'Covi consultation timed out or was unavailable');
+      throw new CovalApiError('COVI_UNAVAILABLE', 'Sofia consultation timed out or was unavailable');
     }
     const payload: unknown = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = (payload as { error?: ApiError }).error;
       throw new CovalApiError(
         error?.code || 'COVI_UNAVAILABLE',
-        error?.message || 'Covi consultation failed',
+        error?.message || 'Sofia consultation failed',
         error?.details,
         response.status
       );
     }
-    const consultation = parseCoviConsultation(payload);
+    const consultation = parseSofiaConsultation(payload);
     return {
       contractVersion: consultation.contract_version,
       requestId: consultation.request_id,
@@ -342,24 +343,26 @@ export class CovalApiClient {
   }
 }
 
-function validateCoviDelegationUrl(delegationUrl: string, apiBaseUrl: string): string {
+function validateSofiaDelegationUrl(delegationUrl: string, apiBaseUrl: string): string {
   let endpoint: URL;
   let apiUrl: URL;
   try {
     endpoint = new URL(delegationUrl);
     apiUrl = new URL(apiBaseUrl);
   } catch {
-    throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation response was invalid');
+    throw new CovalApiError('INVALID_DELEGATION', 'Sofia delegation response was invalid');
   }
   const environmentSuffix = apiUrl.pathname.includes('staging') ? '-staging' : '';
   const expectedHost = apiUrl.hostname.replace(/^api(?=[.-])/, `sofia${environmentSuffix}`);
-  const configuredOrigin = process.env.COVI_DELEGATION_ORIGIN?.replace(/\/$/, '');
+  const configuredOrigin = (
+    process.env.SOFIA_DELEGATION_ORIGIN || process.env.COVI_DELEGATION_ORIGIN
+  )?.replace(/\/$/, '');
   const expectedOrigin = configuredOrigin || `https://${expectedHost}`;
   let expectedOriginUrl: URL;
   try {
     expectedOriginUrl = new URL(expectedOrigin);
   } catch {
-    throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation origin is misconfigured');
+    throw new CovalApiError('INVALID_DELEGATION', 'Sofia delegation origin is misconfigured');
   }
   if (
     apiUrl.protocol !== 'https:' ||
@@ -371,16 +374,16 @@ function validateCoviDelegationUrl(delegationUrl: string, apiBaseUrl: string): s
     endpoint.search ||
     endpoint.hash
   ) {
-    throw new CovalApiError('INVALID_DELEGATION', 'Covi delegation response was invalid');
+    throw new CovalApiError('INVALID_DELEGATION', 'Sofia delegation response was invalid');
   }
   return endpoint.toString();
 }
 
-function parseCoviConsultation(payload: unknown): CoviConsultationResponse {
+function parseSofiaConsultation(payload: unknown): SofiaConsultationResponse {
   if (typeof payload !== 'object' || payload === null) {
-    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Covi returned an invalid response');
+    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Sofia returned an invalid response');
   }
-  const candidate = payload as Partial<CoviConsultationResponse>;
+  const candidate = payload as Partial<SofiaConsultationResponse>;
   if (
     candidate.contract_version !== '1' ||
     typeof candidate.request_id !== 'string' ||
@@ -392,7 +395,7 @@ function parseCoviConsultation(payload: unknown): CoviConsultationResponse {
     !Array.isArray(candidate.proposed_actions) ||
     candidate.proposed_actions.length !== 0
   ) {
-    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Covi returned an invalid response');
+    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Sofia returned an invalid response');
   }
   const evidence = candidate.evidence.filter(
     (item): item is { name: string; status: string } =>
@@ -402,7 +405,7 @@ function parseCoviConsultation(payload: unknown): CoviConsultationResponse {
       typeof item.status === 'string'
   );
   if (evidence.length !== candidate.evidence.length) {
-    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Covi returned invalid evidence');
+    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Sofia returned invalid evidence');
   }
-  return { ...candidate, evidence } as CoviConsultationResponse;
+  return { ...candidate, evidence } as SofiaConsultationResponse;
 }

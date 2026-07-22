@@ -1,7 +1,7 @@
 import { CovalApiClient } from "../../src/client.js";
 import { jest } from "@jest/globals";
 
-describe("CovalApiClient.consultCovi", () => {
+describe("CovalApiClient.consultSofia", () => {
   afterEach(() => {
     jest.restoreAllMocks();
   });
@@ -38,7 +38,7 @@ describe("CovalApiClient.consultCovi", () => {
       "customer-api-key",
       "https://api.example.com/v1",
     );
-    const result = await client.consultCovi({
+    const result = await client.consultSofia({
       prompt: "What should I inspect?",
       conversation: [{ role: "assistant", content: "I can help." }],
       sessionId: "codex-session-1",
@@ -86,7 +86,7 @@ describe("CovalApiClient.consultCovi", () => {
     );
     const client = new CovalApiClient("customer-api-key", "https://api.example.com/v1");
 
-    await expect(client.consultCovi({ prompt: "What should I inspect?" })).rejects.toMatchObject({
+    await expect(client.consultSofia({ prompt: "What should I inspect?" })).rejects.toMatchObject({
       code: "INVALID_DELEGATION",
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -121,7 +121,7 @@ describe("CovalApiClient.consultCovi", () => {
       );
     const client = new CovalApiClient('staging-key', 'https://api.coval.dev/v1-staging');
 
-    await client.consultCovi({ prompt: 'Inspect staging.' });
+    await client.consultSofia({ prompt: 'Inspect staging.' });
 
     expect(fetchMock.mock.calls[1][0]).toBe(
       'https://sofia-staging.coval.dev/v1/external/delegations',
@@ -132,9 +132,9 @@ describe("CovalApiClient.consultCovi", () => {
     jest.spyOn(global, 'fetch').mockRejectedValueOnce(new DOMException('timed out', 'AbortError'));
     const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
 
-    await expect(client.consultCovi({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
+    await expect(client.consultSofia({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
       code: 'COVI_UNAVAILABLE',
-      message: 'Covi delegation was unavailable',
+      message: 'Sofia delegation was unavailable',
     });
   });
 
@@ -155,7 +155,7 @@ describe("CovalApiClient.consultCovi", () => {
       .mockResolvedValueOnce(new Response('null', { status: 200 }));
     const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
 
-    await expect(client.consultCovi({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
+    await expect(client.consultSofia({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
       code: 'INVALID_COVI_RESPONSE',
     });
   });

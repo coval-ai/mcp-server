@@ -4,6 +4,7 @@ import type {
 } from 'aws-lambda';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
+import { rewriteLegacyToolCalls } from './compatibility.js';
 import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
 
 interface JsonRpcRequest {
@@ -85,10 +86,10 @@ export async function handler(
       ? Buffer.from(event.body || '', 'base64').toString('utf-8')
       : event.body || '';
 
-    const request: JsonRpcRequest = JSON.parse(bodyStr);
+    const request = rewriteLegacyToolCalls(JSON.parse(bodyStr)) as JsonRpcRequest;
 
     // Create server and connect via in-memory transport
-    mcpServer = createMcpServer({ apiKey, includeCovi: false });
+    mcpServer = createMcpServer({ apiKey, includeSofia: false });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
     client = new Client({ name: 'lambda-client', version: '1.0.0' }, {});

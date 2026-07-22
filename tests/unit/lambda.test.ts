@@ -10,7 +10,7 @@ describe("remote MCP Lambda", () => {
       requestContext: { http: { method: "GET" } },
       headers: {},
     } as Parameters<typeof handler>[0]);
-    expect(JSON.parse(health.body).version).toBe("0.2.0");
+    expect(JSON.parse(health.body).version).toBe("0.3.0");
 
     const initialize = await handler({
       rawPath: "/mcp",
@@ -19,10 +19,10 @@ describe("remote MCP Lambda", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} }),
       isBase64Encoded: false,
     } as Parameters<typeof handler>[0]);
-    expect(JSON.parse(initialize.body).result.serverInfo.version).toBe("0.2.0");
+    expect(JSON.parse(initialize.body).result.serverInfo.version).toBe("0.3.0");
   });
 
-  it("does not advertise consult_covi until it has a long-lived transport", async () => {
+  it("does not advertise consult_sofia until it has a long-lived transport", async () => {
     const response = await handler({
       rawPath: "/mcp",
       requestContext: { http: { method: "POST" } },
@@ -34,7 +34,7 @@ describe("remote MCP Lambda", () => {
     expect(response.statusCode).toBe(200);
     const body = JSON.parse(response.body);
     const names = body.result.tools.map((tool: { name: string }) => tool.name);
-    expect(names).not.toContain("consult_covi");
+    expect(names).not.toContain("consult_sofia");
   });
 
   it("describes only the capabilities available to the current server", async () => {
@@ -58,7 +58,7 @@ describe("remote MCP Lambda", () => {
     const authenticated = JSON.parse((await readOverview("customer-api-key")).body).result
       .contents[0].text;
     expect(authenticated).toContain("Use direct tools");
-    expect(authenticated).not.toContain("consult_covi");
+    expect(authenticated).not.toContain("consult_sofia");
 
     const unauthenticated = JSON.parse((await readOverview()).body).result.contents[0].text;
     expect(unauthenticated).toContain("Authenticate to access");
