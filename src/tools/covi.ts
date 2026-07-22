@@ -38,11 +38,10 @@ export function registerCoviTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     "consult_covi",
     {
-      title: "Consult Covi",
+      ...readOnlyTool("Consult Covi"),
       description:
         "Delegate a read-only Coval evaluation question to Covi. Covi can use Coval playbooks and the authenticated organization's runs, simulations, conversations, metrics, agents, personas, test sets, and dashboards. It cannot create, modify, run, or delete anything.",
       inputSchema: CoviConsultInputSchema,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {

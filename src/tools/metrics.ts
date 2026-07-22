@@ -9,11 +9,10 @@ export function registerMetricTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'list_metrics',
     {
-      title: 'List metrics',
+      ...readOnlyTool('List metrics'),
       description:
         'List available evaluation metrics. Metrics define how agent performance is measured. Set include_builtin=true to see built-in metrics.',
       inputSchema: ListMetricsInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {
@@ -28,11 +27,10 @@ export function registerMetricTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'get_metric',
     {
-      title: 'Get metric',
+      ...readOnlyTool('Get metric'),
       description:
         'Get detailed information about a specific metric. Shows metric type, description, and configuration.',
       inputSchema: GetMetricInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {

@@ -14,11 +14,10 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
   server.registerTool(
     'list_test_cases',
     {
-      title: 'List test cases',
+      ...readOnlyTool('List test cases'),
       description:
         'List test cases. Filter by test_set_id. Each has input_str (scenario text or JSON message array) and optional expected_behaviors.',
       inputSchema: ListTestCasesInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {
@@ -33,11 +32,10 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
   server.registerTool(
     'get_test_case',
     {
-      title: 'Get test case',
+      ...readOnlyTool('Get test case'),
       description:
         'Get test case details: input_str (the scenario), expected_behaviors, and metadata.',
       inputSchema: GetTestCaseInputSchema.shape,
-      annotations: readOnlyTool(),
     },
     async (params) => {
       try {
@@ -52,11 +50,10 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
   server.registerTool(
     'create_test_case',
     {
-      title: 'Create test case',
+      ...writeTool('Create test case'),
       description:
         'Create test case in a test set. input_str: single scenario message OR JSON array [{role,content},...] for multi-turn conversations.',
       inputSchema: CreateTestCaseInputSchema.shape,
-      annotations: writeTool(),
     },
     async (params) => {
       try {
@@ -71,10 +68,9 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
   server.registerTool(
     'update_test_case',
     {
-      title: 'Update test case',
+      ...updateTool('Update test case'),
       description: 'Update test case input_str, expected_behaviors, or other fields.',
       inputSchema: UpdateTestCaseInputSchema.shape,
-      annotations: updateTool(),
     },
     async (params) => {
       try {
