@@ -49,7 +49,9 @@ describe('registerAllTools', () => {
 
     for (const name of toolNames) {
       const registration = registrations.get(name);
-      expect(registration?.title).toBeTruthy();
+      expect(registration).toBeDefined();
+      expect(registration?.title).toEqual(expect.any(String));
+      expect(registration?.annotations?.title).toEqual(expect.any(String));
       expect(registration?.annotations?.title).toBe(registration?.title);
       expect(typeof registration?.annotations?.readOnlyHint).toBe('boolean');
       expect(typeof registration?.annotations?.destructiveHint).toBe('boolean');
