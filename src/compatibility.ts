@@ -1,3 +1,5 @@
+import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
+
 type JsonRpcToolCall = {
   method?: unknown;
   params?: unknown;
@@ -31,4 +33,38 @@ function rewriteMessage(message: unknown): unknown {
  */
 export function rewriteLegacyToolCalls(payload: unknown): unknown {
   return Array.isArray(payload) ? payload.map(rewriteMessage) : rewriteMessage(payload);
+}
+
+/**
+ * Apply the same hidden alias to transports, such as stdio, that do not expose an HTTP body.
+ */
+export class LegacyToolCallCompatibilityTransport implements Transport {
+  onclose?: Transport['onclose'];
+  onerror?: Transport['onerror'];
+  onmessage?: Transport['onmessage'];
+
+  constructor(private readonly delegate: Transport) {}
+
+  get sessionId(): string | undefined {
+    return this.delegate.sessionId;
+  }
+
+  async start(): Promise<void> {
+    this.delegate.onclose = () => this.onclose?.();
+    this.delegate.onerror = (error) => this.onerror?.(error);
+    this.delegate.onmessage = (message, extra) => {
+      this.onmessage?.(rewriteLegacyToolCalls(message) as typeof message, extra);
+    };
+    await this.delegate.start();
+  }
+
+  send: Transport['send'] = (message, options) => this.delegate.send(message, options);
+
+  close(): Promise<void> {
+    return this.delegate.close();
+  }
+
+  setProtocolVersion(version: string): void {
+    this.delegate.setProtocolVersion?.(version);
+  }
 }

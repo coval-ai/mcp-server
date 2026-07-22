@@ -170,9 +170,9 @@ the connector from the client or revoke its Coval access when it is no longer ne
 Sofia was previously named Covi. Version 0.3 replaces the pre-directory `consult_covi` tool with
 `consult_sofia` while keeping the connector name, endpoint, package, OAuth flow, and read-only
 consultation contract unchanged. Remote clients rediscover the canonical tool after reconnecting;
-update any saved prompts or client allowlists that name the previous tool explicitly. The hosted
-transport continues accepting cached calls to the previous tool name during the migration, but it
-advertises only the canonical 19-tool surface.
+update any saved prompts or client allowlists that name the previous tool explicitly. Both
+transports continue accepting cached calls to the previous tool name during the migration, but
+they advertise only the canonical 19-tool surface.
 
 ## Development
 
