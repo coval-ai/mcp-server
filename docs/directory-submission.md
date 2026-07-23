@@ -23,9 +23,10 @@ authenticated tools.
 
 - Connect `https://mcp.coval.dev/mcp` through the target client using OAuth.
 - Select a populated Coval test organization during consent.
-- Confirm tool discovery returns a title and correct read/write annotations for every tool.
+- Confirm tool discovery returns exactly 19 tools with a title and correct read/write annotations
+  for every tool.
 - Exercise every tool with valid inputs. Confirm write tools affect only disposable test data.
-- Confirm `consult_covi` succeeds for the review organization. Direct API tools and Covi
+- Confirm `consult_sofia` succeeds for the review organization. Direct API tools and Sofia
   consultation are separate capabilities, so test both.
 - Confirm invalid inputs return actionable errors rather than generic server errors.
 - Revoke the connection and confirm the client can no longer access the organization.
@@ -38,7 +39,7 @@ authenticated tools.
 - Support contact: `support@coval.dev`
 - Production connector icon: `assets/coval-logo.svg`
 - A fully populated test account, provided only through the directory's secure review process
-- Example prompts and expected outcomes for both direct Coval tools and `consult_covi`
+- Example prompts and expected outcomes for both direct Coval tools and `consult_sofia`
 
 Never commit test credentials, access tokens, customer data, or private infrastructure details to
 this public repository.
@@ -51,17 +52,17 @@ this public repository.
 
 **Description:** Connect Claude to your Coval workspace to inspect agents, test sets, personas,
 metrics, and evaluation runs. Launch evaluations and update supported resources through explicit
-write tools, or consult Covi for read-only analysis grounded in your organization's evaluation data
+write tools, or consult Sofia for read-only analysis grounded in your organization's evaluation data
 and Coval's evaluation workflows.
 
 **Primary use cases:**
 
 - Inspect recent evaluation runs and diagnose performance or configuration issues.
 - Create and refine agents, test sets, and test cases, then launch evaluation runs.
-- Ask Covi for read-only, organization-grounded evaluation guidance.
+- Ask Sofia for read-only, organization-grounded evaluation guidance.
 
 **Connection requirements:** A Coval account with access to the organization being connected. The
-review account must also have access to `consult_covi` so every submitted tool can be exercised.
+review account must also have access to `consult_sofia` so every submitted tool can be exercised.
 
 **Data access:** Both read and write. Write operations are exposed as separate tools and carry
 write or destructive annotations as applicable.
@@ -99,10 +100,10 @@ after each review run.
      `create_run` once.
    - Expected result: one new run with its identifier and initial status.
    - Fixture: the resources from case 3 plus a persona named "Standard Customer".
-5. **Covi diagnosis**
-   - Prompt: "Ask Covi to inspect my most recent unsuccessful run and recommend the next test I
+5. **Sofia diagnosis**
+   - Prompt: "Ask Sofia to inspect my most recent unsuccessful run and recommend the next test I
      should add."
-   - Expected behavior: call `consult_covi` once. Covi may use its read-only Coval tools but must
+   - Expected behavior: call `consult_sofia` once. Sofia may use its read-only Coval tools but must
      not mutate the organization.
    - Expected result: a grounded diagnosis that identifies the run and proposes a concrete next
      test.

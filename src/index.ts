@@ -2,13 +2,14 @@
 
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { LegacyToolCallCompatibilityTransport } from './compatibility.js';
 import { createMcpServer } from './server.js';
 
 async function main() {
   try {
     console.error('Starting Coval MCP server...');
     const mcpServer = createMcpServer({ apiKey: process.env.COVAL_API_KEY });
-    const transport = new StdioServerTransport();
+    const transport = new LegacyToolCallCompatibilityTransport(new StdioServerTransport());
     await mcpServer.connect(transport);
     console.error('Coval MCP server connected');
     setupShutdownHandler(mcpServer);

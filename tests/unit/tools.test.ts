@@ -37,8 +37,9 @@ describe('registerAllTools', () => {
 
     registerAllTools(server, new CovalApiClient('customer-api-key'));
 
-    expect(toolNames).toContain('consult_covi');
-    expect(registrations.get('consult_covi')?.annotations?.readOnlyHint).toBe(true);
+    expect(toolNames).toContain('consult_sofia');
+    expect(toolNames).not.toContain('consult_covi');
+    expect(registrations.get('consult_sofia')?.annotations?.readOnlyHint).toBe(true);
     expect(registrations.get('list_runs')?.annotations?.readOnlyHint).toBe(true);
     expect(registrations.get('create_run')?.annotations?.readOnlyHint).toBe(false);
     expect(registrations.get('create_run')?.annotations?.destructiveHint).toBe(false);

@@ -24,7 +24,7 @@ MCP endpoint: `https://mcp.coval.dev/mcp`
    **Organization settings > Connectors**.
 2. Add a custom web connector using `https://mcp.coval.dev/mcp`.
 3. Select **Connect**, sign in to Coval, and choose the Coval organization to authorize.
-4. Enable the connector in a conversation and ask Claude to use Coval or Covi.
+4. Enable the connector in a conversation and ask Claude to use Coval or Sofia.
 
 See [Claude's remote MCP connector guide](https://support.claude.com/en/articles/11175166-get-started-with-custom-connectors-using-remote-mcp)
 for current plan and administration requirements.
@@ -139,7 +139,7 @@ Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
 | `get_metric` | Get metric details |
 | `list_personas` | List available personas |
 | `get_persona` | Get persona details |
-| `consult_covi` | Delegate a read-only Coval evaluation question to Covi |
+| `consult_sofia` | Delegate a read-only Coval evaluation question to Sofia |
 
 ## Example Usage
 
@@ -153,9 +153,9 @@ Once connected, you can ask Claude things like:
 
 > "What are the metrics for run abc123?"
 
-> "Use `consult_covi` to analyze my latest failed run and recommend the most useful next test."
+> "Use `consult_sofia` to analyze my latest failed run and recommend the most useful next test."
 
-The same tools, including `consult_covi`, are available through both supported transports:
+The same tools, including `consult_sofia`, are available through both supported transports:
 
 - Remote Streamable HTTP: `https://mcp.coval.dev/mcp` using OAuth. This is the recommended
   connection for Codex, Claude, and other hosted MCP clients.
@@ -164,6 +164,15 @@ The same tools, including `consult_covi`, are available through both supported t
 
 The hosted connector can access only the Coval organization selected during OAuth consent. Remove
 the connector from the client or revoke its Coval access when it is no longer needed.
+
+### Migrating saved prompts
+
+Sofia was previously named Covi. Version 0.3 replaces the pre-directory `consult_covi` tool with
+`consult_sofia` while keeping the connector name, endpoint, package, OAuth flow, and read-only
+consultation contract unchanged. Remote clients rediscover the canonical tool after reconnecting;
+update any saved prompts or client allowlists that name the previous tool explicitly. Both
+transports continue accepting cached calls to the previous tool name during the migration, but
+they advertise only the canonical 19-tool surface.
 
 ## Development
 

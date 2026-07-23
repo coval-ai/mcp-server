@@ -3,7 +3,7 @@ import { CovalApiClient } from './client.js';
 import { registerAllTools } from './tools/index.js';
 import { readOnlyTool } from './tools/annotations.js';
 
-export const COVAL_MCP_SERVER_VERSION = '0.2.0';
+export const COVAL_MCP_SERVER_VERSION = '0.3.0';
 
 const COVAL_OVERVIEW = `Coval evaluates AI agents (voice, SMS, chat) by running simulated conversations.
 
@@ -17,17 +17,17 @@ Entities:
 
 export interface CovalMcpServerOptions {
   apiKey?: string;
-  includeCovi?: boolean;
+  includeSofia?: boolean;
 }
 
 function overviewFor(options: CovalMcpServerOptions): string {
   if (!options.apiKey) {
     return `${COVAL_OVERVIEW}\n\nAuthenticate to access Coval organization tools.`;
   }
-  if (options.includeCovi === false) {
+  if (options.includeSofia === false) {
     return `${COVAL_OVERVIEW}\n\nUse direct tools for deterministic Coval operations.`;
   }
-  return `${COVAL_OVERVIEW}\n\nUse direct tools for deterministic operations. Use consult_covi when the task benefits from\nCoval product knowledge, voice-agent evaluation expertise, or synthesis across resources.`;
+  return `${COVAL_OVERVIEW}\n\nUse direct tools for deterministic operations. Use consult_sofia when the task benefits from\nCoval product knowledge, voice-agent evaluation expertise, or synthesis across resources.`;
 }
 
 export function createMcpServer(options: CovalMcpServerOptions = {}): McpServer {
@@ -39,7 +39,7 @@ export function createMcpServer(options: CovalMcpServerOptions = {}): McpServer 
 
   if (options.apiKey) {
     registerAllTools(server, new CovalApiClient(options.apiKey), {
-      includeCovi: options.includeCovi,
+      includeSofia: options.includeSofia,
     });
   } else {
     server.registerTool(
