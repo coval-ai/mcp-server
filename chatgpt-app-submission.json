@@ -1,0 +1,308 @@
+{
+  "$schema": "https://developers.openai.com/apps-sdk/schemas/chatgpt-app-submission.v1.json",
+  "schema_version": 1,
+  "app_info": {
+    "display_name": "Coval",
+    "subtitle": "Evaluate voice and chat agents",
+    "description": "Coval helps teams inspect AI agents, test sets, personas, metrics, and evaluation runs; create and refine evaluation resources; launch evaluations; and ask Sofia for read-only analysis grounded in their Coval organization.",
+    "category": "DEVELOPER_TOOLS"
+  },
+  "tools": {
+    "list_agents": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves agent configurations from the authenticated Coval organization without changing them.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or revoke access to any agent configuration."
+      }
+    },
+    "get_agent": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves the selected agent configuration from the authenticated Coval organization.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or revoke access to the selected agent."
+      }
+    },
+    "create_agent": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Creates a new agent configuration in the authenticated Coval organization.",
+        "open_world_justification": "Changes only private configuration in the authenticated Coval organization and does not publish externally.",
+        "destructive_justification": "Creates a new private agent configuration without deleting or overwriting existing resources."
+      }
+    },
+    "update_agent": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Updates selected fields on an existing agent in the authenticated Coval organization.",
+        "open_world_justification": "Changes only private configuration in the authenticated Coval organization and does not publish externally.",
+        "destructive_justification": "Overwrites the selected fields on an existing agent configuration."
+      }
+    },
+    "list_runs": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves evaluation runs from the authenticated Coval organization without starting or changing them.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or cancel any evaluation run."
+      }
+    },
+    "get_run": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves the selected evaluation run and its results without changing the run.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or cancel the selected evaluation run."
+      }
+    },
+    "create_run": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Starts a new evaluation run in the authenticated Coval organization.",
+        "open_world_justification": "An evaluation may contact a configured agent, phone number, webhook, or other external endpoint.",
+        "destructive_justification": "Launches an evaluation that may contact external systems and consume resources and cannot be undone once started."
+      }
+    },
+    "list_test_sets": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves test sets from the authenticated Coval organization without changing them.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove any test set."
+      }
+    },
+    "get_test_set": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves the selected test set from the authenticated Coval organization.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove the selected test set."
+      }
+    },
+    "create_test_set": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Creates a new test set in the authenticated Coval organization.",
+        "open_world_justification": "Changes only private test data in the authenticated Coval organization and does not publish externally.",
+        "destructive_justification": "Creates a new private test set without deleting or overwriting existing resources."
+      }
+    },
+    "list_test_cases": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves test cases from the authenticated Coval organization without changing them.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove any test case."
+      }
+    },
+    "get_test_case": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves the selected test case from the authenticated Coval organization.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove the selected test case."
+      }
+    },
+    "create_test_case": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Creates a new test case in a test set in the authenticated Coval organization.",
+        "open_world_justification": "Changes only private test data in the authenticated Coval organization and does not publish externally.",
+        "destructive_justification": "Creates a new private test case without deleting or overwriting existing resources."
+      }
+    },
+    "update_test_case": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Updates selected fields on an existing test case in the authenticated Coval organization.",
+        "open_world_justification": "Changes only private test data in the authenticated Coval organization and does not publish externally.",
+        "destructive_justification": "Overwrites the selected fields on an existing test case."
+      }
+    },
+    "list_metrics": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves available evaluation metrics without creating or changing them.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove any metric."
+      }
+    },
+    "get_metric": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves the selected evaluation metric and its configuration.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove the selected metric."
+      }
+    },
+    "list_personas": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves personas from the authenticated Coval organization without changing them.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove any persona."
+      }
+    },
+    "get_persona": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves the selected persona and its simulation configuration.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove the selected persona."
+      }
+    },
+    "consult_sofia": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Returns a read-only analysis grounded in the authenticated organization's Coval resources and cannot perform proposed actions.",
+        "open_world_justification": "Does not publish content or change public or third-party state.",
+        "destructive_justification": "Cannot create, modify, run, or delete resources."
+      }
+    }
+  },
+  "test_cases": [
+    {
+      "description": "Inspect recent evaluation activity without changing organization data.",
+      "user_prompt": "List my five most recent evaluation runs and summarize their statuses.",
+      "file_attachment_urls": null,
+      "tools_triggered": "list_runs",
+      "expected_output": "Returns up to five recent runs with their identifiers and statuses, followed by a concise status summary.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Resolve a named agent and inspect its connection configuration.",
+      "user_prompt": "Show the configuration of the agent named Review Voice Agent.",
+      "file_attachment_urls": null,
+      "tools_triggered": "list_agents, get_agent",
+      "expected_output": "Returns the selected agent's display name, model type, resource ID needed for later Coval tool calls, and only safe non-secret connection status or details. Omits credential-bearing metadata, prompt text, tags, endpoint content, and internal or unnecessary IDs.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Create disposable test data for a billing scenario.",
+      "user_prompt": "Create a test set named Directory Review Billing and add one scenario where a caller disputes a duplicate charge. The expected behavior is that the agent verifies the duplicate and explains the next step.",
+      "file_attachment_urls": null,
+      "tools_triggered": "create_test_set, create_test_case",
+      "expected_output": "Creates one test set and one linked test case that match the requested scenario and expected behavior.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Launch one evaluation using reviewer fixtures and report its initial state.",
+      "user_prompt": "Run the Directory Review Billing test set against Review Voice Agent using Standard Customer, then report the new run ID and initial status.",
+      "file_attachment_urls": null,
+      "tools_triggered": "list_agents, list_test_sets, list_personas, create_run",
+      "expected_output": "Resolves the named fixtures, creates exactly one evaluation run, and returns its identifier and initial status.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Use Sofia for read-only diagnosis of an unsuccessful evaluation.",
+      "user_prompt": "Ask Sofia to inspect my most recent unsuccessful run and recommend the next test I should add.",
+      "file_attachment_urls": null,
+      "tools_triggered": "consult_sofia",
+      "expected_output": "Returns an organization-grounded diagnosis that identifies the run and recommends a concrete next test without changing any resource.",
+      "expected_output_url": null
+    }
+  ],
+  "negative_test_cases": [
+    {
+      "description": "Do not trigger Coval for an unrelated calendar-management request.",
+      "user_prompt": "What meetings do I have tomorrow, and can you move my afternoon call?",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The Coval app is not invoked because it cannot read or change calendar events.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not trigger Coval for an unrelated Slack-messaging request.",
+      "user_prompt": "Send \"Lunch has moved to 12:30 PM\" to the #general Slack channel.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "The Coval app is not invoked because it cannot send Slack messages.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Do not substitute available write tools for an unsupported bulk destructive request.",
+      "user_prompt": "Delete every agent and test set in this organization.",
+      "file_attachment_urls": null,
+      "tools_triggered": null,
+      "expected_output": "Explains that the connector does not expose bulk deletion tools and makes no changes.",
+      "expected_output_url": null
+    }
+  ]
+}
