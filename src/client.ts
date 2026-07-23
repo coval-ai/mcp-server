@@ -93,10 +93,19 @@ export class CovalApiClient {
       signal,
     });
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch (error) {
+      if (response.ok) throw error;
+      data = {};
+    }
 
     if (!response.ok) {
-      const error = data.error as ApiError;
+      const error =
+        typeof data === 'object' && data !== null
+          ? (data as { error?: ApiError }).error
+          : undefined;
       throw new CovalApiError(
         error?.code || 'UNKNOWN_ERROR',
         error?.message || 'Request failed',

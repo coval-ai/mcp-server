@@ -81,7 +81,7 @@ describe("CovalApiClient.consultSofia", () => {
     const fetchMock = jest
       .spyOn(global, 'fetch')
       .mockResolvedValueOnce(
-        new Response(JSON.stringify({ message: 'Not Found' }), { status: 404 }),
+        new Response(null, { status: 404 }),
       )
       .mockResolvedValueOnce(
         delegationTokenResponse('https://sofia.example.com/v1/external/delegations'),
