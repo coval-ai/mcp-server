@@ -93,10 +93,19 @@ export class CovalApiClient {
       signal,
     });
 
-    const data = await response.json();
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch (error) {
+      if (response.ok) throw error;
+      data = {};
+    }
 
     if (!response.ok) {
-      const error = data.error as ApiError;
+      const error =
+        typeof data === 'object' && data !== null
+          ? (data as { error?: ApiError }).error
+          : undefined;
       throw new CovalApiError(
         error?.code || 'UNKNOWN_ERROR',
         error?.message || 'Request failed',
@@ -283,17 +292,7 @@ export class CovalApiClient {
   }): Promise<SofiaConsultation> {
     let tokenResponse: SofiaDelegationTokenResponse;
     try {
-      tokenResponse = await this.request<SofiaDelegationTokenResponse>(
-        'POST',
-        // Keep using the legacy backend route until every deployed minter supports the Sofia alias.
-        '/covi/delegation-token',
-        {
-          client_id: 'coval-mcp',
-          ...(input.sessionId ? { session_id: input.sessionId } : {}),
-        },
-        undefined,
-        AbortSignal.timeout(SOFIA_TOKEN_EXCHANGE_TIMEOUT_MS),
-      );
+      tokenResponse = await this.requestSofiaDelegationToken(input.sessionId);
     } catch (error) {
       if (error instanceof CovalApiError) throw error;
       throw new CovalApiError('COVI_UNAVAILABLE', 'Sofia delegation was unavailable');
@@ -343,6 +342,28 @@ export class CovalApiClient {
       evidence: consultation.evidence,
       proposedActions: consultation.proposed_actions
     };
+  }
+
+  private async requestSofiaDelegationToken(sessionId?: string): Promise<SofiaDelegationTokenResponse> {
+    const requestToken = (path: string) =>
+      this.request<SofiaDelegationTokenResponse>(
+        'POST',
+        path,
+        {
+          client_id: 'coval-mcp',
+          ...(sessionId ? { session_id: sessionId } : {}),
+        },
+        undefined,
+        AbortSignal.timeout(SOFIA_TOKEN_EXCHANGE_TIMEOUT_MS),
+      );
+
+    try {
+      return await requestToken('/sofia/delegation-token');
+    } catch (error) {
+      // A missing route is the only safe signal that this backend predates the canonical Sofia path.
+      if (!(error instanceof CovalApiError) || error.status !== 404) throw error;
+      return requestToken('/covi/delegation-token');
+    }
   }
 }
 
