@@ -14,6 +14,7 @@ import express, { type NextFunction, type Request, type Response } from 'express
 import { rewriteLegacyToolCalls } from './compatibility.js';
 import { ManagedApiKeyError, ManagedApiKeyProvider } from './managed-api-key.js';
 import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
+import type { ToolAnnotationProfile } from './tools/annotations.js';
 
 const PORT = Number.parseInt(process.env.PORT || '8080', 10);
 const REQUIRED_ORG_SCOPE = 'user:org:read';
@@ -126,6 +127,7 @@ export async function createRemoteApp(): Promise<express.Express> {
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
   app.use('/mcp', validateOrigin(origins));
+  app.use('/claude/mcp', validateOrigin(origins));
   app.use(express.json({ limit: '1mb' }));
   app.use(
     cors({
@@ -170,6 +172,44 @@ export async function createRemoteApp(): Promise<express.Express> {
     void Promise.resolve(oauth(req, res, next)).catch(next);
   };
 
+  const handleMcpRequest =
+    (annotationProfile: ToolAnnotationProfile) => async (req: Request, res: Response) => {
+      let apiKey = headerValue(req, 'X-API-Key');
+      try {
+        if (!apiKey) {
+          if (!managedKeys.isConfigured()) {
+            res.status(503).json({ error: 'OAuth-backed MCP sessions are not configured' });
+            return;
+          }
+          const identity = oauthIdentity(req);
+          apiKey = await managedKeys.getApiKey(
+            identity.clerkOrganizationId,
+            identity.clerkUserId
+          );
+        }
+        req.body = rewriteLegacyToolCalls(req.body);
+        const server = createMcpServer({
+          annotationProfile,
+          apiKey,
+          includeSofia: true,
+        });
+        try {
+          await streamableHttpHandler(server)(req, res);
+        } finally {
+          await server.close();
+        }
+      } catch (error) {
+        console.error('MCP request failed', error instanceof Error ? error.name : 'UnknownError');
+        if (!res.headersSent) {
+          const isKnownError =
+            error instanceof OAuthOrganizationError || error instanceof ManagedApiKeyError;
+          res.status(error instanceof ManagedApiKeyError ? error.status : isKnownError ? 400 : 502).json({
+            error: isKnownError ? error.message : 'Unable to serve MCP request',
+          });
+        }
+      }
+    };
+
   app.get('/health', (_req, res) => {
     res.json({
       status: 'healthy',
@@ -185,36 +225,14 @@ export async function createRemoteApp(): Promise<express.Express> {
     service_documentation: 'https://docs.coval.dev',
     scopes_supported: ['openid', 'profile', 'email', REQUIRED_ORG_SCOPE],
   }));
+  app.get('/.well-known/oauth-protected-resource/claude/mcp', protectedResourceHandlerClerk({
+    service_documentation: 'https://docs.coval.dev',
+    scopes_supported: ['openid', 'profile', 'email', REQUIRED_ORG_SCOPE],
+  }));
   app.get('/.well-known/oauth-authorization-server', authServerMetadataHandlerClerk);
 
-  app.all('/mcp', authenticate, async (req, res) => {
-    let apiKey = headerValue(req, 'X-API-Key');
-    try {
-      if (!apiKey) {
-        if (!managedKeys.isConfigured()) {
-          res.status(503).json({ error: 'OAuth-backed MCP sessions are not configured' });
-          return;
-        }
-        const identity = oauthIdentity(req);
-        apiKey = await managedKeys.getApiKey(identity.clerkOrganizationId, identity.clerkUserId);
-      }
-      req.body = rewriteLegacyToolCalls(req.body);
-      const server = createMcpServer({ apiKey, includeSofia: true });
-      try {
-        await streamableHttpHandler(server)(req, res);
-      } finally {
-        await server.close();
-      }
-    } catch (error) {
-      console.error('MCP request failed', error instanceof Error ? error.name : 'UnknownError');
-      if (!res.headersSent) {
-        const isKnownError = error instanceof OAuthOrganizationError || error instanceof ManagedApiKeyError;
-        res.status(error instanceof ManagedApiKeyError ? error.status : isKnownError ? 400 : 502).json({
-          error: isKnownError ? error.message : 'Unable to serve MCP request',
-        });
-      }
-    }
-  });
+  app.all('/mcp', authenticate, handleMcpRequest('standard'));
+  app.all('/claude/mcp', authenticate, handleMcpRequest('claude'));
 
   // Rejections forwarded from middleware land here (e.g. @clerk/mcp-tools' mcpAuth throws on a
   // malformed Authorization header such as a bare "Bearer") so clients get a terminated JSON

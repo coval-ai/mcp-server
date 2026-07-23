@@ -7,16 +7,21 @@ import { registerTestCaseTools } from './test-cases.js';
 import { registerMetricTools } from './metrics.js';
 import { registerPersonaTools } from './personas.js';
 import { registerSofiaTools } from './sofia.js';
+import type { ToolAnnotationProfile } from './annotations.js';
 
 export function registerAllTools(
   server: McpServer,
   client: CovalApiClient,
-  options: { includeSofia?: boolean } = {},
+  options: {
+    annotationProfile?: ToolAnnotationProfile;
+    includeSofia?: boolean;
+  } = {},
 ) {
-  registerRunTools(server, client);
-  registerAgentTools(server, client);
-  registerTestSetTools(server, client);
-  registerTestCaseTools(server, client);
+  const createToolOptions = { annotationProfile: options.annotationProfile };
+  registerRunTools(server, client, createToolOptions);
+  registerAgentTools(server, client, createToolOptions);
+  registerTestSetTools(server, client, createToolOptions);
+  registerTestCaseTools(server, client, createToolOptions);
   registerMetricTools(server, client);
   registerPersonaTools(server, client);
   if (options.includeSofia ?? true) {

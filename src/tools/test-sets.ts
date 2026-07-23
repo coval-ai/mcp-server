@@ -7,9 +7,17 @@ import {
 } from '../schemas/index.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
-import { readOnlyTool, writeTool } from './annotations.js';
+import {
+  createTool,
+  readOnlyTool,
+  type ToolAnnotationProfile,
+} from './annotations.js';
 
-export function registerTestSetTools(server: McpServer, client: CovalApiClient) {
+export function registerTestSetTools(
+  server: McpServer,
+  client: CovalApiClient,
+  { annotationProfile = 'standard' }: { annotationProfile?: ToolAnnotationProfile } = {}
+) {
   server.registerTool(
     'list_test_sets',
     {
@@ -49,7 +57,7 @@ export function registerTestSetTools(server: McpServer, client: CovalApiClient) 
   server.registerTool(
     'create_test_set',
     {
-      ...writeTool('Create test set'),
+      ...createTool('Create test set', { annotationProfile }),
       description:
         'Create a test set to organize test cases. After creating, use create_test_case to add scenarios.',
       inputSchema: CreateTestSetInputSchema.shape,

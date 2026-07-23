@@ -8,9 +8,18 @@ import {
 } from '../schemas/index.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
-import { readOnlyTool, updateTool, writeTool } from './annotations.js';
+import {
+  createTool,
+  readOnlyTool,
+  updateTool,
+  type ToolAnnotationProfile,
+} from './annotations.js';
 
-export function registerTestCaseTools(server: McpServer, client: CovalApiClient) {
+export function registerTestCaseTools(
+  server: McpServer,
+  client: CovalApiClient,
+  { annotationProfile = 'standard' }: { annotationProfile?: ToolAnnotationProfile } = {}
+) {
   server.registerTool(
     'list_test_cases',
     {
@@ -50,7 +59,7 @@ export function registerTestCaseTools(server: McpServer, client: CovalApiClient)
   server.registerTool(
     'create_test_case',
     {
-      ...writeTool('Create test case'),
+      ...createTool('Create test case', { annotationProfile }),
       description:
         'Create test case in a test set. input_str: single scenario message OR JSON array [{role,content},...] for multi-turn conversations.',
       inputSchema: CreateTestCaseInputSchema.shape,

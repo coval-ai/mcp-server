@@ -13,6 +13,7 @@ npm run typecheck
 npm test -- --runInBand
 npm run build
 npm run check:remote
+COVAL_MCP_URL=https://mcp.coval.dev/claude/mcp npm run check:remote
 ```
 
 The remote check verifies the public health endpoint, OAuth discovery metadata, PKCE support, and
@@ -21,13 +22,17 @@ authenticated tools.
 
 ## Manual checks
 
-- Connect `https://mcp.coval.dev/mcp` through the target client using OAuth.
+- Connect `https://mcp.coval.dev/mcp` for OpenAI and generic MCP review, and
+  `https://mcp.coval.dev/claude/mcp` for Claude review, using OAuth.
 - Select a populated Coval test organization during consent.
 - Confirm tool discovery returns exactly 19 tools with a title and correct read/write annotations
   for every tool. The six write tools (`create_agent`, `create_run`, `create_test_set`,
   `create_test_case`, `update_agent`, and `update_test_case`) must advertise
-  `readOnlyHint: false` and `destructiveHint: true`. `create_run` alone advertises
-  `openWorldHint: true`; the other write tools advertise `openWorldHint: false`.
+  `readOnlyHint: false`. On `/mcp`, the additive create tools (`create_agent`, `create_test_set`,
+  and `create_test_case`) advertise `destructiveHint: false`, while `create_run`, `update_agent`,
+  and `update_test_case` advertise `destructiveHint: true`. On `/claude/mcp`, all six write tools
+  advertise `destructiveHint: true`. On both paths, `create_run` alone advertises
+  `openWorldHint: true`; all other tools advertise `openWorldHint: false`.
 - Exercise every tool with valid inputs. Confirm write tools affect only disposable test data.
 - Confirm `consult_sofia` succeeds for the review organization. Direct API tools and Sofia
   consultation are separate capabilities, so test both.

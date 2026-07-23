@@ -1,7 +1,10 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CovalApiClient } from './client.js';
 import { registerAllTools } from './tools/index.js';
-import { readOnlyTool } from './tools/annotations.js';
+import {
+  readOnlyTool,
+  type ToolAnnotationProfile,
+} from './tools/annotations.js';
 
 export const COVAL_MCP_SERVER_VERSION = '0.3.0';
 
@@ -16,6 +19,7 @@ Entities:
 - Metrics: Organization-specific evaluation criteria`;
 
 export interface CovalMcpServerOptions {
+  annotationProfile?: ToolAnnotationProfile;
   apiKey?: string;
   includeSofia?: boolean;
 }
@@ -39,6 +43,7 @@ export function createMcpServer(options: CovalMcpServerOptions = {}): McpServer 
 
   if (options.apiKey) {
     registerAllTools(server, new CovalApiClient(options.apiKey), {
+      annotationProfile: options.annotationProfile,
       includeSofia: options.includeSofia,
     });
   } else {

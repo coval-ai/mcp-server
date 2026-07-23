@@ -1,5 +1,6 @@
 const endpoint = new URL(process.env.COVAL_MCP_URL ?? 'https://mcp.coval.dev/mcp');
 const origin = endpoint.origin;
+const protectedResourcePath = `/.well-known/oauth-protected-resource${endpoint.pathname}`;
 
 async function expectJson(url, validate) {
   const response = await fetch(url, { signal: AbortSignal.timeout(10_000) });
@@ -15,7 +16,7 @@ await expectJson(`${origin}/health`, (body) => {
 });
 
 let authorizationServer;
-await expectJson(`${origin}/.well-known/oauth-protected-resource/mcp`, (body) => {
+await expectJson(`${origin}${protectedResourcePath}`, (body) => {
   if (body.resource !== endpoint.href) {
     throw new Error('Protected resource URL does not match the MCP endpoint');
   }
@@ -57,7 +58,7 @@ if (challenge.status !== 401) {
   throw new Error(`Unauthenticated initialize returned ${challenge.status}, expected 401`);
 }
 const authenticate = challenge.headers.get('www-authenticate');
-if (!authenticate?.includes('/.well-known/oauth-protected-resource/mcp')) {
+if (!authenticate?.includes(protectedResourcePath)) {
   throw new Error('MCP challenge does not point to protected-resource metadata');
 }
 

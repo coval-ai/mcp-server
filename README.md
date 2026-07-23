@@ -16,13 +16,15 @@ The hosted connector is the recommended way to use Coval from Claude, ChatGPT, a
 MCP clients. It uses OAuth, so users sign in to Coval and select the organization the connector
 can access. No Coval API key is copied into the client.
 
-MCP endpoint: `https://mcp.coval.dev/mcp`
+Standard MCP endpoint: `https://mcp.coval.dev/mcp`
+
+Claude hosted endpoint: `https://mcp.coval.dev/claude/mcp`
 
 ### Claude
 
 1. Open **Customize > Connectors**. Team and Enterprise owners add the connector first from
    **Organization settings > Connectors**.
-2. Add a custom web connector using `https://mcp.coval.dev/mcp`.
+2. Add a custom web connector using `https://mcp.coval.dev/claude/mcp`.
 3. Select **Connect**, sign in to Coval, and choose the Coval organization to authorize.
 4. Enable the connector in a conversation and ask Claude to use Coval or Sofia.
 
@@ -155,10 +157,13 @@ Once connected, you can ask Claude things like:
 
 > "Use `consult_sofia` to analyze my latest failed run and recommend the most useful next test."
 
-The same tools, including `consult_sofia`, are available through both supported transports:
+The same tools, including `consult_sofia`, are available through every supported endpoint and
+transport:
 
-- Remote Streamable HTTP: `https://mcp.coval.dev/mcp` using OAuth. This is the recommended
-  connection for Codex, Claude, and other hosted MCP clients.
+- Standard remote Streamable HTTP: `https://mcp.coval.dev/mcp` using OAuth. This is the recommended
+  connection for ChatGPT, Codex, and other hosted MCP clients.
+- Claude remote Streamable HTTP: `https://mcp.coval.dev/claude/mcp` using the same OAuth flow and
+  tool surface, with Claude-specific risk annotations.
 - Local stdio: `npx @coval/mcp-server` with `COVAL_API_KEY`, for service accounts and local
   development.
 
@@ -192,7 +197,7 @@ npm run check:remote
 | `COVAL_API_BASE_URL` | No | `https://api.coval.dev/v1` | API base URL |
 | `SOFIA_DELEGATION_ORIGIN` | No | Derived from `COVAL_API_BASE_URL` | Overrides the expected Sofia origin used to validate delegation URLs |
 | `LOG_LEVEL` | No | `info` | Logging level |
-| `MCP_ALLOWED_ORIGINS` | No | Claude and OpenAI web origins | Comma-separated exact browser origins allowed to call `/mcp`; clients that omit `Origin` remain supported |
+| `MCP_ALLOWED_ORIGINS` | No | Claude and OpenAI web origins | Comma-separated exact browser origins allowed to call `/mcp` or `/claude/mcp`; clients that omit `Origin` remain supported |
 | `OPENAI_APPS_CHALLENGE` | No | - | OpenAI plugin-portal domain verification token served as plain text from `/.well-known/openai-apps-challenge` |
 
 ## Documentation
