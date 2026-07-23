@@ -4,6 +4,11 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { allowedOrigins, createRemoteApp, organizationIdFromVerifiedToken } from '../../src/remote.js';
 
+const REMOTE_ENDPOINTS = [
+  { path: '/mcp', annotationProfile: 'standard' },
+  { path: '/claude/mcp', annotationProfile: 'claude' },
+] as const;
+
 async function withRemoteServer(run: (baseUrl: string) => Promise<void>): Promise<void> {
   process.env.CLERK_PUBLISHABLE_KEY = 'pk_test_Y2xlcmsudGVzdCQ=';
   process.env.CLERK_SECRET_KEY = 'sk_test_not-a-real-key';
@@ -77,19 +82,39 @@ describe('remote OAuth organization binding', () => {
 
   it('challenges unauthenticated requests with protected resource metadata', async () => {
     await withRemoteServer(async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json, text/event-stream',
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }),
-      });
+      for (const { path } of REMOTE_ENDPOINTS) {
+        const response = await fetch(`${baseUrl}${path}`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json, text/event-stream',
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'ping' }),
+        });
 
-      expect(response.status).toBe(401);
-      const challenge = response.headers.get('www-authenticate');
-      expect(challenge).toContain('Bearer resource_metadata=');
-      expect(challenge).toContain('/.well-known/oauth-protected-resource/mcp');
+        expect(response.status).toBe(401);
+        const challenge = response.headers.get('www-authenticate');
+        expect(challenge).toContain('Bearer resource_metadata=');
+        expect(challenge).toContain(`/.well-known/oauth-protected-resource${path}`);
+      }
+    });
+  });
+
+  it('serves protected resource metadata for both MCP endpoints', async () => {
+    await withRemoteServer(async (baseUrl) => {
+      for (const { path } of REMOTE_ENDPOINTS) {
+        const response = await fetch(
+          `${baseUrl}/.well-known/oauth-protected-resource${path}`
+        );
+
+        expect(response.status).toBe(200);
+        const metadata = (await response.json()) as {
+          resource?: string;
+          scopes_supported?: string[];
+        };
+        expect(metadata.resource).toBe(`${baseUrl}${path}`);
+        expect(metadata.scopes_supported).toContain('user:org:read');
+      }
     });
   });
 
@@ -182,36 +207,40 @@ describe('remote OAuth organization binding', () => {
 
   it('rejects unknown browser origins before authentication or tool execution', async () => {
     await withRemoteServer(async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          Accept: 'application/json, text/event-stream',
-          'Content-Type': 'application/json',
-          Origin: 'https://attacker.example.com',
-          'X-API-Key': 'customer-api-key',
-        },
-        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }),
-      });
+      for (const { path } of REMOTE_ENDPOINTS) {
+        const response = await fetch(`${baseUrl}${path}`, {
+          method: 'POST',
+          headers: {
+            Accept: 'application/json, text/event-stream',
+            'Content-Type': 'application/json',
+            Origin: 'https://attacker.example.com',
+            'X-API-Key': 'customer-api-key',
+          },
+          body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'initialize', params: {} }),
+        });
 
-      expect(response.status).toBe(403);
-      expect(response.headers.get('access-control-allow-origin')).toBeNull();
-      expect(await response.json()).toEqual({ error: 'Request origin is not allowed' });
+        expect(response.status).toBe(403);
+        expect(response.headers.get('access-control-allow-origin')).toBeNull();
+        expect(await response.json()).toEqual({ error: 'Request origin is not allowed' });
+      }
     });
   });
 
   it('rejects an unknown browser origin before parsing its request body', async () => {
     await withRemoteServer(async (baseUrl) => {
-      const response = await fetch(`${baseUrl}/mcp`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Origin: 'https://attacker.example.com',
-        },
-        body: '{',
-      });
+      for (const { path } of REMOTE_ENDPOINTS) {
+        const response = await fetch(`${baseUrl}${path}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Origin: 'https://attacker.example.com',
+          },
+          body: '{',
+        });
 
-      expect(response.status).toBe(403);
-      expect(await response.json()).toEqual({ error: 'Request origin is not allowed' });
+        expect(response.status).toBe(403);
+        expect(await response.json()).toEqual({ error: 'Request origin is not allowed' });
+      }
     });
   });
 
@@ -241,26 +270,57 @@ describe('remote OAuth organization binding', () => {
     });
   });
 
-  it('supports a stateless SDK client across initialize and tools/list requests', async () => {
+  it('serves stable platform-specific annotations on both remote paths', async () => {
     await withRemoteServer(async (baseUrl) => {
-      const transport = new StreamableHTTPClientTransport(
-        new URL(`${baseUrl}/mcp`),
-        { requestInit: { headers: { 'X-API-Key': 'customer-api-key' } } },
-      );
-      const client = new Client({ name: 'stateless-test-client', version: '1' });
+      const toolsByProfile = new Map<
+        string,
+        Awaited<ReturnType<Client['listTools']>>['tools']
+      >();
 
-      try {
-        await client.connect(transport);
-        const tools = await client.listTools();
-        expect(tools.tools.map((tool) => tool.name)).toContain('consult_sofia');
-        expect(tools.tools.map((tool) => tool.name)).not.toContain('consult_covi');
-        for (const tool of tools.tools) {
-          expect(tool.title).toBeTruthy();
-          expect(typeof tool.annotations?.readOnlyHint).toBe('boolean');
-          expect(typeof tool.annotations?.destructiveHint).toBe('boolean');
+      for (const { annotationProfile, path } of REMOTE_ENDPOINTS) {
+        const transport = new StreamableHTTPClientTransport(new URL(`${baseUrl}${path}`), {
+          requestInit: { headers: { 'X-API-Key': 'customer-api-key' } },
+        });
+        const client = new Client({
+          name: `${annotationProfile}-stateless-test-client`,
+          version: '1',
+        });
+
+        try {
+          await client.connect(transport);
+          const { tools } = await client.listTools();
+          toolsByProfile.set(annotationProfile, tools);
+          expect(tools.map((tool) => tool.name)).toContain('consult_sofia');
+          expect(tools.map((tool) => tool.name)).not.toContain('consult_covi');
+          expect(tools).toHaveLength(19);
+          for (const tool of tools) {
+            expect(tool.title).toBeTruthy();
+            expect(typeof tool.annotations?.readOnlyHint).toBe('boolean');
+            expect(typeof tool.annotations?.destructiveHint).toBe('boolean');
+          }
+        } finally {
+          await client.close();
         }
-      } finally {
-        await client.close();
+      }
+
+      const standardTools = toolsByProfile.get('standard') || [];
+      const claudeTools = toolsByProfile.get('claude') || [];
+      expect(claudeTools.map((tool) => tool.name).sort()).toEqual(
+        standardTools.map((tool) => tool.name).sort()
+      );
+
+      const destructiveByName = (tools: typeof standardTools) =>
+        new Map(tools.map((tool) => [tool.name, tool.annotations?.destructiveHint]));
+      const standardDestructive = destructiveByName(standardTools);
+      const claudeDestructive = destructiveByName(claudeTools);
+
+      for (const name of ['create_agent', 'create_test_set', 'create_test_case']) {
+        expect(standardDestructive.get(name)).toBe(false);
+        expect(claudeDestructive.get(name)).toBe(true);
+      }
+      for (const name of ['create_run', 'update_agent', 'update_test_case']) {
+        expect(standardDestructive.get(name)).toBe(true);
+        expect(claudeDestructive.get(name)).toBe(true);
       }
     });
   });

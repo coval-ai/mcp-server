@@ -1,65 +1,103 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CovalApiClient } from '../../src/client.js';
+import type { ToolAnnotationProfile } from '../../src/tools/annotations.js';
 import { registerAllTools } from '../../src/tools/index.js';
 
-describe('registerAllTools', () => {
-  it('registers complete directory metadata for every tool', () => {
-    const toolNames: string[] = [];
-    const registrations = new Map<
-      string,
-      {
-        title?: string;
-        annotations?: {
-          title?: string;
-          readOnlyHint?: boolean;
-          destructiveHint?: boolean;
-          openWorldHint?: boolean;
-        };
-      }
-    >();
-    const server = {
-      registerTool: (
-        name: string,
-        config: {
-          title?: string;
-          annotations?: {
-            title?: string;
-            readOnlyHint?: boolean;
-            destructiveHint?: boolean;
-            openWorldHint?: boolean;
-          };
-        }
-      ) => {
-        toolNames.push(name);
-        registrations.set(name, config);
-      }
-    } as unknown as McpServer;
+interface ToolRegistration {
+  title?: string;
+  annotations?: {
+    title?: string;
+    readOnlyHint?: boolean;
+    destructiveHint?: boolean;
+    idempotentHint?: boolean;
+    openWorldHint?: boolean;
+  };
+}
 
-    registerAllTools(server, new CovalApiClient('customer-api-key'));
+function collectRegistrations(annotationProfile?: ToolAnnotationProfile) {
+  const toolNames: string[] = [];
+  const registrations = new Map<string, ToolRegistration>();
+  const server = {
+    registerTool: (name: string, config: ToolRegistration) => {
+      toolNames.push(name);
+      registrations.set(name, config);
+    },
+  } as unknown as McpServer;
 
-    expect(toolNames).toContain('consult_sofia');
-    expect(toolNames).not.toContain('consult_covi');
-    expect(registrations.get('consult_sofia')?.annotations?.readOnlyHint).toBe(true);
-    expect(registrations.get('list_runs')?.annotations?.readOnlyHint).toBe(true);
-    expect(registrations.get('create_run')?.annotations?.readOnlyHint).toBe(false);
-    expect(registrations.get('create_run')?.annotations?.destructiveHint).toBe(false);
-    expect(registrations.get('create_run')?.annotations?.openWorldHint).toBe(true);
-    expect(registrations.get('update_agent')?.annotations?.destructiveHint).toBe(true);
-    expect(registrations.get('update_test_case')?.annotations?.destructiveHint).toBe(true);
-    expect(toolNames).toHaveLength(19);
-
-    for (const name of toolNames) {
-      const registration = registrations.get(name);
-      expect(registration).toBeDefined();
-      expect(registration?.title).toEqual(expect.any(String));
-      expect(registration?.annotations?.title).toEqual(expect.any(String));
-      expect(registration?.annotations?.title).toBe(registration?.title);
-      expect(typeof registration?.annotations?.readOnlyHint).toBe('boolean');
-      expect(typeof registration?.annotations?.destructiveHint).toBe('boolean');
-      expect(typeof registration?.annotations?.openWorldHint).toBe('boolean');
-      if (name !== 'create_run') {
-        expect(registration?.annotations?.openWorldHint).toBe(false);
-      }
-    }
+  registerAllTools(server, new CovalApiClient('customer-api-key'), {
+    annotationProfile,
   });
+  return { registrations, toolNames };
+}
+
+describe('registerAllTools', () => {
+  it('defaults unspecified callers such as stdio to standard annotations', () => {
+    const { registrations } = collectRegistrations();
+
+    expect(registrations.get('create_agent')?.annotations?.destructiveHint).toBe(false);
+    expect(registrations.get('create_test_set')?.annotations?.destructiveHint).toBe(false);
+    expect(registrations.get('create_test_case')?.annotations?.destructiveHint).toBe(false);
+    expect(registrations.get('create_run')?.annotations?.destructiveHint).toBe(true);
+  });
+
+  it.each([
+    ['standard', false],
+    ['claude', true],
+  ] as const)(
+    'registers complete %s directory metadata for every tool',
+    (annotationProfile, additiveCreatesAreDestructive) => {
+      const { registrations, toolNames } = collectRegistrations(annotationProfile);
+      const readOnlyAnnotations = {
+        readOnlyHint: true,
+        destructiveHint: false,
+        idempotentHint: true,
+        openWorldHint: false,
+      };
+      const additiveWriteAnnotations = {
+        readOnlyHint: false,
+        destructiveHint: additiveCreatesAreDestructive,
+        idempotentHint: false,
+        openWorldHint: false,
+      };
+      const destructiveWriteAnnotations = {
+        readOnlyHint: false,
+        destructiveHint: true,
+        idempotentHint: false,
+        openWorldHint: false,
+      };
+      const expectedAnnotations = new Map([
+        ['list_runs', readOnlyAnnotations],
+        ['get_run', readOnlyAnnotations],
+        ['create_run', { ...destructiveWriteAnnotations, openWorldHint: true }],
+        ['list_agents', readOnlyAnnotations],
+        ['get_agent', readOnlyAnnotations],
+        ['create_agent', additiveWriteAnnotations],
+        ['update_agent', destructiveWriteAnnotations],
+        ['list_test_sets', readOnlyAnnotations],
+        ['get_test_set', readOnlyAnnotations],
+        ['create_test_set', additiveWriteAnnotations],
+        ['list_test_cases', readOnlyAnnotations],
+        ['get_test_case', readOnlyAnnotations],
+        ['create_test_case', additiveWriteAnnotations],
+        ['update_test_case', destructiveWriteAnnotations],
+        ['list_metrics', readOnlyAnnotations],
+        ['get_metric', readOnlyAnnotations],
+        ['list_personas', readOnlyAnnotations],
+        ['get_persona', readOnlyAnnotations],
+        ['consult_sofia', readOnlyAnnotations],
+      ]);
+
+      expect([...toolNames].sort()).toEqual([...expectedAnnotations.keys()].sort());
+      expect(toolNames).toHaveLength(19);
+
+      for (const [name, expected] of expectedAnnotations) {
+        const registration = registrations.get(name);
+        expect(registration).toBeDefined();
+        expect(registration?.annotations).toMatchObject(expected);
+        expect(registration?.title).toEqual(expect.any(String));
+        expect(registration?.annotations?.title).toEqual(expect.any(String));
+        expect(registration?.annotations?.title).toBe(registration?.title);
+      }
+    },
+  );
 });

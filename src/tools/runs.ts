@@ -7,9 +7,17 @@ import {
 } from '../schemas/index.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
-import { readOnlyTool, writeTool } from './annotations.js';
+import {
+  createTool,
+  readOnlyTool,
+  type ToolAnnotationProfile,
+} from './annotations.js';
 
-export function registerRunTools(server: McpServer, client: CovalApiClient) {
+export function registerRunTools(
+  server: McpServer,
+  client: CovalApiClient,
+  { annotationProfile = 'standard' }: { annotationProfile?: ToolAnnotationProfile } = {}
+) {
   server.registerTool(
     'list_runs',
     {
@@ -49,7 +57,11 @@ export function registerRunTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'create_run',
     {
-      ...writeTool('Create run', { openWorldHint: true }),
+      ...createTool('Create run', {
+        annotationProfile,
+        irreversible: true,
+        openWorldHint: true,
+      }),
       description:
         'Launch evaluation: agent + persona + test_set. Optionally add tags for filtering. Poll get_run until status=COMPLETED to see metrics.',
       inputSchema: CreateRunInputSchema.shape,

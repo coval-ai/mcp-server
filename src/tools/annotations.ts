@@ -5,6 +5,8 @@ interface ToolMetadata {
   annotations: ToolAnnotations;
 }
 
+export type ToolAnnotationProfile = 'standard' | 'claude';
+
 export function readOnlyTool(title: string): ToolMetadata {
   return {
     title,
@@ -18,16 +20,24 @@ export function readOnlyTool(title: string): ToolMetadata {
   };
 }
 
-export function writeTool(
+export function createTool(
   title: string,
-  { openWorldHint = false }: { openWorldHint?: boolean } = {}
+  {
+    annotationProfile = 'standard',
+    irreversible = false,
+    openWorldHint = false,
+  }: {
+    annotationProfile?: ToolAnnotationProfile;
+    irreversible?: boolean;
+    openWorldHint?: boolean;
+  } = {}
 ): ToolMetadata {
   return {
     title,
     annotations: {
       title,
       readOnlyHint: false,
-      destructiveHint: false,
+      destructiveHint: irreversible || annotationProfile === 'claude',
       idempotentHint: false,
       openWorldHint,
     },

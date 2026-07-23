@@ -9,7 +9,12 @@ import {
 } from '../schemas/index.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
-import { readOnlyTool, updateTool, writeTool } from './annotations.js';
+import {
+  createTool,
+  readOnlyTool,
+  updateTool,
+  type ToolAnnotationProfile,
+} from './annotations.js';
 
 const REQUIRED_STRING_FIELDS = ['id', 'display_name', 'model_type'] as const;
 const SAFE_NULLABLE_STRING_FIELDS = ['phone_number', 'language'] as const;
@@ -104,7 +109,11 @@ function invalidApiResponse(): CallToolResult {
   return createErrorResponse('INVALID_API_RESPONSE', INVALID_API_RESPONSE_MESSAGE);
 }
 
-export function registerAgentTools(server: McpServer, client: CovalApiClient) {
+export function registerAgentTools(
+  server: McpServer,
+  client: CovalApiClient,
+  { annotationProfile = 'standard' }: { annotationProfile?: ToolAnnotationProfile } = {}
+) {
   server.registerTool(
     'list_agents',
     {
@@ -146,7 +155,7 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
     'create_agent',
     {
-      ...writeTool('Create agent'),
+      ...createTool('Create agent', { annotationProfile }),
       description:
         'Create a new agent configuration. Specify the model type (voice, chat, SMS, websocket) and connection details. API reference: https://docs.coval.dev/api-reference/agents/connect-an-agent',
       inputSchema: CreateAgentInputSchema.shape,
