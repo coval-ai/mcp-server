@@ -36,12 +36,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Creates a new agent configuration in the authenticated Coval organization.",
         "open_world_justification": "Changes only private configuration in the authenticated Coval organization and does not publish externally.",
-        "destructive_justification": "Creates a new configuration without deleting or overwriting an existing agent."
+        "destructive_justification": "Creates persistent organization state that may require manual cleanup if invoked unintentionally."
       }
     },
     "update_agent": {
@@ -84,12 +84,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": true,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Starts a new evaluation run in the authenticated Coval organization.",
         "open_world_justification": "An evaluation may contact a configured agent, phone number, webhook, or other external endpoint.",
-        "destructive_justification": "Creates a new run without deleting or overwriting an existing Coval resource."
+        "destructive_justification": "Launches an evaluation that may contact external systems and consume resources and cannot be undone once started."
       }
     },
     "list_test_sets": {
@@ -120,12 +120,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Creates a new test set in the authenticated Coval organization.",
         "open_world_justification": "Changes only private test data in the authenticated Coval organization and does not publish externally.",
-        "destructive_justification": "Creates a new test set without deleting or overwriting an existing resource."
+        "destructive_justification": "Creates persistent test data that may require manual cleanup if invoked unintentionally."
       }
     },
     "list_test_cases": {
@@ -156,12 +156,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Creates a new test case in a test set in the authenticated Coval organization.",
         "open_world_justification": "Changes only private test data in the authenticated Coval organization and does not publish externally.",
-        "destructive_justification": "Creates a new test case without deleting or overwriting an existing resource."
+        "destructive_justification": "Creates persistent test data that may require manual cleanup if invoked unintentionally."
       }
     },
     "update_test_case": {
@@ -251,7 +251,7 @@
       "user_prompt": "Show the configuration of the agent named Review Voice Agent.",
       "file_attachment_urls": null,
       "tools_triggered": "list_agents, get_agent",
-      "expected_output": "Returns the selected agent's display name, model type, and configured connection details.",
+      "expected_output": "Returns the selected agent's display name, model type, resource ID needed for later Coval tool calls, and only safe non-secret connection status or details. Omits credential-bearing metadata, prompt text, tags, endpoint content, and internal or unnecessary IDs.",
       "expected_output_url": null
     },
     {
@@ -289,11 +289,11 @@
       "expected_output_url": null
     },
     {
-      "description": "Do not trigger Coval for an unsupported external-messaging request.",
-      "user_prompt": "Send my latest evaluation report to the team Slack channel.",
+      "description": "Do not trigger Coval for an unrelated Slack-messaging request.",
+      "user_prompt": "Send \"Lunch has moved to 12:30 PM\" to the #general Slack channel.",
       "file_attachment_urls": null,
       "tools_triggered": null,
-      "expected_output": "The Coval app is not invoked because it cannot send Slack messages or publish evaluation reports.",
+      "expected_output": "The Coval app is not invoked because it cannot send Slack messages.",
       "expected_output_url": null
     },
     {
