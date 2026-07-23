@@ -165,15 +165,6 @@ The same tools, including `consult_sofia`, are available through both supported 
 The hosted connector can access only the Coval organization selected during OAuth consent. Remove
 the connector from the client or revoke its Coval access when it is no longer needed.
 
-### Migrating saved prompts
-
-Sofia was previously named Covi. Version 0.3 replaces the pre-directory `consult_covi` tool with
-`consult_sofia` while keeping the connector name, endpoint, package, OAuth flow, and read-only
-consultation contract unchanged. Remote clients rediscover the canonical tool after reconnecting;
-update any saved prompts or client allowlists that name the previous tool explicitly. Both
-transports continue accepting cached calls to the previous tool name during the migration, but
-they advertise only the canonical 19-tool surface.
-
 ## Development
 
 ```bash
@@ -199,6 +190,7 @@ npm run check:remote
 |----------|----------|---------|-------------|
 | `COVAL_API_KEY` | Stdio | - | Coval API key for the local stdio transport |
 | `COVAL_API_BASE_URL` | No | `https://api.coval.dev/v1` | API base URL |
+| `SOFIA_DELEGATION_ORIGIN` | No | Derived from `COVAL_API_BASE_URL` | Overrides the expected Sofia origin used to validate delegation URLs |
 | `LOG_LEVEL` | No | `info` | Logging level |
 | `MCP_ALLOWED_ORIGINS` | No | Claude and OpenAI web origins | Comma-separated exact browser origins allowed to call `/mcp`; clients that omit `Origin` remain supported |
 | `OPENAI_APPS_CHALLENGE` | No | - | OpenAI plugin-portal domain verification token served as plain text from `/.well-known/openai-apps-challenge` |
