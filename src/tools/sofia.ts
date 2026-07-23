@@ -50,7 +50,6 @@ export function registerSofiaTools(server: McpServer, client: CovalApiClient) {
         });
         return createSuccessResponse({
           contract_version: result.contractVersion,
-          request_id: result.requestId,
           mode: result.mode,
           summary: result.summary,
           evidence: result.evidence,
