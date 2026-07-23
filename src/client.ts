@@ -323,7 +323,10 @@ export class CovalApiClient {
     }
     const payload: unknown = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const error = (payload as { error?: ApiError }).error;
+      const error =
+        typeof payload === 'object' && payload !== null
+          ? (payload as { error?: ApiError }).error
+          : undefined;
       throw new CovalApiError(
         error?.code || 'COVI_UNAVAILABLE',
         error?.message || 'Sofia consultation failed',
