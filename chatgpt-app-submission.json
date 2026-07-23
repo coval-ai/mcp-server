@@ -281,19 +281,19 @@
   ],
   "negative_test_cases": [
     {
-      "description": "Do not expose a resource from an organization outside the OAuth selection.",
-      "user_prompt": "Show me the agent with the supplied ID from another Coval organization.",
+      "description": "Do not trigger Coval for an unrelated calendar-management request.",
+      "user_prompt": "What meetings do I have tomorrow, and can you move my afternoon call?",
       "file_attachment_urls": null,
       "tools_triggered": null,
-      "expected_output": "Returns a not-found or permission error without exposing the resource or guessing another identifier.",
+      "expected_output": "The Coval app is not invoked because it cannot read or change calendar events.",
       "expected_output_url": null
     },
     {
-      "description": "Do not guess or mutate data when a run identifier is malformed.",
-      "user_prompt": "Open run not-a-valid-run-id and explain its results.",
+      "description": "Do not trigger Coval for an unsupported external-messaging request.",
+      "user_prompt": "Send my latest evaluation report to the team Slack channel.",
       "file_attachment_urls": null,
       "tools_triggered": null,
-      "expected_output": "Returns an actionable validation or not-found error and does not retry with a guessed identifier.",
+      "expected_output": "The Coval app is not invoked because it cannot send Slack messages or publish evaluation reports.",
       "expected_output_url": null
     },
     {
