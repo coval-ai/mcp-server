@@ -1,4 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { CovalApiClient } from '../client.js';
 import {
   ListAgentsInputSchema,
@@ -6,9 +7,102 @@ import {
   CreateAgentInputSchema,
   UpdateAgentInputSchema,
 } from '../schemas/index.js';
-import { createSuccessResponse } from '../utils/response.js';
+import { createErrorResponse, createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
 import { readOnlyTool, updateTool, writeTool } from './annotations.js';
+
+const REQUIRED_STRING_FIELDS = ['id', 'display_name', 'model_type'] as const;
+const SAFE_NULLABLE_STRING_FIELDS = ['phone_number', 'language'] as const;
+const REQUIRED_STRING_ARRAY_FIELDS = [
+  'metric_ids',
+  'test_set_ids',
+  'knowledge_base_ids',
+] as const;
+const INVALID_API_RESPONSE_MESSAGE = 'The Coval API returned an invalid response.';
+
+function asRecord(value: unknown): Record<string, unknown> | undefined {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : undefined;
+}
+
+function hasOwn(source: Record<string, unknown>, field: string): boolean {
+  return Object.prototype.hasOwnProperty.call(source, field);
+}
+
+function projectAgent(value: unknown): Record<string, unknown> | undefined {
+  const source = asRecord(value);
+  if (!source) return undefined;
+
+  const projected: Record<string, unknown> = {};
+  for (const field of REQUIRED_STRING_FIELDS) {
+    const fieldValue = source[field];
+    if (typeof fieldValue !== 'string' || fieldValue.trim().length === 0) return undefined;
+    projected[field] = fieldValue;
+  }
+  for (const field of SAFE_NULLABLE_STRING_FIELDS) {
+    if (!hasOwn(source, field)) continue;
+    const fieldValue = source[field];
+    if (typeof fieldValue !== 'string' && fieldValue !== null) return undefined;
+    projected[field] = fieldValue;
+  }
+
+  projected.endpoint_configured =
+    typeof source.endpoint === 'string' && source.endpoint.trim().length > 0;
+
+  for (const field of REQUIRED_STRING_ARRAY_FIELDS) {
+    const fieldValue = source[field];
+    if (!Array.isArray(fieldValue) || !fieldValue.every((item) => typeof item === 'string')) {
+      return undefined;
+    }
+    projected[field] = fieldValue;
+  }
+
+  return projected;
+}
+
+function projectAgentResponse(value: unknown): { agent: Record<string, unknown> } | undefined {
+  const response = asRecord(value);
+  if (!response) return undefined;
+
+  const agent = projectAgent(response.agent);
+  return agent ? { agent } : undefined;
+}
+
+function projectAgentListResponse(value: unknown): {
+  agents: Record<string, unknown>[];
+  next_page_token?: string | null;
+} | undefined {
+  const response = asRecord(value);
+  if (!response || !Array.isArray(response.agents)) return undefined;
+
+  const agents: Record<string, unknown>[] = [];
+  for (const candidate of response.agents) {
+    const agent = projectAgent(candidate);
+    if (!agent) return undefined;
+    agents.push(agent);
+  }
+
+  const projected: {
+    agents: Record<string, unknown>[];
+    next_page_token?: string | null;
+  } = { agents };
+
+  if (hasOwn(response, 'next_page_token')) {
+    if (
+      typeof response.next_page_token !== 'string' &&
+      response.next_page_token !== null
+    ) {
+      return undefined;
+    }
+    projected.next_page_token = response.next_page_token;
+  }
+  return projected;
+}
+
+function invalidApiResponse(): CallToolResult {
+  return createErrorResponse('INVALID_API_RESPONSE', INVALID_API_RESPONSE_MESSAGE);
+}
 
 export function registerAgentTools(server: McpServer, client: CovalApiClient) {
   server.registerTool(
@@ -22,7 +116,8 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
     async (params) => {
       try {
         const result = await client.listAgents(params);
-        return createSuccessResponse(result);
+        const projected = projectAgentListResponse(result);
+        return projected ? createSuccessResponse(projected) : invalidApiResponse();
       } catch (err) {
         return handleApiError(err);
       }
@@ -34,13 +129,14 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
     {
       ...readOnlyTool('Get agent'),
       description:
-        'Get agent config: model_type, phone_number (voice), endpoint (websocket/chat), and display_name.',
+        'Get agent config: model_type, phone_number (voice), whether a top-level endpoint is configured, and display_name.',
       inputSchema: GetAgentInputSchema.shape,
     },
     async (params) => {
       try {
         const result = await client.getAgent(params.agent_id);
-        return createSuccessResponse(result);
+        const projected = projectAgentResponse(result);
+        return projected ? createSuccessResponse(projected) : invalidApiResponse();
       } catch (err) {
         return handleApiError(err);
       }
@@ -58,7 +154,8 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
     async (params) => {
       try {
         const result = await client.createAgent(params);
-        return createSuccessResponse(result);
+        const projected = projectAgentResponse(result);
+        return projected ? createSuccessResponse(projected) : invalidApiResponse();
       } catch (err) {
         return handleApiError(err);
       }
@@ -77,7 +174,8 @@ export function registerAgentTools(server: McpServer, client: CovalApiClient) {
       try {
         const { agent_id, ...updateData } = params;
         const result = await client.updateAgent(agent_id, updateData);
-        return createSuccessResponse(result);
+        const projected = projectAgentResponse(result);
+        return projected ? createSuccessResponse(projected) : invalidApiResponse();
       } catch (err) {
         return handleApiError(err);
       }
