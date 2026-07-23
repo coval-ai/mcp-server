@@ -36,12 +36,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": true
+        "destructiveHint": false
       },
       "justifications": {
         "read_only_justification": "Creates a new agent configuration in the authenticated Coval organization.",
         "open_world_justification": "Changes only private configuration in the authenticated Coval organization and does not publish externally.",
-        "destructive_justification": "Creates persistent organization state that may require manual cleanup if invoked unintentionally."
+        "destructive_justification": "Creates a new private agent configuration without deleting or overwriting existing resources."
       }
     },
     "update_agent": {
@@ -120,12 +120,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": true
+        "destructiveHint": false
       },
       "justifications": {
         "read_only_justification": "Creates a new test set in the authenticated Coval organization.",
         "open_world_justification": "Changes only private test data in the authenticated Coval organization and does not publish externally.",
-        "destructive_justification": "Creates persistent test data that may require manual cleanup if invoked unintentionally."
+        "destructive_justification": "Creates a new private test set without deleting or overwriting existing resources."
       }
     },
     "list_test_cases": {
@@ -156,12 +156,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": true
+        "destructiveHint": false
       },
       "justifications": {
         "read_only_justification": "Creates a new test case in a test set in the authenticated Coval organization.",
         "open_world_justification": "Changes only private test data in the authenticated Coval organization and does not publish externally.",
-        "destructive_justification": "Creates persistent test data that may require manual cleanup if invoked unintentionally."
+        "destructive_justification": "Creates a new private test case without deleting or overwriting existing resources."
       }
     },
     "update_test_case": {
