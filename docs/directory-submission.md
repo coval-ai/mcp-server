@@ -24,7 +24,10 @@ authenticated tools.
 - Connect `https://mcp.coval.dev/mcp` through the target client using OAuth.
 - Select a populated Coval test organization during consent.
 - Confirm tool discovery returns exactly 19 tools with a title and correct read/write annotations
-  for every tool.
+  for every tool. The six write tools (`create_agent`, `create_run`, `create_test_set`,
+  `create_test_case`, `update_agent`, and `update_test_case`) must advertise
+  `readOnlyHint: false` and `destructiveHint: true`. `create_run` alone advertises
+  `openWorldHint: true`; the other write tools advertise `openWorldHint: false`.
 - Exercise every tool with valid inputs. Confirm write tools affect only disposable test data.
 - Confirm `consult_sofia` succeeds for the review organization. Direct API tools and Sofia
   consultation are separate capabilities, so test both.

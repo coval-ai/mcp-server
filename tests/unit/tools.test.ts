@@ -13,6 +13,7 @@ describe('registerAllTools', () => {
           title?: string;
           readOnlyHint?: boolean;
           destructiveHint?: boolean;
+          idempotentHint?: boolean;
           openWorldHint?: boolean;
         };
       }
@@ -26,6 +27,7 @@ describe('registerAllTools', () => {
             title?: string;
             readOnlyHint?: boolean;
             destructiveHint?: boolean;
+            idempotentHint?: boolean;
             openWorldHint?: boolean;
           };
         }
@@ -37,29 +39,50 @@ describe('registerAllTools', () => {
 
     registerAllTools(server, new CovalApiClient('customer-api-key'));
 
-    expect(toolNames).toContain('consult_sofia');
-    expect(toolNames).not.toContain('consult_covi');
-    expect(registrations.get('consult_sofia')?.annotations?.readOnlyHint).toBe(true);
-    expect(registrations.get('list_runs')?.annotations?.readOnlyHint).toBe(true);
-    expect(registrations.get('create_run')?.annotations?.readOnlyHint).toBe(false);
-    expect(registrations.get('create_run')?.annotations?.destructiveHint).toBe(false);
-    expect(registrations.get('create_run')?.annotations?.openWorldHint).toBe(true);
-    expect(registrations.get('update_agent')?.annotations?.destructiveHint).toBe(true);
-    expect(registrations.get('update_test_case')?.annotations?.destructiveHint).toBe(true);
+    const readOnlyAnnotations = {
+      readOnlyHint: true,
+      destructiveHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+    };
+    const writeAnnotations = {
+      readOnlyHint: false,
+      destructiveHint: true,
+      idempotentHint: false,
+      openWorldHint: false,
+    };
+    const expectedAnnotations = new Map([
+      ['list_runs', readOnlyAnnotations],
+      ['get_run', readOnlyAnnotations],
+      ['create_run', { ...writeAnnotations, openWorldHint: true }],
+      ['list_agents', readOnlyAnnotations],
+      ['get_agent', readOnlyAnnotations],
+      ['create_agent', writeAnnotations],
+      ['update_agent', writeAnnotations],
+      ['list_test_sets', readOnlyAnnotations],
+      ['get_test_set', readOnlyAnnotations],
+      ['create_test_set', writeAnnotations],
+      ['list_test_cases', readOnlyAnnotations],
+      ['get_test_case', readOnlyAnnotations],
+      ['create_test_case', writeAnnotations],
+      ['update_test_case', writeAnnotations],
+      ['list_metrics', readOnlyAnnotations],
+      ['get_metric', readOnlyAnnotations],
+      ['list_personas', readOnlyAnnotations],
+      ['get_persona', readOnlyAnnotations],
+      ['consult_sofia', readOnlyAnnotations],
+    ]);
+
+    expect([...toolNames].sort()).toEqual([...expectedAnnotations.keys()].sort());
     expect(toolNames).toHaveLength(19);
 
-    for (const name of toolNames) {
+    for (const [name, expected] of expectedAnnotations) {
       const registration = registrations.get(name);
       expect(registration).toBeDefined();
+      expect(registration?.annotations).toMatchObject(expected);
       expect(registration?.title).toEqual(expect.any(String));
       expect(registration?.annotations?.title).toEqual(expect.any(String));
       expect(registration?.annotations?.title).toBe(registration?.title);
-      expect(typeof registration?.annotations?.readOnlyHint).toBe('boolean');
-      expect(typeof registration?.annotations?.destructiveHint).toBe('boolean');
-      expect(typeof registration?.annotations?.openWorldHint).toBe('boolean');
-      if (name !== 'create_run') {
-        expect(registration?.annotations?.openWorldHint).toBe(false);
-      }
     }
   });
 });
