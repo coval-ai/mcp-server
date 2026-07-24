@@ -46,7 +46,7 @@ function claudeRunPolicyError(modelType: string | undefined) {
   return createErrorResponse(
     'CLAUDE_AGENT_TYPE_UNVERIFIED',
     'The agent type could not be verified, so the run was not created.',
-    'Use get_agent to confirm a MODEL_TYPE_CHAT or MODEL_TYPE_SMS agent.'
+    'Choose a verified MODEL_TYPE_CHAT or MODEL_TYPE_SMS agent.'
   );
 }
 
@@ -101,8 +101,8 @@ export function registerRunTools(
       }),
       description:
         annotationProfile === 'claude'
-          ? 'Launch a text evaluation: agent + persona + test_set. The Claude directory connector supports MODEL_TYPE_CHAT and MODEL_TYPE_SMS agents; it does not start voice, outbound voice, or WebSocket voice runs. Optionally add tags for filtering. Poll get_run until status=COMPLETED to see metrics.'
-          : 'Launch evaluation: agent + persona + test_set. Optionally add tags for filtering. Poll get_run until status=COMPLETED to see metrics.',
+          ? 'Launch a text evaluation for an agent, persona, and test set. The Claude directory connector supports MODEL_TYPE_CHAT and MODEL_TYPE_SMS agents; it does not start voice, outbound voice, or WebSocket voice runs. Optional tags support result filtering.'
+          : 'Launch an evaluation for an agent, persona, and test set. Optional tags support result filtering.',
       inputSchema: CreateRunInputSchema.shape,
     },
     async (params) => {

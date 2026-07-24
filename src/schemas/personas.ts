@@ -9,7 +9,7 @@ export const GetPersonaInputSchema = z.object({
   persona_id: z
     .string()
     .min(1)
-    .describe('The unique ID of the persona to retrieve. Get this from list_personas.'),
+    .describe('The unique ID of the persona to retrieve.'),
 });
 
 export type ListPersonasInput = z.infer<typeof ListPersonasInputSchema>;

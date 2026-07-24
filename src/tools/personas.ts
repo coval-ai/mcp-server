@@ -11,7 +11,7 @@ export function registerPersonaTools(server: McpServer, client: CovalApiClient) 
     {
       ...readOnlyTool('List personas'),
       description:
-        'List personas (simulated users). Each has voice_name, language_code, background_sound (off/office/crowd/airport/etc), and behavior prompt. Required for runs.',
+        'List personas (simulated users). Each has voice_name, language_code, background_sound, and a behavior prompt.',
       inputSchema: ListPersonasInputSchema.shape,
     },
     async (params) => {
