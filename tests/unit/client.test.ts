@@ -243,6 +243,38 @@ describe("CovalApiClient.consultSofia", () => {
     });
   });
 
+  it('retains the compatibility unavailable code when the Sofia request fails locally', async () => {
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(delegationTokenResponse('https://sofia.example.com/v1/external/delegations'))
+      .mockRejectedValueOnce(new DOMException('timed out', 'AbortError'));
+    const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
+
+    await expect(client.consultSofia({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
+      code: 'COVI_UNAVAILABLE',
+      message: 'Sofia consultation timed out or was unavailable',
+    });
+  });
+
+  it('preserves a structured legacy Sofia consultation error from the backend', async () => {
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(delegationTokenResponse('https://sofia.example.com/v1/external/delegations'))
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ error: { code: 'COVI_UNAVAILABLE', message: 'Legacy backend error' } }),
+          { status: 503 },
+        ),
+      );
+    const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
+
+    await expect(client.consultSofia({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
+      code: 'COVI_UNAVAILABLE',
+      message: 'Legacy backend error',
+      status: 503,
+    });
+  });
+
   it('preserves a structured non-OK consultation error', async () => {
     const details = [{ field: 'prompt', description: 'Prompt is required.' }];
     jest

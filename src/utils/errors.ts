@@ -66,6 +66,13 @@ const SAFE_API_ERRORS = new Map<string, { message: string; suggestion?: string }
     },
   ],
   [
+    'SOFIA_UNAVAILABLE',
+    {
+      message: 'Sofia is temporarily unavailable.',
+      suggestion: 'Try the request again later.',
+    },
+  ],
+  [
     'COVI_UNAVAILABLE',
     {
       message: 'Sofia is temporarily unavailable.',
@@ -83,6 +90,12 @@ const SAFE_API_ERRORS = new Map<string, { message: string; suggestion?: string }
     'INVALID_DELEGATION',
     {
       message: 'Sofia delegation could not be validated.',
+    },
+  ],
+  [
+    'INVALID_SOFIA_RESPONSE',
+    {
+      message: 'Sofia returned an invalid response.',
     },
   ],
   [
