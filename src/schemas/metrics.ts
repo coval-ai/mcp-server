@@ -12,7 +12,7 @@ export const GetMetricInputSchema = z.object({
   metric_id: z
     .string()
     .min(1)
-    .describe('The unique ID of the metric to retrieve. Get this from list_metrics.'),
+    .describe('The unique ID of the metric to retrieve.'),
 });
 
 export type ListMetricsInput = z.infer<typeof ListMetricsInputSchema>;

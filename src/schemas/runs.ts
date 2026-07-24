@@ -9,22 +9,22 @@ export const GetRunInputSchema = z.object({
   run_id: z
     .string()
     .min(1)
-    .describe('The unique ID of the run to retrieve. Get this from list_runs.'),
+    .describe('The unique ID of the run to retrieve.'),
 });
 
 export const CreateRunInputSchema = z.object({
   agent_id: z
     .string()
     .min(1)
-    .describe('The unique ID of the agent to evaluate. Get this from list_agents.'),
+    .describe('The unique ID of the agent to evaluate.'),
   persona_id: z
     .string()
     .min(1)
-    .describe('The unique ID of the persona to use. Get this from list_personas.'),
+    .describe('The unique ID of the persona to use.'),
   test_set_id: z
     .string()
     .min(1)
-    .describe('The unique ID of the test set to run against. Get this from list_test_sets.'),
+    .describe('The unique ID of the test set to run against.'),
   metric_ids: z
     .array(z.string())
     .optional()
@@ -52,9 +52,7 @@ export const CreateRunInputSchema = z.object({
     .array(z.string().max(200))
     .max(20)
     .optional()
-    .describe(
-      'Tags for categorizing and filtering the run (max 20 tags, 200 chars each). Filter later with list_runs filter=\'tag="regression"\'.'
-    ),
+    .describe('Tags for categorizing and filtering the run (max 20 tags, 200 chars each).'),
   metadata: z
     .record(z.unknown())
     .optional()

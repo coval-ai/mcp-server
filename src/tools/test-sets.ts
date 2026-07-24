@@ -23,7 +23,7 @@ export function registerTestSetTools(
     {
       ...readOnlyTool('List test sets'),
       description:
-        'List test sets (collections of test cases). Each contains scenarios to run against an agent. Use test_set_id when creating runs.',
+        'List test sets (collections of test cases). Each contains evaluation scenarios and returns its ID, name, description, and test case count.',
       inputSchema: ListTestSetsInputSchema.shape,
     },
     async (params) => {
@@ -41,7 +41,7 @@ export function registerTestSetTools(
     {
       ...readOnlyTool('Get test set'),
       description:
-        'Get test set details: display_name, description, and test case count. Use list_test_cases to see individual scenarios.',
+        'Get test set details: display_name, description, and test case count.',
       inputSchema: GetTestSetInputSchema.shape,
     },
     async (params) => {
@@ -58,8 +58,7 @@ export function registerTestSetTools(
     'create_test_set',
     {
       ...createTool('Create test set', { annotationProfile }),
-      description:
-        'Create a test set to organize test cases. After creating, use create_test_case to add scenarios.',
+      description: 'Create a test set for organizing evaluation scenarios.',
       inputSchema: CreateTestSetInputSchema.shape,
     },
     async (params) => {

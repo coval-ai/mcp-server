@@ -112,7 +112,7 @@ describe('Claude create_run audio policy', () => {
     expect(responsePayload(result)).toEqual({
       error: 'CLAUDE_AGENT_TYPE_UNVERIFIED',
       message: 'The agent type could not be verified, so the run was not created.',
-      suggestion: 'Use get_agent to confirm a MODEL_TYPE_CHAT or MODEL_TYPE_SMS agent.',
+      suggestion: 'Choose a verified MODEL_TYPE_CHAT or MODEL_TYPE_SMS agent.',
     });
   });
 

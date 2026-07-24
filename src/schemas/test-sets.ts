@@ -9,7 +9,7 @@ export const GetTestSetInputSchema = z.object({
   test_set_id: z
     .string()
     .min(1)
-    .describe('The unique ID of the test set to retrieve. Get this from list_test_sets.'),
+    .describe('The unique ID of the test set to retrieve.'),
 });
 
 export const CreateTestSetInputSchema = z.object({

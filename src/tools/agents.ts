@@ -119,7 +119,7 @@ export function registerAgentTools(
     {
       ...readOnlyTool('List agents'),
       description:
-        'List agents (AI systems to evaluate). Model types: VOICE, OUTBOUND_VOICE, SMS, WEBSOCKET, CHAT. Use agent_id when creating runs.',
+        'List agents (AI systems to evaluate). Model types: VOICE, OUTBOUND_VOICE, SMS, WEBSOCKET, and CHAT.',
       inputSchema: ListAgentsInputSchema.shape,
     },
     async (params) => {
@@ -157,7 +157,7 @@ export function registerAgentTools(
     {
       ...createTool('Create agent', { annotationProfile }),
       description:
-        'Create a new agent configuration. Specify the model type (voice, chat, SMS, websocket) and connection details. API reference: https://docs.coval.dev/api-reference/agents/connect-an-agent',
+        'Create a new agent configuration with a model type and connection details.',
       inputSchema: CreateAgentInputSchema.shape,
     },
     async (params) => {
@@ -176,7 +176,7 @@ export function registerAgentTools(
     {
       ...updateTool('Update agent'),
       description:
-        'Update an existing agent configuration. Only provided fields will be updated. API reference: https://docs.coval.dev/api-reference/agents/update-agent',
+        'Update an existing agent configuration. Only provided fields are changed.',
       inputSchema: UpdateAgentInputSchema.shape,
     },
     async (params) => {

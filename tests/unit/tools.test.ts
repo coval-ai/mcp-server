@@ -5,6 +5,7 @@ import { registerAllTools } from '../../src/tools/index.js';
 
 interface ToolRegistration {
   title?: string;
+  description?: string;
   annotations?: {
     title?: string;
     readOnlyHint?: boolean;
@@ -39,6 +40,21 @@ describe('registerAllTools', () => {
     expect(registrations.get('create_test_case')?.annotations?.destructiveHint).toBe(false);
     expect(registrations.get('create_run')?.annotations?.destructiveHint).toBe(true);
   });
+
+  it.each(['standard', 'claude'] as const)(
+    'keeps %s tool descriptions self-contained',
+    (annotationProfile) => {
+      const { registrations } = collectRegistrations(annotationProfile);
+      const externalSource = /https?:\/\//i;
+      const otherToolName = /\b(?:list|get|create|update|consult)_[a-z_]+\b/i;
+
+      for (const registration of registrations.values()) {
+        expect(registration.description).toEqual(expect.any(String));
+        expect(registration.description).not.toMatch(externalSource);
+        expect(registration.description).not.toMatch(otherToolName);
+      }
+    }
+  );
 
   it.each([
     ['standard', false],

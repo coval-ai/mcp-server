@@ -17,7 +17,7 @@ export const GetAgentInputSchema = z.object({
   agent_id: z
     .string()
     .min(1)
-    .describe('The unique ID of the agent to retrieve. Get this from list_agents.'),
+    .describe('The unique ID of the agent to retrieve.'),
 });
 
 export const CreateAgentInputSchema = z.object({
