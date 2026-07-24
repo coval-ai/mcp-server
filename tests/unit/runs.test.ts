@@ -116,6 +116,25 @@ describe('Claude create_run audio policy', () => {
     });
   });
 
+  it('does not create a run when the agent preflight request fails', async () => {
+    const { createRun, getAgent, handler } = registerCreateRunTool('claude', {
+      agent: { model_type: 'MODEL_TYPE_CHAT' },
+    });
+    getAgent.mockRejectedValueOnce(new Error('SYNTHETIC_PREFLIGHT_FAILURE'));
+
+    const result = await handler(createRunParams);
+
+    expect(createRun).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect(responsePayload(result)).toEqual({
+      error: 'INTERNAL_ERROR',
+      message: 'An unexpected error occurred.',
+    });
+    expect(JSON.stringify(responsePayload(result))).not.toContain(
+      'SYNTHETIC_PREFLIGHT_FAILURE'
+    );
+  });
+
   it('preserves standard route behavior without an agent preflight', async () => {
     const { createRun, getAgent, handler } = registerCreateRunTool('standard', {
       agent: { model_type: 'MODEL_TYPE_VOICE' },
