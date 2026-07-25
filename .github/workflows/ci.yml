@@ -21,4 +21,14 @@ jobs:
       - run: npm run typecheck
       - run: npm test -- --runInBand
       - run: npm run build
-      - run: docker build -t coval-mcp:test .
+      - name: Build production image
+        run: |
+          docker build \
+            --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
+            --tag "coval-mcp:${GITHUB_SHA}" \
+            .
+      - name: Qualify production image
+        env:
+          COVAL_MCP_IMAGE: coval-mcp:${{ github.sha }}
+          COVAL_MCP_SOURCE_SHA: ${{ github.sha }}
+        run: npm run qualify:image
