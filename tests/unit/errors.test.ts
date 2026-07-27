@@ -55,6 +55,15 @@ describe('handleApiError', () => {
       },
     ],
     [
+      'SOFIA_UNAVAILABLE',
+      503,
+      {
+        error: 'SOFIA_UNAVAILABLE',
+        message: 'Sofia is temporarily unavailable.',
+        suggestion: 'Try the request again later.',
+      },
+    ],
+    [
       'COVI_UNAVAILABLE',
       503,
       {
@@ -72,6 +81,14 @@ describe('handleApiError', () => {
       },
     ],
     [
+      'INVALID_SOFIA_RESPONSE',
+      502,
+      {
+        error: 'INVALID_SOFIA_RESPONSE',
+        message: 'Sofia returned an invalid response.',
+      },
+    ],
+    [
       'INVALID_COVI_RESPONSE',
       502,
       {
@@ -79,7 +96,7 @@ describe('handleApiError', () => {
         message: 'Sofia returned an invalid response.',
       },
     ],
-  ])('redacts upstream text for the existing %s API error', (code, status, expected) => {
+  ])('redacts upstream text for the supported %s API error', (code, status, expected) => {
     const payload = errorPayload(
       new CovalApiError(
         code,

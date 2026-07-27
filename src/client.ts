@@ -283,7 +283,9 @@ export class CovalApiClient {
    *
    * The customer API key authenticates only the short token exchange. The key is never sent to
    * Sofia; the returned token is audience-, org-, subject-, and time-bound and is used only for
-   * this read-only consultation request.
+   * this read-only consultation request. The existing `COVI_UNAVAILABLE` and
+   * `INVALID_COVI_RESPONSE` machine-readable errors remain stable compatibility identifiers even
+   * though every human-facing message names Sofia.
    */
   async consultSofia(input: {
     prompt: string;
