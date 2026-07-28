@@ -290,11 +290,14 @@ describe('agent tool response projection', () => {
 });
 
 describe('OpenAI agent input validation', () => {
-  it.each([
-    ['one-digit syntactic boundary', '+1'],
-    ['maximum E.164 length', '+123456789012345'],
-  ])('accepts an E.164 number at the %s', (_name, phoneNumber) => {
-    expect(E164PhoneNumberSchema.safeParse(phoneNumber).success).toBe(true);
+  it('accepts the one-digit syntactic boundary allowed by the 1–15 digit schema', () => {
+    expect(E164PhoneNumberSchema.safeParse('+1').success).toBe(true);
+  });
+
+  it('accepts the maximum 15-digit E.164 length', () => {
+    expect(
+      E164PhoneNumberSchema.safeParse('+123456789012345').success,
+    ).toBe(true);
   });
 
   it.each([
