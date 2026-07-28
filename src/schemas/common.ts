@@ -4,9 +4,18 @@ export const ResourceIdSchema = z
   .string()
   .trim()
   .min(1)
-  .max(128);
+  .max(128)
+  .regex(
+    /^[A-Za-z0-9_-]+$/,
+    'Resource ID must contain only letters, digits, hyphens, or underscores',
+  );
 
-export const PaginationInputSchema = z.object({
+export const OpenAiTestSetIdSchema = z
+  .string()
+  .trim()
+  .regex(/^[A-Za-z0-9]{8}$/, 'Test set ID must be exactly eight letters or digits');
+
+const PaginationInputShape = {
   page_size: z
     .number()
     .int()
@@ -29,6 +38,11 @@ export const PaginationInputSchema = z.object({
     .max(1000)
     .optional()
     .describe('Filter expression (e.g., status="COMPLETED")'),
-}).strict();
+};
+
+export const PaginationInputSchema = z.object(PaginationInputShape);
+
+export const StrictPaginationInputSchema = z.object(PaginationInputShape).strict();
 
 export type PaginationInput = z.infer<typeof PaginationInputSchema>;
+export type StrictPaginationInput = z.infer<typeof StrictPaginationInputSchema>;

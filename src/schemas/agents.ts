@@ -1,5 +1,9 @@
 import { z } from 'zod';
-import { PaginationInputSchema, ResourceIdSchema } from './common.js';
+import {
+  PaginationInputSchema,
+  ResourceIdSchema,
+  StrictPaginationInputSchema,
+} from './common.js';
 
 export const ModelTypeEnum = z.enum([
   'MODEL_TYPE_VOICE',
@@ -9,8 +13,12 @@ export const ModelTypeEnum = z.enum([
   'MODEL_TYPE_WEBSOCKET',
 ]);
 
-export const ListAgentsInputSchema = PaginationInputSchema.extend({}).describe(
+export const ListAgentsInputSchema = StrictPaginationInputSchema.extend({}).describe(
   'Input for listing configured agents'
+);
+
+export const LegacyListAgentsInputSchema = PaginationInputSchema.extend({}).describe(
+  'Input for listing configured agents',
 );
 
 export const GetAgentInputSchema = z.object({
@@ -32,10 +40,12 @@ const AgentPromptSchema = z
   .optional()
   .describe('Optional system prompt or instructions for the agent');
 
-const E164PhoneNumberSchema = z
+export const E164PhoneNumberSchema = z
   .string()
-  .regex(/^\+[1-9]\d{9,19}$/)
-  .max(21)
+  .regex(/^\+[1-9]\d{0,14}$/, {
+    message: 'Phone number must use E.164 format with 1 to 15 digits',
+  })
+  .max(16)
   .describe('Phone number in E.164 format, such as +14155550123');
 
 const SipAddressSchema = z
@@ -81,7 +91,7 @@ const AgentBaseShape = {
   prompt: AgentPromptSchema,
 };
 
-export const CreateAgentInputSchema = z.object({
+const CreateAgentInputObjectSchema = z.object({
   ...AgentBaseShape,
   phone_number: VoicePhoneNumberSchema.optional().describe(
     'Required for VOICE (E.164 or SIP) and SMS (E.164 only); omit for other model types',
@@ -91,6 +101,76 @@ export const CreateAgentInputSchema = z.object({
   ),
 }).strict().describe(
   'Create an agent with the connection field required by its model type',
+);
+
+const RefinedCreateAgentInputSchema = CreateAgentInputObjectSchema.superRefine(
+  (params, ctx): void => {
+    let message: string | undefined;
+    let path: ['phone_number'] | ['endpoint'] | undefined;
+
+    switch (params.model_type) {
+      case 'MODEL_TYPE_VOICE':
+        if (!params.phone_number) {
+          message = 'MODEL_TYPE_VOICE requires an E.164 phone number or SIP address.';
+          path = ['phone_number'];
+        } else if (params.endpoint) {
+          message = 'MODEL_TYPE_VOICE does not use endpoint.';
+          path = ['endpoint'];
+        }
+        break;
+      case 'MODEL_TYPE_SMS':
+        if (
+          !params.phone_number ||
+          !E164PhoneNumberSchema.safeParse(params.phone_number).success
+        ) {
+          message = 'MODEL_TYPE_SMS requires an E.164 phone number.';
+          path = ['phone_number'];
+        } else if (params.endpoint) {
+          message = 'MODEL_TYPE_SMS does not use endpoint.';
+          path = ['endpoint'];
+        }
+        break;
+      case 'MODEL_TYPE_OUTBOUND_VOICE':
+      case 'MODEL_TYPE_CHAT':
+        if (!params.endpoint || !usesProtocol(params.endpoint, ['http:', 'https:'])) {
+          message = `${params.model_type} requires an HTTP(S) endpoint.`;
+          path = ['endpoint'];
+        } else if (params.phone_number) {
+          message = `${params.model_type} does not use phone_number.`;
+          path = ['phone_number'];
+        }
+        break;
+      case 'MODEL_TYPE_WEBSOCKET':
+        if (!params.endpoint || !usesProtocol(params.endpoint, ['wss:'])) {
+          message = 'MODEL_TYPE_WEBSOCKET requires a secure WSS endpoint.';
+          path = ['endpoint'];
+        } else if (params.phone_number) {
+          message = 'MODEL_TYPE_WEBSOCKET does not use phone_number.';
+          path = ['phone_number'];
+        }
+        break;
+      default: {
+        const exhaustiveModelType: never = params.model_type;
+        void exhaustiveModelType;
+      }
+    }
+
+    if (message && path) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message,
+        path,
+      });
+    }
+  },
+);
+
+// The MCP SDK identifies object schemas through `shape` when serializing tools/list. Preserve the
+// underlying object's shape on the refined schema so the same schema both advertises every input
+// field and rejects invalid model-specific combinations before the tool handler runs.
+export const CreateAgentInputSchema = Object.assign(
+  RefinedCreateAgentInputSchema,
+  { shape: CreateAgentInputObjectSchema.shape },
 );
 
 export const UpdateAgentInputSchema = z.object({
@@ -103,7 +183,7 @@ export const UpdateAgentInputSchema = z.object({
     .optional()
     .describe('New display name'),
   phone_number: VoicePhoneNumberSchema.optional().describe(
-    'New E.164 phone number or SIP address for a VOICE or SMS agent',
+    'New E.164 phone number for a VOICE or SMS agent, or SIP address for a VOICE agent',
   ),
   outbound_voice_endpoint: HttpEndpointSchema
     .optional()
@@ -161,6 +241,7 @@ export const LegacyUpdateAgentInputSchema = z.object({
 });
 
 export type ListAgentsInput = z.infer<typeof ListAgentsInputSchema>;
+export type LegacyListAgentsInput = z.infer<typeof LegacyListAgentsInputSchema>;
 export type GetAgentInput = z.infer<typeof GetAgentInputSchema>;
 export type CreateAgentInput = z.infer<typeof CreateAgentInputSchema>;
 export type UpdateAgentInput = z.infer<typeof UpdateAgentInputSchema>;

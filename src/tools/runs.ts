@@ -2,9 +2,12 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CovalApiClient } from '../client.js';
 import {
   ListRunsInputSchema,
+  LegacyListRunsInputSchema,
   GetRunInputSchema,
   CreateRunInputSchema,
   LegacyCreateRunInputSchema,
+  type ListRunsInput,
+  type LegacyListRunsInput,
   type CreateRunInput,
   type LegacyCreateRunInput,
 } from '../schemas/index.js';
@@ -71,9 +74,12 @@ export function registerRunTools(
       ...readOnlyTool('List runs'),
       description:
         'List evaluation runs. Each run = agent + persona + test_set. Returns run_id, status, tags. Filter by tag: filter=\'tag="regression"\'.',
-      inputSchema: ListRunsInputSchema,
+      inputSchema:
+        inputProfile === 'openai'
+          ? ListRunsInputSchema
+          : LegacyListRunsInputSchema,
     },
-    async (params) => {
+    async (params: ListRunsInput | LegacyListRunsInput) => {
       try {
         const result = await client.listRuns(params);
         return createSuccessResponse(result);

@@ -29,8 +29,12 @@ export function registerAllTools(
   registerAgentTools(server, client, createToolOptions);
   registerTestSetTools(server, client, createToolOptions);
   registerTestCaseTools(server, client, createToolOptions);
-  registerMetricTools(server, client);
-  registerPersonaTools(server, client);
+  registerMetricTools(server, client, {
+    inputProfile: options.inputProfile,
+  });
+  registerPersonaTools(server, client, {
+    inputProfile: options.inputProfile,
+  });
   if (options.includeSofia ?? true) {
     registerSofiaTools(server, client, {
       inputProfile: options.inputProfile,

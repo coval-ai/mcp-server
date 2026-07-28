@@ -28,11 +28,56 @@ function rewriteMessage(message: unknown): unknown {
   };
 }
 
+function rewriteOpenAiMessage(message: unknown): unknown {
+  if (typeof message !== 'object' || message === null) return message;
+
+  const request = message as JsonRpcToolCall;
+  if (
+    request.method !== 'tools/call' ||
+    typeof request.params !== 'object' ||
+    request.params === null
+  ) {
+    return message;
+  }
+
+  const params = request.params as { name?: unknown; arguments?: unknown };
+  if (!['consult_covi', 'consult_sofia'].includes(String(params.name))) {
+    return message;
+  }
+
+  const legacyArguments =
+    typeof params.arguments === 'object' && params.arguments !== null
+      ? (params.arguments as Record<string, unknown>)
+      : {};
+
+  return {
+    ...request,
+    params: {
+      ...(request.params as Record<string, unknown>),
+      name: 'consult_sofia',
+      arguments: {
+        ...(typeof legacyArguments.prompt === 'string'
+          ? { prompt: legacyArguments.prompt }
+          : {}),
+      },
+    },
+  };
+}
+
 /**
  * Keep cached pre-rename clients working without advertising a second tool in tools/list.
  */
 export function rewriteLegacyToolCalls(payload: unknown): unknown {
   return Array.isArray(payload) ? payload.map(rewriteMessage) : rewriteMessage(payload);
+}
+
+/**
+ * Keep cached OpenAI action snapshots working while enforcing the current prompt-only Sofia input.
+ */
+export function rewriteOpenAiToolCalls(payload: unknown): unknown {
+  return Array.isArray(payload)
+    ? payload.map(rewriteOpenAiMessage)
+    : rewriteOpenAiMessage(payload);
 }
 
 /**

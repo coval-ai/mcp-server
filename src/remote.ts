@@ -11,7 +11,10 @@ import { verifyClerkToken } from '@clerk/mcp-tools/server';
 import type { AuthInfo } from '@modelcontextprotocol/sdk/server/auth/types.js';
 import cors from 'cors';
 import express, { type NextFunction, type Request, type Response } from 'express';
-import { rewriteLegacyToolCalls } from './compatibility.js';
+import {
+  rewriteLegacyToolCalls,
+  rewriteOpenAiToolCalls,
+} from './compatibility.js';
 import { ManagedApiKeyError, ManagedApiKeyProvider } from './managed-api-key.js';
 import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
 import type { ToolAnnotationProfile } from './tools/annotations.js';
@@ -187,10 +190,14 @@ export async function createRemoteApp(): Promise<express.Express> {
             identity.clerkUserId
           );
         }
-        req.body = rewriteLegacyToolCalls(req.body);
+        const isOpenAi = annotationProfile === 'standard';
+        req.body =
+          isOpenAi
+            ? rewriteOpenAiToolCalls(req.body)
+            : rewriteLegacyToolCalls(req.body);
         const server = createMcpServer({
           annotationProfile,
-          inputProfile: annotationProfile === 'standard' ? 'openai' : 'legacy',
+          inputProfile: isOpenAi ? 'openai' : 'legacy',
           apiKey,
           includeSofia: true,
         });

@@ -1,7 +1,13 @@
+import { Client as McpClient } from '@modelcontextprotocol/sdk/client/index.js';
+import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { jest } from '@jest/globals';
 import { CovalApiClient } from '../../src/client.js';
+import {
+  CreateAgentInputSchema,
+  E164PhoneNumberSchema,
+} from '../../src/schemas/agents.js';
 import { registerAgentTools } from '../../src/tools/agents.js';
 
 type ToolHandler = (params: Record<string, unknown>) => Promise<CallToolResult>;
@@ -283,6 +289,144 @@ describe('agent tool response projection', () => {
   );
 });
 
+describe('OpenAI agent input validation', () => {
+  it('accepts the one-digit syntactic boundary allowed by the 1–15 digit schema', () => {
+    expect(E164PhoneNumberSchema.safeParse('+1').success).toBe(true);
+  });
+
+  it('accepts the maximum 15-digit E.164 length', () => {
+    expect(
+      E164PhoneNumberSchema.safeParse('+123456789012345').success,
+    ).toBe(true);
+  });
+
+  it.each([
+    ['without any digits', '+'],
+    ['above the E.164 maximum', '+1234567890123456'],
+    ['a zero-leading country code', '+0123456789'],
+  ])('rejects an E.164 number %s', (_name, phoneNumber) => {
+    expect(E164PhoneNumberSchema.safeParse(phoneNumber).success).toBe(false);
+  });
+
+  it.each([
+    {
+      display_name: 'Voice agent',
+      model_type: 'MODEL_TYPE_VOICE',
+      phone_number: 'sip:reviewer@invalid.example',
+    },
+    {
+      display_name: 'SMS agent',
+      model_type: 'MODEL_TYPE_SMS',
+      phone_number: '+14155550123',
+    },
+    {
+      display_name: 'Outbound voice agent',
+      model_type: 'MODEL_TYPE_OUTBOUND_VOICE',
+      endpoint: 'https://voice.example.com/start',
+    },
+    {
+      display_name: 'Chat agent',
+      model_type: 'MODEL_TYPE_CHAT',
+      endpoint: 'https://chat.example.com/messages',
+    },
+    {
+      display_name: 'WebSocket agent',
+      model_type: 'MODEL_TYPE_WEBSOCKET',
+      endpoint: 'wss://voice.example.com/socket',
+    },
+  ])('accepts the connection field for $model_type', (params) => {
+    expect(CreateAgentInputSchema.safeParse(params).success).toBe(true);
+  });
+
+  it.each([
+    [
+      {
+        display_name: 'Voice agent',
+        model_type: 'MODEL_TYPE_VOICE',
+      },
+      'MODEL_TYPE_VOICE requires an E.164 phone number or SIP address.',
+    ],
+    [
+      {
+        display_name: 'Voice agent',
+        model_type: 'MODEL_TYPE_VOICE',
+        phone_number: '+14155550123',
+        endpoint: 'https://voice.example.com/start',
+      },
+      'MODEL_TYPE_VOICE does not use endpoint.',
+    ],
+    [
+      {
+        display_name: 'SMS agent',
+        model_type: 'MODEL_TYPE_SMS',
+        phone_number: 'sip:reviewer@invalid.example',
+      },
+      'MODEL_TYPE_SMS requires an E.164 phone number.',
+    ],
+    [
+      {
+        display_name: 'SMS agent',
+        model_type: 'MODEL_TYPE_SMS',
+        phone_number: '+14155550123',
+        endpoint: 'https://sms.example.com/messages',
+      },
+      'MODEL_TYPE_SMS does not use endpoint.',
+    ],
+    [
+      {
+        display_name: 'Chat agent',
+        model_type: 'MODEL_TYPE_CHAT',
+        endpoint: 'wss://chat.example.com/socket',
+      },
+      'MODEL_TYPE_CHAT requires an HTTP(S) endpoint.',
+    ],
+    [
+      {
+        display_name: 'WebSocket agent',
+        model_type: 'MODEL_TYPE_WEBSOCKET',
+        endpoint: 'https://voice.example.com/socket',
+      },
+      'MODEL_TYPE_WEBSOCKET requires a secure WSS endpoint.',
+    ],
+  ])('rejects mismatched model-specific config', (params, message) => {
+    const result = CreateAgentInputSchema.safeParse(params);
+
+    expect(result.success).toBe(false);
+    if (result.success) throw new Error('Expected schema validation to fail');
+    expect(result.error.issues.map((issue) => issue.message)).toContain(message);
+  });
+
+  it('advertises the complete create_agent object schema', async () => {
+    const server = new McpServer({ name: 'agent-schema-test', version: '1.0.0' });
+    const client = {
+      createAgent: jest.fn(async () => ({ agent: upstreamAgent(null) })),
+    } as unknown as CovalApiClient;
+    registerAgentTools(server, client, { inputProfile: 'openai' });
+
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const mcpClient = new McpClient({
+      name: 'agent-schema-test-client',
+      version: '1.0.0',
+    });
+
+    try {
+      await Promise.all([
+        server.connect(serverTransport),
+        mcpClient.connect(clientTransport),
+      ]);
+      const { tools } = await mcpClient.listTools();
+      const createAgent = tools.find((tool) => tool.name === 'create_agent');
+
+      expect(createAgent?.inputSchema.additionalProperties).toBe(false);
+      expect(Object.keys(createAgent?.inputSchema.properties || {}).sort()).toEqual(
+        ['display_name', 'endpoint', 'model_type', 'phone_number', 'prompt'].sort(),
+      );
+    } finally {
+      await Promise.all([mcpClient.close(), server.close()]);
+    }
+  });
+});
+
 describe('create_agent payload construction', () => {
   it.each([
     [
@@ -307,6 +451,30 @@ describe('create_agent payload construction', () => {
         display_name: 'Chat agent',
         model_type: 'MODEL_TYPE_CHAT',
         metadata: { chat_endpoint: 'https://chat.example.com/messages' },
+      },
+    ],
+    [
+      {
+        display_name: 'Outbound voice agent',
+        model_type: 'MODEL_TYPE_OUTBOUND_VOICE',
+        endpoint: 'https://voice.example.com/start',
+      },
+      {
+        display_name: 'Outbound voice agent',
+        model_type: 'MODEL_TYPE_OUTBOUND_VOICE',
+        endpoint: 'https://voice.example.com/start',
+      },
+    ],
+    [
+      {
+        display_name: 'SMS agent',
+        model_type: 'MODEL_TYPE_SMS',
+        phone_number: '+14155550123',
+      },
+      {
+        display_name: 'SMS agent',
+        model_type: 'MODEL_TYPE_SMS',
+        phone_number: '+14155550123',
       },
     ],
     [
@@ -364,24 +532,33 @@ describe('create_agent payload construction', () => {
       'MODEL_TYPE_WEBSOCKET requires a secure WSS endpoint.',
     ],
   ])('rejects incomplete model-specific config before the API call', async (params, message) => {
-    let handler: ToolHandler | undefined;
-    const server = {
-      registerTool: (name: string, _config: unknown, registeredHandler: ToolHandler) => {
-        if (name === 'create_agent') handler = registeredHandler;
-      },
-    } as unknown as McpServer;
+    const server = new McpServer({ name: 'agent-validation-test', version: '1.0.0' });
     const createAgent = jest.fn(async () => ({ agent: upstreamAgent(null) }));
     const client = { createAgent } as unknown as CovalApiClient;
-
     registerAgentTools(server, client, { inputProfile: 'openai' });
-    const result = await handler!(params);
 
-    expect(createAgent).not.toHaveBeenCalled();
-    expect(result.isError).toBe(true);
-    expect(responsePayload(result)).toMatchObject({
-      error: 'INVALID_AGENT_CONFIGURATION',
-      message,
+    const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
+    const mcpClient = new McpClient({
+      name: 'agent-validation-test-client',
+      version: '1.0.0',
     });
+
+    try {
+      await Promise.all([
+        server.connect(serverTransport),
+        mcpClient.connect(clientTransport),
+      ]);
+      const result = await mcpClient.callTool({
+        name: 'create_agent',
+        arguments: params,
+      });
+
+      expect(result.isError).toBe(true);
+      expect(JSON.stringify(result.content)).toContain(message);
+      expect(createAgent).not.toHaveBeenCalled();
+    } finally {
+      await Promise.all([mcpClient.close(), server.close()]);
+    }
   });
 });
 
@@ -417,6 +594,64 @@ describe('update_agent payload construction', () => {
         authorization_header: 'Bearer preserved',
         chat_endpoint: 'https://new.example.com/messages',
       },
+    });
+  });
+
+  it.each([
+    ['a SIP address', 'sip:reviewer@invalid.example'],
+    ['a malformed number', 'not-a-phone-number'],
+    ['an overlong number', '+1234567890123456'],
+  ])('rejects %s when updating an SMS agent', async (_name, phoneNumber) => {
+    let handler: ToolHandler | undefined;
+    const server = {
+      registerTool: (name: string, _config: unknown, registeredHandler: ToolHandler) => {
+        if (name === 'update_agent') handler = registeredHandler;
+      },
+    } as unknown as McpServer;
+    const getAgent = jest.fn(async () => ({
+      agent: { model_type: 'MODEL_TYPE_SMS' },
+    }));
+    const updateAgent = jest.fn(async () => ({ agent: upstreamAgent(null) }));
+    const client = { getAgent, updateAgent } as unknown as CovalApiClient;
+
+    registerAgentTools(server, client, { inputProfile: 'openai' });
+    const result = await handler!({
+      agent_id: 'agent_example',
+      phone_number: phoneNumber,
+    });
+
+    expect(getAgent).toHaveBeenCalledWith('agent_example');
+    expect(updateAgent).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect(responsePayload(result)).toMatchObject({
+      error: 'INVALID_AGENT_CONFIGURATION',
+      message: 'SMS agents require an E.164 phone number.',
+    });
+  });
+
+  it('accepts an E.164 number when updating an SMS agent', async () => {
+    let handler: ToolHandler | undefined;
+    const server = {
+      registerTool: (name: string, _config: unknown, registeredHandler: ToolHandler) => {
+        if (name === 'update_agent') handler = registeredHandler;
+      },
+    } as unknown as McpServer;
+    const getAgent = jest.fn(async () => ({
+      agent: { model_type: 'MODEL_TYPE_SMS' },
+    }));
+    const updateAgent = jest.fn(async () => ({ agent: upstreamAgent(null) }));
+    const client = { getAgent, updateAgent } as unknown as CovalApiClient;
+
+    registerAgentTools(server, client, { inputProfile: 'openai' });
+    const result = await handler!({
+      agent_id: 'agent_example',
+      phone_number: '+14155550123',
+    });
+
+    expect(result.isError).not.toBe(true);
+    expect(getAgent).toHaveBeenCalledWith('agent_example');
+    expect(updateAgent).toHaveBeenCalledWith('agent_example', {
+      phone_number: '+14155550123',
     });
   });
 });

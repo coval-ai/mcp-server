@@ -1,30 +1,27 @@
 import { z } from 'zod';
-import { PaginationInputSchema } from './common.js';
+import {
+  OpenAiTestSetIdSchema,
+  PaginationInputSchema,
+  ResourceIdSchema,
+  StrictPaginationInputSchema,
+} from './common.js';
 
-export const ListTestCasesInputSchema = PaginationInputSchema.omit({
+export const ListTestCasesInputSchema = StrictPaginationInputSchema.omit({
   filter: true,
 }).extend({
-  test_set_id: z
-    .string()
-    .length(8)
+  test_set_id: OpenAiTestSetIdSchema
     .optional()
     .describe('Return only test cases in this test set.'),
 }).strict().describe('Input for listing test cases');
 
 export const GetTestCaseInputSchema = z.object({
-  test_case_id: z
-    .string()
-    .trim()
-    .min(1)
-    .max(128)
-    .describe('The unique ID of the test case to retrieve.'),
+  test_case_id: ResourceIdSchema.describe('The unique ID of the test case to retrieve.'),
 }).strict();
 
 export const CreateTestCaseInputSchema = z.object({
-  test_set_id: z
-    .string()
-    .length(8)
-    .describe('The 8-character ID of the test set to add this test case to.'),
+  test_set_id: OpenAiTestSetIdSchema.describe(
+    'The eight-character ID of the test set to add this test case to.',
+  ),
   input_str: z
     .string()
     .trim()
@@ -48,12 +45,7 @@ export const CreateTestCaseInputSchema = z.object({
 }).strict();
 
 export const UpdateTestCaseInputSchema = z.object({
-  test_case_id: z
-    .string()
-    .trim()
-    .min(1)
-    .max(128)
-    .describe('The unique ID of the test case to update.'),
+  test_case_id: ResourceIdSchema.describe('The unique ID of the test case to update.'),
   input_str: z
     .string()
     .trim()
@@ -109,10 +101,7 @@ export const LegacyCreateTestCaseInputSchema = z.object({
 });
 
 export const LegacyUpdateTestCaseInputSchema = z.object({
-  test_case_id: z
-    .string()
-    .min(1)
-    .describe('The unique ID of the test case to update.'),
+  test_case_id: ResourceIdSchema.describe('The unique ID of the test case to update.'),
   input_str: z.string().min(1).optional().describe('Updated test input or scenario.'),
   expected_behaviors: z
     .array(z.string())

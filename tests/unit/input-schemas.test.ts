@@ -3,9 +3,54 @@ import {
   CreateRunInputSchema,
   CreateTestCaseInputSchema,
   CreateTestSetInputSchema,
+  GetTestSetInputSchema,
+  LegacyGetTestSetInputSchema,
+  ListTestCasesInputSchema,
+  PaginationInputSchema,
+  ResourceIdSchema,
+  StrictPaginationInputSchema,
   UpdateAgentInputSchema,
   UpdateTestCaseInputSchema,
 } from '../../src/schemas/index.js';
+
+describe('shared public input boundaries', () => {
+  it('accepts safe resource IDs and rejects path or query delimiters', () => {
+    expect(ResourceIdSchema.safeParse('agent_Example-123').success).toBe(true);
+    for (const unsafeId of ['../agents', 'agent/id', 'agent?id', 'agent#fragment']) {
+      expect(ResourceIdSchema.safeParse(unsafeId).success).toBe(false);
+    }
+  });
+
+  it('keeps OpenAI pagination strict and strips unknown legacy pagination keys', () => {
+    const input = {
+      page_size: 10,
+      legacy_extension: 'ignored',
+    };
+    const result = PaginationInputSchema.safeParse(input);
+
+    expect(StrictPaginationInputSchema.safeParse(input).success).toBe(false);
+    expect(result.success).toBe(true);
+    if (result.success) {
+      expect(result.data).toEqual({ page_size: 10 });
+    }
+  });
+
+  it('keeps eight-character test-set IDs specific to the OpenAI profile', () => {
+    expect(GetTestSetInputSchema.safeParse({ test_set_id: 'Ab12Cd34' }).success).toBe(true);
+    expect(
+      GetTestSetInputSchema.safeParse({ test_set_id: 'test_set_example' }).success,
+    ).toBe(false);
+    expect(
+      LegacyGetTestSetInputSchema.safeParse({ test_set_id: 'test_set_example' }).success,
+    ).toBe(true);
+  });
+
+  it('rejects filter-breaking OpenAI test-set IDs', () => {
+    expect(
+      ListTestCasesInputSchema.safeParse({ test_set_id: 'Ab12Cd3"' }).success,
+    ).toBe(false);
+  });
+});
 
 describe('public write input schemas', () => {
   it('advertises create_agent as an MCP-serializable object with bounded connection fields', () => {
@@ -14,7 +59,7 @@ describe('public write input schemas', () => {
         display_name: 'Reviewer voice agent',
         model_type: 'MODEL_TYPE_VOICE',
       }).success,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       CreateAgentInputSchema.safeParse({
         display_name: 'Reviewer voice agent',
@@ -27,7 +72,7 @@ describe('public write input schemas', () => {
         display_name: 'Reviewer chat agent',
         model_type: 'MODEL_TYPE_CHAT',
       }).success,
-    ).toBe(true);
+    ).toBe(false);
     expect(
       CreateAgentInputSchema.safeParse({
         display_name: 'Reviewer chat agent',

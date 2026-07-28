@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { allowedOrigins, createRemoteApp, organizationIdFromVerifiedToken } from '../../src/remote.js';
+import { findOpenAdditionalProperties } from './helpers/json-schema.js';
 
 const REMOTE_ENDPOINTS = [
   { path: '/mcp', annotationProfile: 'standard' },
@@ -360,29 +361,3 @@ describe('remote OAuth organization binding', () => {
     });
   });
 });
-
-function findOpenAdditionalProperties(
-  value: unknown,
-  path = '$',
-  findings: string[] = [],
-): string[] {
-  if (!value || typeof value !== 'object') return findings;
-  if (Array.isArray(value)) {
-    value.forEach((item, index) =>
-      findOpenAdditionalProperties(item, `${path}[${index}]`, findings),
-    );
-    return findings;
-  }
-
-  const record = value as Record<string, unknown>;
-  if (
-    'additionalProperties' in record &&
-    record.additionalProperties !== false
-  ) {
-    findings.push(`${path}.additionalProperties`);
-  }
-  for (const [key, nested] of Object.entries(record)) {
-    findOpenAdditionalProperties(nested, `${path}.${key}`, findings);
-  }
-  return findings;
-}

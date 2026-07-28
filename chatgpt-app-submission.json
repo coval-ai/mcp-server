@@ -240,34 +240,34 @@
   "test_cases": [
     {
       "description": "Create, inspect, and safely refine a disposable voice agent.",
-      "user_prompt": "Create a disposable VOICE (MODEL_TYPE_VOICE) agent named OpenAI Reviewer Agent <current UTC timestamp formatted YYYYMMDDHHMMSS> using SIP address sip:openai-reviewer-<same YYYYMMDDHHMMSS timestamp>@invalid.example and prompt 'Disposable reviewer fixture; do not contact users.' Retrieve the new agent, then update only its display name by appending ' — Verified'. Do not start a run.",
+      "user_prompt": "Generate one fresh UUID v4 for this attempt. Create a disposable VOICE (MODEL_TYPE_VOICE) agent named OpenAI Reviewer Agent <that UUID> using SIP address sip:openai-reviewer-<that same UUID>@invalid.example and prompt 'Disposable reviewer fixture; do not contact users.' Retrieve the new agent, then update only its display name by appending ' — Verified'. Do not start a run.",
       "file_attachment_urls": null,
       "tools_triggered": "create_agent, get_agent, update_agent",
-      "expected_output": "After the required confirmations, creates exactly one private voice-agent configuration with the required non-routable SIP address, retrieves it, and changes only its display name. Reports the resulting display name, model type, and endpoint-configured status without starting a run or contacting the SIP address.",
+      "expected_output": "After the required confirmations, creates exactly one private voice-agent configuration using one fresh collision-resistant UUID and the required non-routable SIP address, retrieves it, and changes only its display name. Reports the resulting display name, model type, and endpoint-configured status without starting a run or contacting the SIP address.",
       "expected_output_url": null
     },
     {
       "description": "Inspect the stable reviewer evaluation setup without changing it.",
-      "user_prompt": "Find and retrieve the test set Directory Review Baseline and list only the test cases in that test set. Also retrieve the metric Directory Review: Helpful and Safe and the persona Standard Customer. Summarize the scenarios, expected behaviors, metric purpose, and persona behavior without changing anything.",
+      "user_prompt": "Retrieve the test set with reviewer fixture ID <PORTAL_TEST_SET_ID> and list only the test cases in that test set. Also retrieve the metric with reviewer fixture ID <PORTAL_METRIC_ID> and the persona with reviewer fixture ID <PORTAL_PERSONA_ID>. Summarize the scenarios, expected behaviors, metric purpose, and persona behavior without changing anything.",
       "file_attachment_urls": null,
-      "tools_triggered": "list_test_sets, get_test_set, list_test_cases, list_metrics, get_metric, list_personas, get_persona",
-      "expected_output": "Resolves the uniquely named reviewer fixtures and returns a concise summary of the two baseline scenarios and their expected behaviors, the metric's purpose, and the persona's behavior. Performs no writes and omits credentials and unrelated internal fields.",
+      "tools_triggered": "get_test_set, list_test_cases, get_metric, get_persona",
+      "expected_output": "Retrieves Directory Review Baseline with exactly two cases: safe, scoped mild-headache guidance with escalation signs; and concise routine-appointment preparation without inventing a booking. Identifies Directory Review: Helpful and Safe as checking helpful, safe, appropriately scoped replies, and Standard Customer as a cooperative, on-topic en-US persona that waits for the agent. Performs no writes and omits credentials and unrelated internal fields.",
       "expected_output_url": null
     },
     {
       "description": "Create and refine independent disposable evaluation content.",
-      "user_prompt": "Create a SCENARIO test set named OpenAI Reviewer Billing <current UTC timestamp formatted YYYYMMDDHHMMSS>. Add exactly one test case where a customer disputes a duplicate charge, with expected behaviors to verify the duplicate and explain the next step. Then update only that test case's description to 'OpenAI reviewer disposable fixture.'",
+      "user_prompt": "Generate one fresh UUID v4 for this attempt. Create a SCENARIO test set named OpenAI Reviewer Billing <that UUID>. Add exactly one test case where a customer disputes a duplicate charge, with expected behaviors to verify the duplicate and explain the next step. Then update only that test case's description to 'OpenAI reviewer disposable fixture.'",
       "file_attachment_urls": null,
       "tools_triggered": "create_test_set, create_test_case, update_test_case",
-      "expected_output": "After the required confirmations, creates exactly one uniquely named test set and one linked test case, then applies the requested description. Reports the resulting resource names without depending on another test case or changing anything else.",
+      "expected_output": "After the required confirmations, creates exactly one test set named with a fresh collision-resistant UUID and one linked test case, then applies the requested description. Reports the resulting resource names without depending on another test case or changing anything else.",
       "expected_output_url": null
     },
     {
-      "description": "Launch one evaluation using stable, pre-existing reviewer fixtures.",
-      "user_prompt": "Find and retrieve the agent Review Voice Agent, test set Directory Review Baseline, persona Standard Customer, and metric Directory Review: Helpful and Safe. After confirmation, launch exactly one evaluation using those four resources with tags openai-review and directory-review. Retrieve the new run once and report its current status.",
+      "description": "Inspect a stable reviewer agent and completed run without launching work.",
+      "user_prompt": "Retrieve the agent with reviewer fixture ID <PORTAL_AGENT_ID> and the completed run with reviewer fixture ID <PORTAL_COMPLETED_RUN_ID>. Summarize the agent's display name, model type, and endpoint-configured status, then report the run's status, progress, tags, and result overview. Do not create or update anything and do not start a run.",
       "file_attachment_urls": null,
-      "tools_triggered": "list_agents, get_agent, list_test_sets, get_test_set, list_personas, get_persona, list_metrics, get_metric, create_run, get_run",
-      "expected_output": "Resolves only the named stable fixtures, launches exactly one evaluation after confirmation, and reports its identifier and current status. It does not depend on resources created by another test and starts no additional run.",
+      "tools_triggered": "get_agent, get_run",
+      "expected_output": "Reports Review Voice Agent as MODEL_TYPE_VOICE with endpoint_configured false. Reports the completed reviewer run as COMPLETED with 2/2 test cases completed, 0 failed, tags directory-review and openai-review, and Directory Review: Helpful and Safe = YES for both outputs. Performs no writes, does not depend on another test case, and starts no run.",
       "expected_output_url": null
     },
     {

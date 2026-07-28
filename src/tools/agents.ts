@@ -3,12 +3,16 @@ import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { CovalApiClient } from '../client.js';
 import {
   ListAgentsInputSchema,
+  LegacyListAgentsInputSchema,
   GetAgentInputSchema,
   CreateAgentInputSchema,
   UpdateAgentInputSchema,
   LegacyCreateAgentInputSchema,
   LegacyUpdateAgentInputSchema,
+  E164PhoneNumberSchema,
   type CreateAgentInput,
+  type ListAgentsInput,
+  type LegacyListAgentsInput,
   type UpdateAgentInput,
   type LegacyCreateAgentInput,
   type LegacyUpdateAgentInput,
@@ -116,45 +120,6 @@ function invalidApiResponse(): CallToolResult {
   return createErrorResponse('INVALID_API_RESPONSE', INVALID_API_RESPONSE_MESSAGE);
 }
 
-function usesProtocol(value: string | undefined, protocols: readonly string[]): boolean {
-  if (!value) return false;
-  try {
-    return protocols.includes(new URL(value).protocol);
-  } catch {
-    return false;
-  }
-}
-
-function openAiCreateAgentError(params: CreateAgentInput): string | undefined {
-  switch (params.model_type) {
-    case 'MODEL_TYPE_VOICE':
-      if (!params.phone_number) {
-        return 'MODEL_TYPE_VOICE requires an E.164 phone number or SIP address.';
-      }
-      if (params.endpoint) return 'MODEL_TYPE_VOICE does not use endpoint.';
-      return undefined;
-    case 'MODEL_TYPE_SMS':
-      if (!params.phone_number?.startsWith('+')) {
-        return 'MODEL_TYPE_SMS requires an E.164 phone number.';
-      }
-      if (params.endpoint) return 'MODEL_TYPE_SMS does not use endpoint.';
-      return undefined;
-    case 'MODEL_TYPE_OUTBOUND_VOICE':
-    case 'MODEL_TYPE_CHAT':
-      if (!usesProtocol(params.endpoint, ['http:', 'https:'])) {
-        return `${params.model_type} requires an HTTP(S) endpoint.`;
-      }
-      if (params.phone_number) return `${params.model_type} does not use phone_number.`;
-      return undefined;
-    case 'MODEL_TYPE_WEBSOCKET':
-      if (!usesProtocol(params.endpoint, ['wss:'])) {
-        return 'MODEL_TYPE_WEBSOCKET requires a secure WSS endpoint.';
-      }
-      if (params.phone_number) return 'MODEL_TYPE_WEBSOCKET does not use phone_number.';
-      return undefined;
-  }
-}
-
 function createAgentPayload(params: CreateAgentInput) {
   const { display_name, model_type, prompt } = params;
   const common = {
@@ -214,8 +179,9 @@ function openAiAgentUpdateError(
     return 'phone_number can update only a VOICE or SMS agent.';
   }
   if (
-    params.phone_number?.startsWith('sip:') &&
-    modelType === 'MODEL_TYPE_SMS'
+    params.phone_number &&
+    modelType === 'MODEL_TYPE_SMS' &&
+    !E164PhoneNumberSchema.safeParse(params.phone_number).success
   ) {
     return 'SMS agents require an E.164 phone number.';
   }
@@ -287,9 +253,12 @@ export function registerAgentTools(
       ...readOnlyTool('List agents'),
       description:
         'List agents (AI systems to evaluate). Model types: VOICE, OUTBOUND_VOICE, SMS, WEBSOCKET, and CHAT.',
-      inputSchema: ListAgentsInputSchema,
+      inputSchema:
+        inputProfile === 'openai'
+          ? ListAgentsInputSchema
+          : LegacyListAgentsInputSchema,
     },
-    async (params) => {
+    async (params: ListAgentsInput | LegacyListAgentsInput) => {
       try {
         const result = await client.listAgents(params);
         const projected = projectAgentListResponse(result);
@@ -337,14 +306,6 @@ export function registerAgentTools(
         const input = params as CreateAgentInput | LegacyCreateAgentInput;
         if (inputProfile === 'openai') {
           const openAiInput = input as CreateAgentInput;
-          const validationError = openAiCreateAgentError(openAiInput);
-          if (validationError) {
-            return createErrorResponse(
-              'INVALID_AGENT_CONFIGURATION',
-              validationError,
-              'Provide only the connection field required by the selected model type.',
-            );
-          }
           const result = await client.createAgent(createAgentPayload(openAiInput));
           const projected = projectAgentResponse(result);
           return projected ? createSuccessResponse(projected) : invalidApiResponse();
