@@ -88,7 +88,11 @@ export async function handler(
     const request: JsonRpcRequest = JSON.parse(bodyStr);
 
     // Create server and connect via in-memory transport
-    mcpServer = createMcpServer({ apiKey, includeSofia: false });
+    mcpServer = createMcpServer({
+      apiKey,
+      includeSofia: false,
+      inputProfile: 'openai',
+    });
     const [clientTransport, serverTransport] = InMemoryTransport.createLinkedPair();
 
     client = new Client({ name: 'lambda-client', version: '1.0.0' }, {});

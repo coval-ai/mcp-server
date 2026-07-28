@@ -315,7 +315,7 @@ export class CovalApiClient {
         },
         body: JSON.stringify({
           prompt: input.prompt,
-          conversation: input.conversation || []
+          ...(input.conversation ? { conversation: input.conversation } : {}),
         }),
         signal: AbortSignal.timeout(SOFIA_DELEGATION_TIMEOUT_MS)
       });

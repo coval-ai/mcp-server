@@ -4,6 +4,9 @@ import {
   ListRunsInputSchema,
   GetRunInputSchema,
   CreateRunInputSchema,
+  LegacyCreateRunInputSchema,
+  type CreateRunInput,
+  type LegacyCreateRunInput,
 } from '../schemas/index.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
@@ -11,6 +14,7 @@ import {
   createTool,
   readOnlyTool,
   type ToolAnnotationProfile,
+  type ToolInputProfile,
 } from './annotations.js';
 
 const CLAUDE_ALLOWED_RUN_MODEL_TYPES = new Set([
@@ -53,7 +57,13 @@ function claudeRunPolicyError(modelType: string | undefined) {
 export function registerRunTools(
   server: McpServer,
   client: CovalApiClient,
-  { annotationProfile = 'standard' }: { annotationProfile?: ToolAnnotationProfile } = {}
+  {
+    annotationProfile = 'standard',
+    inputProfile = 'legacy',
+  }: {
+    annotationProfile?: ToolAnnotationProfile;
+    inputProfile?: ToolInputProfile;
+  } = {},
 ) {
   server.registerTool(
     'list_runs',
@@ -61,7 +71,7 @@ export function registerRunTools(
       ...readOnlyTool('List runs'),
       description:
         'List evaluation runs. Each run = agent + persona + test_set. Returns run_id, status, tags. Filter by tag: filter=\'tag="regression"\'.',
-      inputSchema: ListRunsInputSchema.shape,
+      inputSchema: ListRunsInputSchema,
     },
     async (params) => {
       try {
@@ -79,7 +89,7 @@ export function registerRunTools(
       ...readOnlyTool('Get run'),
       description:
         'Get run status/results. Status: PENDING→RUNNING→COMPLETED. Completed runs include metrics (custom per org) and output_ids for transcripts.',
-      inputSchema: GetRunInputSchema.shape,
+      inputSchema: GetRunInputSchema,
     },
     async (params) => {
       try {
@@ -103,25 +113,34 @@ export function registerRunTools(
         annotationProfile === 'claude'
           ? 'Launch a text evaluation for an agent, persona, and test set. The Claude directory connector supports MODEL_TYPE_CHAT and MODEL_TYPE_SMS agents; it does not start voice, outbound voice, or WebSocket voice runs. Optional tags support result filtering.'
           : 'Launch an evaluation for an agent, persona, and test set. Optional tags support result filtering.',
-      inputSchema: CreateRunInputSchema.shape,
+      inputSchema:
+        inputProfile === 'openai'
+          ? CreateRunInputSchema
+          : LegacyCreateRunInputSchema,
     },
-    async (params) => {
+    async (params: CreateRunInput | LegacyCreateRunInput) => {
       try {
+        const input = params as CreateRunInput | LegacyCreateRunInput;
         if (annotationProfile === 'claude') {
-          const agent = await client.getAgent(params.agent_id);
+          const agent = await client.getAgent(input.agent_id);
           const modelType = modelTypeFromAgentResponse(agent);
           if (!modelType || !CLAUDE_ALLOWED_RUN_MODEL_TYPES.has(modelType)) {
             return claudeRunPolicyError(modelType);
           }
         }
-        const { tags, ...rest } = params;
-        const payload = {
-          ...rest,
-          metadata: {
-            ...((rest.metadata as Record<string, unknown>) || {}),
-            ...(tags ? { tags } : {}),
-          },
-        };
+        const { tags, ...rest } = input;
+        const payload =
+          inputProfile === 'openai'
+            ? tags
+              ? { ...rest, metadata: { tags } }
+              : rest
+            : {
+                ...rest,
+                metadata: {
+                  ...('metadata' in rest ? rest.metadata : {}),
+                  ...(tags ? { tags } : {}),
+                },
+              };
         const result = await client.createRun(payload);
         return createSuccessResponse(result);
       } catch (err) {

@@ -4,6 +4,7 @@ import { registerAllTools } from './tools/index.js';
 import {
   readOnlyTool,
   type ToolAnnotationProfile,
+  type ToolInputProfile,
 } from './tools/annotations.js';
 
 export const COVAL_MCP_SERVER_VERSION = '0.3.0';
@@ -20,6 +21,7 @@ Entities:
 
 export interface CovalMcpServerOptions {
   annotationProfile?: ToolAnnotationProfile;
+  inputProfile?: ToolInputProfile;
   apiKey?: string;
   includeSofia?: boolean;
 }
@@ -44,6 +46,7 @@ export function createMcpServer(options: CovalMcpServerOptions = {}): McpServer 
   if (options.apiKey) {
     registerAllTools(server, new CovalApiClient(options.apiKey), {
       annotationProfile: options.annotationProfile,
+      inputProfile: options.inputProfile,
       includeSofia: options.includeSofia,
     });
   } else {

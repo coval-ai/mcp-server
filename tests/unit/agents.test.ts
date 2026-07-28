@@ -1,5 +1,6 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { jest } from '@jest/globals';
 import { CovalApiClient } from '../../src/client.js';
 import { registerAgentTools } from '../../src/tools/agents.js';
 
@@ -144,6 +145,7 @@ describe('agent tool response projection', () => {
       await handlers.get('create_agent')!({
         display_name: 'Example agent',
         model_type: 'MODEL_TYPE_CHAT',
+        endpoint: 'https://chat.example.com/messages',
       })
     );
     const updateResult = responsePayload(
@@ -256,7 +258,11 @@ describe('agent tool response projection', () => {
     [
       'create_agent',
       'create',
-      { display_name: 'Example agent', model_type: 'MODEL_TYPE_CHAT' },
+      {
+        display_name: 'Example agent',
+        model_type: 'MODEL_TYPE_CHAT',
+        endpoint: 'https://chat.example.com/messages',
+      },
       { agent: null, arbitrary: 'FAKE_SENSITIVE_MALFORMED_AGENT' },
     ],
     [
@@ -275,4 +281,142 @@ describe('agent tool response projection', () => {
       expect(JSON.stringify(responsePayload(result))).not.toContain('FAKE_SENSITIVE');
     }
   );
+});
+
+describe('create_agent payload construction', () => {
+  it.each([
+    [
+      {
+        display_name: 'Voice agent',
+        model_type: 'MODEL_TYPE_VOICE',
+        phone_number: 'sip:reviewer@invalid.example',
+      },
+      {
+        display_name: 'Voice agent',
+        model_type: 'MODEL_TYPE_VOICE',
+        phone_number: 'sip:reviewer@invalid.example',
+      },
+    ],
+    [
+      {
+        display_name: 'Chat agent',
+        model_type: 'MODEL_TYPE_CHAT',
+        endpoint: 'https://chat.example.com/messages',
+      },
+      {
+        display_name: 'Chat agent',
+        model_type: 'MODEL_TYPE_CHAT',
+        metadata: { chat_endpoint: 'https://chat.example.com/messages' },
+      },
+    ],
+    [
+      {
+        display_name: 'WebSocket agent',
+        model_type: 'MODEL_TYPE_WEBSOCKET',
+        endpoint: 'wss://voice.example.com/socket',
+      },
+      {
+        display_name: 'WebSocket agent',
+        model_type: 'MODEL_TYPE_WEBSOCKET',
+        metadata: { endpoint: 'wss://voice.example.com/socket' },
+      },
+    ],
+  ])('sends only the model-specific connection config', async (params, expectedPayload) => {
+    let handler: ToolHandler | undefined;
+    const server = {
+      registerTool: (name: string, _config: unknown, registeredHandler: ToolHandler) => {
+        if (name === 'create_agent') handler = registeredHandler;
+      },
+    } as unknown as McpServer;
+    const createAgent = jest.fn(async () => ({ agent: upstreamAgent(null) }));
+    const client = { createAgent } as unknown as CovalApiClient;
+
+    registerAgentTools(server, client, { inputProfile: 'openai' });
+    expect(handler).toBeDefined();
+
+    await handler!(params);
+
+    expect(createAgent).toHaveBeenCalledWith(expectedPayload);
+  });
+
+  it.each([
+    [
+      {
+        display_name: 'Voice agent',
+        model_type: 'MODEL_TYPE_VOICE',
+      },
+      'MODEL_TYPE_VOICE requires an E.164 phone number or SIP address.',
+    ],
+    [
+      {
+        display_name: 'SMS agent',
+        model_type: 'MODEL_TYPE_SMS',
+        phone_number: 'sip:reviewer@invalid.example',
+      },
+      'MODEL_TYPE_SMS requires an E.164 phone number.',
+    ],
+    [
+      {
+        display_name: 'WebSocket agent',
+        model_type: 'MODEL_TYPE_WEBSOCKET',
+        endpoint: 'https://voice.example.com/socket',
+      },
+      'MODEL_TYPE_WEBSOCKET requires a secure WSS endpoint.',
+    ],
+  ])('rejects incomplete model-specific config before the API call', async (params, message) => {
+    let handler: ToolHandler | undefined;
+    const server = {
+      registerTool: (name: string, _config: unknown, registeredHandler: ToolHandler) => {
+        if (name === 'create_agent') handler = registeredHandler;
+      },
+    } as unknown as McpServer;
+    const createAgent = jest.fn(async () => ({ agent: upstreamAgent(null) }));
+    const client = { createAgent } as unknown as CovalApiClient;
+
+    registerAgentTools(server, client, { inputProfile: 'openai' });
+    const result = await handler!(params);
+
+    expect(createAgent).not.toHaveBeenCalled();
+    expect(result.isError).toBe(true);
+    expect(responsePayload(result)).toMatchObject({
+      error: 'INVALID_AGENT_CONFIGURATION',
+      message,
+    });
+  });
+});
+
+describe('update_agent payload construction', () => {
+  it('merges a narrow chat endpoint into the existing metadata', async () => {
+    let handler: ToolHandler | undefined;
+    const server = {
+      registerTool: (name: string, _config: unknown, registeredHandler: ToolHandler) => {
+        if (name === 'update_agent') handler = registeredHandler;
+      },
+    } as unknown as McpServer;
+    const getAgent = jest.fn(async () => ({
+      agent: {
+        model_type: 'MODEL_TYPE_CHAT',
+        metadata: {
+          authorization_header: 'Bearer preserved',
+          chat_endpoint: 'https://old.example.com/messages',
+        },
+      },
+    }));
+    const updateAgent = jest.fn(async () => ({ agent: upstreamAgent(null) }));
+    const client = { getAgent, updateAgent } as unknown as CovalApiClient;
+
+    registerAgentTools(server, client, { inputProfile: 'openai' });
+    await handler!({
+      agent_id: 'agent_example',
+      chat_endpoint: 'https://new.example.com/messages',
+    });
+
+    expect(getAgent).toHaveBeenCalledWith('agent_example');
+    expect(updateAgent).toHaveBeenCalledWith('agent_example', {
+      metadata: {
+        authorization_header: 'Bearer preserved',
+        chat_endpoint: 'https://new.example.com/messages',
+      },
+    });
+  });
 });

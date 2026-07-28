@@ -4,11 +4,7 @@ import { jest } from '@jest/globals';
 import { CovalApiClient } from '../../src/client.js';
 import { registerSofiaTools } from '../../src/tools/sofia.js';
 
-type SofiaToolHandler = (params: {
-  prompt: string;
-  conversation?: Array<{ role: 'user' | 'assistant'; content: string }>;
-  session_id?: string;
-}) => Promise<CallToolResult>;
+type SofiaToolHandler = (params: { prompt: string }) => Promise<CallToolResult>;
 
 describe('consult_sofia tool output', () => {
   it('keeps the request ID inside the client boundary and omits it from model-visible output', async () => {
@@ -33,12 +29,11 @@ describe('consult_sofia tool output', () => {
     }));
     const client = { consultSofia } as unknown as CovalApiClient;
 
-    registerSofiaTools(server, client);
+    registerSofiaTools(server, client, { inputProfile: 'openai' });
 
     expect(handler).toBeDefined();
     const response = await handler!({
       prompt: 'What should I inspect?',
-      session_id: 'review-session',
     });
     const content = response.content[0];
     expect(content.type).toBe('text');
@@ -49,8 +44,6 @@ describe('consult_sofia tool output', () => {
 
     expect(consultSofia).toHaveBeenCalledWith({
       prompt: 'What should I inspect?',
-      conversation: undefined,
-      sessionId: 'review-session',
     });
     expect(visibleOutput).toEqual({
       contract_version: '1',

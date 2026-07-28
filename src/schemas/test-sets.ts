@@ -8,11 +8,31 @@ export const ListTestSetsInputSchema = PaginationInputSchema.extend({}).describe
 export const GetTestSetInputSchema = z.object({
   test_set_id: z
     .string()
-    .min(1)
+    .length(8)
     .describe('The unique ID of the test set to retrieve.'),
-});
+}).strict();
 
 export const CreateTestSetInputSchema = z.object({
+  display_name: z
+    .string()
+    .trim()
+    .min(1)
+    .max(100)
+    .describe('Human-readable name for the test set'),
+  description: z
+    .string()
+    .trim()
+    .min(1)
+    .max(4000)
+    .optional()
+    .describe('Description of the test set'),
+  test_set_type: z
+    .enum(['DEFAULT', 'SCENARIO', 'TRANSCRIPT', 'WORKFLOW'])
+    .optional()
+    .describe('Type of test set: DEFAULT, SCENARIO, TRANSCRIPT, WORKFLOW'),
+}).strict();
+
+export const LegacyCreateTestSetInputSchema = z.object({
   display_name: z
     .string()
     .min(1)
@@ -23,10 +43,7 @@ export const CreateTestSetInputSchema = z.object({
     .max(100)
     .optional()
     .describe('URL-friendly identifier (auto-generated if not provided)'),
-  description: z
-    .string()
-    .optional()
-    .describe('Description of the test set'),
+  description: z.string().optional().describe('Description of the test set'),
   test_set_type: z
     .string()
     .optional()
@@ -44,3 +61,4 @@ export const CreateTestSetInputSchema = z.object({
 export type ListTestSetsInput = z.infer<typeof ListTestSetsInputSchema>;
 export type GetTestSetInput = z.infer<typeof GetTestSetInputSchema>;
 export type CreateTestSetInput = z.infer<typeof CreateTestSetInputSchema>;
+export type LegacyCreateTestSetInput = z.infer<typeof LegacyCreateTestSetInputSchema>;

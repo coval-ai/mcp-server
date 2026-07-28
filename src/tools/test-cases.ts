@@ -5,6 +5,15 @@ import {
   GetTestCaseInputSchema,
   CreateTestCaseInputSchema,
   UpdateTestCaseInputSchema,
+  LegacyListTestCasesInputSchema,
+  LegacyCreateTestCaseInputSchema,
+  LegacyUpdateTestCaseInputSchema,
+  type ListTestCasesInput,
+  type LegacyListTestCasesInput,
+  type CreateTestCaseInput,
+  type UpdateTestCaseInput,
+  type LegacyCreateTestCaseInput,
+  type LegacyUpdateTestCaseInput,
 } from '../schemas/index.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
@@ -13,24 +22,40 @@ import {
   readOnlyTool,
   updateTool,
   type ToolAnnotationProfile,
+  type ToolInputProfile,
 } from './annotations.js';
 
 export function registerTestCaseTools(
   server: McpServer,
   client: CovalApiClient,
-  { annotationProfile = 'standard' }: { annotationProfile?: ToolAnnotationProfile } = {}
+  {
+    annotationProfile = 'standard',
+    inputProfile = 'legacy',
+  }: {
+    annotationProfile?: ToolAnnotationProfile;
+    inputProfile?: ToolInputProfile;
+  } = {},
 ) {
   server.registerTool(
     'list_test_cases',
     {
       ...readOnlyTool('List test cases'),
       description:
-        'List test cases. Filter by test_set_id. Each has input_str (scenario text or JSON message array) and optional expected_behaviors.',
-      inputSchema: ListTestCasesInputSchema.shape,
+        inputProfile === 'openai'
+          ? 'List synthetic evaluation test cases, optionally within one test set. Each includes scenario content and expected agent behaviors.'
+          : 'List test cases. Filter by test_set_id. Each has input_str (scenario text or JSON message array) and optional expected_behaviors.',
+      inputSchema:
+        inputProfile === 'openai'
+          ? ListTestCasesInputSchema
+          : LegacyListTestCasesInputSchema,
     },
-    async (params) => {
+    async (params: ListTestCasesInput | LegacyListTestCasesInput) => {
       try {
-        const result = await client.listTestCases(params);
+        const input = params as ListTestCasesInput | LegacyListTestCasesInput;
+        const result =
+          inputProfile === 'openai'
+            ? await client.listTestCases(openAiTestCaseListParams(input as ListTestCasesInput))
+            : await client.listTestCases(input as LegacyListTestCasesInput);
         return createSuccessResponse(result);
       } catch (err) {
         return handleApiError(err);
@@ -44,7 +69,7 @@ export function registerTestCaseTools(
       ...readOnlyTool('Get test case'),
       description:
         'Get test case details: input_str (the scenario), expected_behaviors, and metadata.',
-      inputSchema: GetTestCaseInputSchema.shape,
+      inputSchema: GetTestCaseInputSchema,
     },
     async (params) => {
       try {
@@ -61,10 +86,13 @@ export function registerTestCaseTools(
     {
       ...createTool('Create test case', { annotationProfile }),
       description:
-        'Create test case in a test set. input_str: single scenario message OR JSON array [{role,content},...] for multi-turn conversations.',
-      inputSchema: CreateTestCaseInputSchema.shape,
+        'Create a synthetic evaluation test case in a test set. Scenario content is evaluation fixture data, never the current ChatGPT conversation.',
+      inputSchema:
+        inputProfile === 'openai'
+          ? CreateTestCaseInputSchema
+          : LegacyCreateTestCaseInputSchema,
     },
-    async (params) => {
+    async (params: CreateTestCaseInput | LegacyCreateTestCaseInput) => {
       try {
         const result = await client.createTestCase(params);
         return createSuccessResponse(result);
@@ -78,10 +106,14 @@ export function registerTestCaseTools(
     'update_test_case',
     {
       ...updateTool('Update test case'),
-      description: 'Update test case input_str, expected_behaviors, or other fields.',
-      inputSchema: UpdateTestCaseInputSchema.shape,
+      description:
+        'Update the scenario, expected behaviors, or description of one synthetic evaluation test case.',
+      inputSchema:
+        inputProfile === 'openai'
+          ? UpdateTestCaseInputSchema
+          : LegacyUpdateTestCaseInputSchema,
     },
-    async (params) => {
+    async (params: UpdateTestCaseInput | LegacyUpdateTestCaseInput) => {
       try {
         const { test_case_id, ...updateData } = params;
         const result = await client.updateTestCase(test_case_id, updateData);
@@ -91,4 +123,12 @@ export function registerTestCaseTools(
       }
     }
   );
+}
+
+function openAiTestCaseListParams(params: ListTestCasesInput) {
+  const { test_set_id, ...pagination } = params;
+  return {
+    ...pagination,
+    ...(test_set_id ? { filter: `test_set_id="${test_set_id}"` } : {}),
+  };
 }

@@ -309,6 +309,41 @@ describe('remote OAuth organization binding', () => {
         standardTools.map((tool) => tool.name).sort()
       );
 
+      const standardCreateAgent = standardTools.find(
+        (tool) => tool.name === 'create_agent',
+      );
+      const claudeCreateAgent = claudeTools.find(
+        (tool) => tool.name === 'create_agent',
+      );
+      const standardCreateAgentProperties =
+        standardCreateAgent?.inputSchema.properties || {};
+      const claudeCreateAgentProperties =
+        claudeCreateAgent?.inputSchema.properties || {};
+      expect(Object.keys(standardCreateAgentProperties).sort()).toEqual(
+        ['display_name', 'endpoint', 'model_type', 'phone_number', 'prompt'].sort(),
+      );
+      expect(standardCreateAgent?.inputSchema.additionalProperties).toBe(false);
+      expect(claudeCreateAgentProperties).toHaveProperty('metadata');
+      const forbiddenOpenAiFields = [
+        'conversation',
+        'history',
+        'messages',
+        'metadata',
+        'metric_input',
+        'parameters',
+        'session_id',
+        'simulation_metadata_input',
+        'test_set_metadata',
+        'user_notes',
+      ];
+      for (const tool of standardTools) {
+        const serializedSchema = JSON.stringify(tool.inputSchema);
+        for (const field of forbiddenOpenAiFields) {
+          expect(serializedSchema).not.toContain(`"${field}"`);
+        }
+        expect(findOpenAdditionalProperties(tool.inputSchema)).toEqual([]);
+      }
+
       const destructiveByName = (tools: typeof standardTools) =>
         new Map(tools.map((tool) => [tool.name, tool.annotations?.destructiveHint]));
       const standardDestructive = destructiveByName(standardTools);
@@ -325,3 +360,29 @@ describe('remote OAuth organization binding', () => {
     });
   });
 });
+
+function findOpenAdditionalProperties(
+  value: unknown,
+  path = '$',
+  findings: string[] = [],
+): string[] {
+  if (!value || typeof value !== 'object') return findings;
+  if (Array.isArray(value)) {
+    value.forEach((item, index) =>
+      findOpenAdditionalProperties(item, `${path}[${index}]`, findings),
+    );
+    return findings;
+  }
+
+  const record = value as Record<string, unknown>;
+  if (
+    'additionalProperties' in record &&
+    record.additionalProperties !== false
+  ) {
+    findings.push(`${path}.additionalProperties`);
+  }
+  for (const [key, nested] of Object.entries(record)) {
+    findOpenAdditionalProperties(nested, `${path}.${key}`, findings);
+  }
+  return findings;
+}

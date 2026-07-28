@@ -6,6 +6,7 @@ interface ToolMetadata {
 }
 
 export type ToolAnnotationProfile = 'standard' | 'claude';
+export type ToolInputProfile = 'legacy' | 'openai';
 
 export function readOnlyTool(title: string): ToolMetadata {
   return {

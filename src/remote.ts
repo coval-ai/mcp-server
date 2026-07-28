@@ -190,6 +190,7 @@ export async function createRemoteApp(): Promise<express.Express> {
         req.body = rewriteLegacyToolCalls(req.body);
         const server = createMcpServer({
           annotationProfile,
+          inputProfile: annotationProfile === 'standard' ? 'openai' : 'legacy',
           apiKey,
           includeSofia: true,
         });
