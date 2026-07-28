@@ -291,7 +291,7 @@ describe('agent tool response projection', () => {
 
 describe('OpenAI agent input validation', () => {
   it.each([
-    ['minimum E.164 length', '+1'],
+    ['one-digit syntactic boundary', '+1'],
     ['maximum E.164 length', '+123456789012345'],
   ])('accepts an E.164 number at the %s', (_name, phoneNumber) => {
     expect(E164PhoneNumberSchema.safeParse(phoneNumber).success).toBe(true);

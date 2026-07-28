@@ -190,13 +190,14 @@ export async function createRemoteApp(): Promise<express.Express> {
             identity.clerkUserId
           );
         }
+        const isOpenAi = annotationProfile === 'standard';
         req.body =
-          annotationProfile === 'standard'
+          isOpenAi
             ? rewriteOpenAiToolCalls(req.body)
             : rewriteLegacyToolCalls(req.body);
         const server = createMcpServer({
           annotationProfile,
-          inputProfile: annotationProfile === 'standard' ? 'openai' : 'legacy',
+          inputProfile: isOpenAi ? 'openai' : 'legacy',
           apiKey,
           includeSofia: true,
         });

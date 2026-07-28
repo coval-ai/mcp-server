@@ -149,6 +149,10 @@ const RefinedCreateAgentInputSchema = CreateAgentInputObjectSchema.superRefine(
           path = ['phone_number'];
         }
         break;
+      default: {
+        const exhaustiveModelType: never = params.model_type;
+        void exhaustiveModelType;
+      }
     }
 
     if (message && path) {

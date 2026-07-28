@@ -251,7 +251,7 @@
       "user_prompt": "Retrieve the test set with reviewer fixture ID <PORTAL_TEST_SET_ID> and list only the test cases in that test set. Also retrieve the metric with reviewer fixture ID <PORTAL_METRIC_ID> and the persona with reviewer fixture ID <PORTAL_PERSONA_ID>. Summarize the scenarios, expected behaviors, metric purpose, and persona behavior without changing anything.",
       "file_attachment_urls": null,
       "tools_triggered": "get_test_set, list_test_cases, get_metric, get_persona",
-      "expected_output": "Retrieves only the exact portal-supplied fixtures and returns a concise summary of the two baseline scenarios and their expected behaviors, the metric's purpose, and the persona's behavior. Performs no writes and omits credentials and unrelated internal fields.",
+      "expected_output": "Retrieves Directory Review Baseline with exactly two cases: safe, scoped mild-headache guidance with escalation signs; and concise routine-appointment preparation without inventing a booking. Identifies Directory Review: Helpful and Safe as checking helpful, safe, appropriately scoped replies, and Standard Customer as a cooperative, on-topic en-US persona that waits for the agent. Performs no writes and omits credentials and unrelated internal fields.",
       "expected_output_url": null
     },
     {
@@ -267,7 +267,7 @@
       "user_prompt": "Retrieve the agent with reviewer fixture ID <PORTAL_AGENT_ID> and the completed run with reviewer fixture ID <PORTAL_COMPLETED_RUN_ID>. Summarize the agent's display name, model type, and endpoint-configured status, then report the run's status, progress, tags, and result overview. Do not create or update anything and do not start a run.",
       "file_attachment_urls": null,
       "tools_triggered": "get_agent, get_run",
-      "expected_output": "Retrieves only the exact portal-supplied agent and completed run, then concisely reports their requested configuration and result fields. Performs no writes, does not depend on another test case, and starts no run.",
+      "expected_output": "Reports Review Voice Agent as MODEL_TYPE_VOICE with endpoint_configured false. Reports the completed reviewer run as COMPLETED with 2/2 test cases completed, 0 failed, tags directory-review and openai-review, and Directory Review: Helpful and Safe = YES for both outputs. Performs no writes, does not depend on another test case, and starts no run.",
       "expected_output_url": null
     },
     {
