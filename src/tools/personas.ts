@@ -12,7 +12,7 @@ export function registerPersonaTools(server: McpServer, client: CovalApiClient) 
       ...readOnlyTool('List personas'),
       description:
         'List personas (simulated users). Each has voice_name, language_code, background_sound, and a behavior prompt.',
-      inputSchema: ListPersonasInputSchema.shape,
+      inputSchema: ListPersonasInputSchema,
     },
     async (params) => {
       try {
@@ -30,7 +30,7 @@ export function registerPersonaTools(server: McpServer, client: CovalApiClient) 
       ...readOnlyTool('Get persona'),
       description:
         'Get persona details: voice_name, language_code (BCP-47), background_sound, persona_prompt (behavior), wait_seconds, conversation_initiation (speak_first/wait_for_user).',
-      inputSchema: GetPersonaInputSchema.shape,
+      inputSchema: GetPersonaInputSchema,
     },
     async (params) => {
       try {

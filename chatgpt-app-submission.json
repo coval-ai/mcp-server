@@ -239,43 +239,43 @@
   },
   "test_cases": [
     {
-      "description": "Inspect recent evaluation activity without changing organization data.",
-      "user_prompt": "List my five most recent evaluation runs and summarize their statuses.",
+      "description": "Create, inspect, and safely refine a disposable voice agent.",
+      "user_prompt": "Create a disposable VOICE (MODEL_TYPE_VOICE) agent named OpenAI Reviewer Agent <current UTC timestamp formatted YYYYMMDDHHMMSS> using SIP address sip:openai-reviewer-<same YYYYMMDDHHMMSS timestamp>@invalid.example and prompt 'Disposable reviewer fixture; do not contact users.' Retrieve the new agent, then update only its display name by appending ' — Verified'. Do not start a run.",
       "file_attachment_urls": null,
-      "tools_triggered": "list_runs",
-      "expected_output": "Returns up to five recent runs with their identifiers and statuses, followed by a concise status summary.",
+      "tools_triggered": "create_agent, get_agent, update_agent",
+      "expected_output": "After the required confirmations, creates exactly one private voice-agent configuration with the required non-routable SIP address, retrieves it, and changes only its display name. Reports the resulting display name, model type, and endpoint-configured status without starting a run or contacting the SIP address.",
       "expected_output_url": null
     },
     {
-      "description": "Resolve a named agent and inspect its connection configuration.",
-      "user_prompt": "Show the configuration of the agent named Review Voice Agent.",
+      "description": "Inspect the stable reviewer evaluation setup without changing it.",
+      "user_prompt": "Find and retrieve the test set Directory Review Baseline and list only the test cases in that test set. Also retrieve the metric Directory Review: Helpful and Safe and the persona Standard Customer. Summarize the scenarios, expected behaviors, metric purpose, and persona behavior without changing anything.",
       "file_attachment_urls": null,
-      "tools_triggered": "list_agents, get_agent",
-      "expected_output": "Returns the selected agent's display name, model type, resource ID needed for later Coval tool calls, and only safe non-secret connection status or details. Omits credential-bearing metadata, prompt text, tags, endpoint content, and internal or unnecessary IDs.",
+      "tools_triggered": "list_test_sets, get_test_set, list_test_cases, list_metrics, get_metric, list_personas, get_persona",
+      "expected_output": "Resolves the uniquely named reviewer fixtures and returns a concise summary of the two baseline scenarios and their expected behaviors, the metric's purpose, and the persona's behavior. Performs no writes and omits credentials and unrelated internal fields.",
       "expected_output_url": null
     },
     {
-      "description": "Create disposable test data for a billing scenario.",
-      "user_prompt": "Create a test set named Directory Review Billing and add one scenario where a caller disputes a duplicate charge. The expected behavior is that the agent verifies the duplicate and explains the next step.",
+      "description": "Create and refine independent disposable evaluation content.",
+      "user_prompt": "Create a SCENARIO test set named OpenAI Reviewer Billing <current UTC timestamp formatted YYYYMMDDHHMMSS>. Add exactly one test case where a customer disputes a duplicate charge, with expected behaviors to verify the duplicate and explain the next step. Then update only that test case's description to 'OpenAI reviewer disposable fixture.'",
       "file_attachment_urls": null,
-      "tools_triggered": "create_test_set, create_test_case",
-      "expected_output": "Creates one test set and one linked test case that match the requested scenario and expected behavior.",
+      "tools_triggered": "create_test_set, create_test_case, update_test_case",
+      "expected_output": "After the required confirmations, creates exactly one uniquely named test set and one linked test case, then applies the requested description. Reports the resulting resource names without depending on another test case or changing anything else.",
       "expected_output_url": null
     },
     {
-      "description": "Launch one evaluation using reviewer fixtures and report its initial state.",
-      "user_prompt": "Run the Directory Review Billing test set against Review Voice Agent using Standard Customer, then report the new run ID and initial status.",
+      "description": "Launch one evaluation using stable, pre-existing reviewer fixtures.",
+      "user_prompt": "Find and retrieve the agent Review Voice Agent, test set Directory Review Baseline, persona Standard Customer, and metric Directory Review: Helpful and Safe. After confirmation, launch exactly one evaluation using those four resources with tags openai-review and directory-review. Retrieve the new run once and report its current status.",
       "file_attachment_urls": null,
-      "tools_triggered": "list_agents, list_test_sets, list_personas, create_run",
-      "expected_output": "Resolves the named fixtures, creates exactly one evaluation run, and returns its identifier and initial status.",
+      "tools_triggered": "list_agents, get_agent, list_test_sets, get_test_set, list_personas, get_persona, list_metrics, get_metric, create_run, get_run",
+      "expected_output": "Resolves only the named stable fixtures, launches exactly one evaluation after confirmation, and reports its identifier and current status. It does not depend on resources created by another test and starts no additional run.",
       "expected_output_url": null
     },
     {
-      "description": "Use Sofia for read-only diagnosis of an unsuccessful evaluation.",
-      "user_prompt": "Ask Sofia to inspect my most recent unsuccessful run and recommend the next test I should add.",
+      "description": "Use Sofia for bounded, standalone evaluation guidance.",
+      "user_prompt": "Ask Sofia this standalone question: A completed Coval run has exactly two outputs and its only current metric is Turn Count, with scores 10 and 44. Recommend exactly one additional metric that would tell us whether the agent completed the user's task, and explain in one sentence what it would catch. Do not create or update anything.",
       "file_attachment_urls": null,
       "tools_triggered": "consult_sofia",
-      "expected_output": "Returns an organization-grounded diagnosis that identifies the run and recommends a concrete next test without changing any resource.",
+      "expected_output": "Calls Sofia once with only the bounded standalone prompt, with no conversation history or session identifier. Returns one task-success or task-completion metric recommendation and a concise rationale, and performs no writes.",
       "expected_output_url": null
     }
   ],

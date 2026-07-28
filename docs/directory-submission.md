@@ -33,12 +33,21 @@ authenticated tools.
   and `update_test_case` advertise `destructiveHint: true`. On `/claude/mcp`, all six write tools
   advertise `destructiveHint: true`. On both paths, `create_run` alone advertises
   `openWorldHint: true`; all other tools advertise `openWorldHint: false`.
+- Inspect every input schema discovered from the OpenAI `/mcp` endpoint. No tool may request
+  ChatGPT conversation history, a caller-provided session identifier, arbitrary metadata, or an
+  unconstrained object. Confirm `consult_sofia` accepts only one bounded standalone prompt and
+  `create_agent` clearly identifies the connection field required by its selected model type.
+  The Claude endpoint and local package retain their existing advanced input fields as a separate
+  compatibility profile.
 - Exercise every tool with valid inputs. Confirm write tools affect only disposable test data.
 - Confirm `consult_sofia` succeeds for the review organization. Direct API tools and Sofia
   consultation are separate capabilities, so test both.
 - Confirm invalid inputs return actionable errors rather than generic server errors.
 - Revoke the connection and confirm the client can no longer access the organization.
 - Repeat the flow with a user who cannot access the selected organization.
+- Run every submitted positive and negative case independently in a fresh conversation on each
+  supported ChatGPT and Codex surface. For OpenAI review, include ChatGPT web and mobile. Record
+  the exact tool sequence and verify the final answer matches the submitted expected result.
 
 ## Submission assets
 
@@ -77,45 +86,45 @@ write or destructive annotations as applicable.
 
 ## OpenAI review test cases
 
-The review account should use a populated, disposable Coval organization. Provide the concrete
-fixture IDs and credentials only through the submission portal. Reset the disposable resources
-after each review run.
+The review account should use a populated, disposable Coval organization. Provide concrete fixture
+IDs and credentials only through the submission portal. Keep every case independently runnable:
+no case may depend on a resource created by another case, a moving "most recent" target, or a
+fixed-name disposable resource left by an earlier run. Reset disposable resources after review.
 
 ### Positive cases
 
-1. **Recent run inspection**
-   - Prompt: "List my five most recent evaluation runs and summarize their statuses."
-   - Expected behavior: call `list_runs`; do not create or update anything.
-   - Expected result: up to five runs with identifiers, names, and statuses plus a short summary.
-   - Fixture: at least three recent runs with more than one status.
-2. **Agent configuration lookup**
-   - Prompt: "Show the configuration of the review voice agent."
-   - Expected behavior: call `list_agents` to resolve the name, then `get_agent` with its ID.
-   - Expected result: the selected agent's display name, model type, and connection configuration.
-   - Fixture: one agent named "Review Voice Agent".
-3. **Disposable test-set creation**
-   - Prompt: "Create a test set named Directory Review Billing and add one scenario where a caller
-     disputes a duplicate charge. The expected behavior is that the agent verifies the duplicate
-     and explains the next step."
-   - Expected behavior: call `create_test_set`, then `create_test_case` using the returned test-set
-     ID.
-   - Expected result: one new test set and one linked test case matching the requested scenario.
-   - Fixture: permission to create disposable test data; the named test set must not already exist.
-4. **Evaluation launch**
-   - Prompt: "Run the Directory Review Billing test set against Review Voice Agent using Standard
-     Customer, then report the new run ID and initial status."
-   - Expected behavior: resolve the named agent, test set, and persona with list tools; call
-     `create_run` once.
-   - Expected result: one new run with its identifier and initial status.
-   - Fixture: the resources from case 3 plus a persona named "Standard Customer".
-5. **Sofia diagnosis**
-   - Prompt: "Ask Sofia to inspect my most recent unsuccessful run and recommend the next test I
-     should add."
-   - Expected behavior: call `consult_sofia` once. Sofia may use its read-only Coval tools but must
-     not mutate the organization.
-   - Expected result: a grounded diagnosis that identifies the run and proposes a concrete next
-     test.
-   - Fixture: at least one recent unsuccessful run with inspectable results.
+1. **Disposable agent creation**
+   - Create one uniquely named `MODEL_TYPE_VOICE` agent using a non-routable reviewer SIP address,
+     retrieve it, and update only its display name.
+   - Expected behavior: `create_agent`, `get_agent`, and `update_agent` each run once after the
+     required confirmations; no evaluation starts and the SIP address is never contacted.
+   - Fixture: permission to create disposable agents. Generate a new UTC suffix and matching
+     `sip:<suffix>@invalid.example` address for every attempt.
+2. **Stable evaluation setup inspection**
+   - Retrieve the uniquely named baseline test set, only its test cases, the reviewer metric, and
+     the reviewer persona.
+   - Expected behavior: use list tools only to resolve the portal-provided fixture IDs, then
+     retrieve those exact resources. Make no changes.
+   - Fixture: one uniquely named baseline test set with two cases, one metric, and one persona.
+3. **Independent disposable test content**
+   - Create one uniquely timestamped SCENARIO test set, add one duplicate-charge test case, and
+     update only that case's description.
+   - Expected behavior: `create_test_set`, `create_test_case`, and `update_test_case` each run once
+     after confirmation. This case must not be reused by another submitted test.
+   - Fixture: permission to create disposable test data.
+4. **Stable evaluation launch**
+   - Resolve the portal-provided stable agent, test set, persona, and metric IDs, then launch
+     exactly one tagged evaluation and retrieve it once.
+   - Expected behavior: use only those resolved fixtures, call `create_run` once after
+     confirmation, and report the new run's identifier and current status.
+   - Fixture: independently valid reviewer fixtures that do not depend on cases 1 or 3.
+5. **Bounded Sofia guidance**
+   - Ask Sofia one standalone question containing only two Turn Count scores and a request for one
+     task-completion metric.
+   - Expected behavior: call `consult_sofia` once with only `prompt`; do not send prior turns or a
+     caller session identifier.
+   - Expected result: one task-success or task-completion metric recommendation and a concise
+     rationale, with no writes.
 
 ### Negative cases
 
@@ -147,4 +156,6 @@ after each review run.
 
 - [Claude connector submission](https://claude.com/docs/connectors/building/submission)
 - [Claude pre-submission checklist](https://claude.com/docs/connectors/building/review-criteria)
-- [ChatGPT app submission](https://developers.openai.com/apps-sdk/deploy/submission)
+- [OpenAI plugin guidelines](https://developers.openai.com/plugins/app-guidelines)
+- [OpenAI app-review FAQ](https://developers.openai.com/plugins/deploy/app-review)
+- [OpenAI submission requirements](https://developers.openai.com/plugins/deploy/submission)

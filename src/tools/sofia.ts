@@ -3,9 +3,23 @@ import { z } from 'zod';
 import { CovalApiClient } from '../client.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
-import { readOnlyTool } from './annotations.js';
+import {
+  readOnlyTool,
+  type ToolInputProfile,
+} from './annotations.js';
 
-const SofiaConsultInputSchema = {
+const SofiaConsultInputSchema = z.object({
+  prompt: z
+    .string()
+    .trim()
+    .min(1)
+    .max(4000)
+    .describe(
+      'A standalone, task-specific Coval evaluation question for Sofia. Include only the exact facts needed for this request, never conversation history.',
+    ),
+}).strict();
+
+const LegacySofiaConsultInputSchema = z.object({
   prompt: z
     .string()
     .trim()
@@ -30,23 +44,49 @@ const SofiaConsultInputSchema = {
     .max(128)
     .optional()
     .describe('Optional stable caller-session identifier. It must not contain customer secrets.'),
-};
+});
 
-export function registerSofiaTools(server: McpServer, client: CovalApiClient) {
+export function registerSofiaTools(
+  server: McpServer,
+  client: CovalApiClient,
+  {
+    inputProfile = 'legacy',
+  }: {
+    inputProfile?: ToolInputProfile;
+  } = {},
+) {
   server.registerTool(
     'consult_sofia',
     {
       ...readOnlyTool('Consult Sofia'),
       description:
-        "Delegate a read-only Coval evaluation question to Sofia. Sofia can use Coval playbooks and the authenticated organization's runs, simulations, conversations, metrics, agents, personas, test sets, and dashboards. It cannot create, modify, run, or delete anything.",
-      inputSchema: SofiaConsultInputSchema,
+        inputProfile === 'openai'
+          ? "Delegate one standalone, read-only Coval evaluation question to Sofia. Sofia can inspect the authenticated organization's evaluation resources, including run transcripts, but this tool never requests ChatGPT conversation history. It cannot create, modify, run, or delete anything."
+          : "Delegate a read-only Coval evaluation question to Sofia. Sofia can use Coval playbooks and the authenticated organization's runs, simulations, conversations, metrics, agents, personas, test sets, and dashboards. It cannot create, modify, run, or delete anything.",
+      inputSchema:
+        inputProfile === 'openai'
+          ? SofiaConsultInputSchema
+          : LegacySofiaConsultInputSchema,
     },
-    async (params) => {
+    async (params: {
+      prompt: string;
+      conversation?: Array<{ role: 'user' | 'assistant'; content: string }>;
+      session_id?: string;
+    }) => {
       try {
+        const input = params as {
+          prompt: string;
+          conversation?: Array<{ role: 'user' | 'assistant'; content: string }>;
+          session_id?: string;
+        };
         const result = await client.consultSofia({
-          prompt: params.prompt,
-          conversation: params.conversation,
-          sessionId: params.session_id,
+          prompt: input.prompt,
+          ...(inputProfile === 'legacy'
+            ? {
+                conversation: input.conversation,
+                sessionId: input.session_id,
+              }
+            : {}),
         });
         return createSuccessResponse({
           contract_version: result.contractVersion,

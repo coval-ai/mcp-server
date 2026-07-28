@@ -46,7 +46,6 @@ const createRunParams = {
   persona_id: 'persona_example',
   test_set_id: 'test_set_example',
   tags: ['directory-review'],
-  metadata: { source: 'test' },
 };
 
 describe('Claude create_run audio policy', () => {
@@ -92,7 +91,6 @@ describe('Claude create_run audio policy', () => {
       persona_id: 'persona_example',
       test_set_id: 'test_set_example',
       metadata: {
-        source: 'test',
         tags: ['directory-review'],
       },
     });

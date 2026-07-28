@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { PaginationInputSchema } from './common.js';
+import { PaginationInputSchema, ResourceIdSchema } from './common.js';
 
 export const ListMetricsInputSchema = PaginationInputSchema.extend({
   include_builtin: z
@@ -9,11 +9,8 @@ export const ListMetricsInputSchema = PaginationInputSchema.extend({
 }).describe('Input for listing available metrics');
 
 export const GetMetricInputSchema = z.object({
-  metric_id: z
-    .string()
-    .min(1)
-    .describe('The unique ID of the metric to retrieve.'),
-});
+  metric_id: ResourceIdSchema.describe('The unique ID of the metric to retrieve.'),
+}).strict();
 
 export type ListMetricsInput = z.infer<typeof ListMetricsInputSchema>;
 export type GetMetricInput = z.infer<typeof GetMetricInputSchema>;

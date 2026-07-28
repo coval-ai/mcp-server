@@ -45,8 +45,6 @@ describe("CovalApiClient.consultSofia", () => {
     );
     const result = await client.consultSofia({
       prompt: "What should I inspect?",
-      conversation: [{ role: "assistant", content: "I can help." }],
-      sessionId: "codex-session-1",
     });
 
     expect(result).toEqual({
@@ -63,6 +61,9 @@ describe("CovalApiClient.consultSofia", () => {
     expect(fetchMock.mock.calls[0][1]).toMatchObject({
       headers: expect.objectContaining({ "X-API-Key": "customer-api-key" }),
     });
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      client_id: 'coval-mcp',
+    });
     expect(fetchMock.mock.calls[0][1]?.signal).toBeDefined();
     expect(fetchMock.mock.calls[1][0]).toBe(
       "https://sofia.example.com/v1/external/delegations",
@@ -74,7 +75,37 @@ describe("CovalApiClient.consultSofia", () => {
     });
     expect(fetchMock.mock.calls[1][1]?.headers).not.toHaveProperty("X-API-Key");
     expect(fetchMock.mock.calls[1][1]?.headers?.Authorization).not.toContain("customer-api-key");
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+      prompt: 'What should I inspect?',
+    });
+    expect(String(fetchMock.mock.calls[0][1]?.body)).not.toContain('session_id');
+    expect(String(fetchMock.mock.calls[1][1]?.body)).not.toContain('conversation');
     expect(fetchMock.mock.calls[1][1]?.signal).toBeDefined();
+  });
+
+  it('preserves explicitly provided Sofia history for legacy clients', async () => {
+    const fetchMock = mockSuccessfulConsultation(
+      'https://sofia.example.com/v1/external/delegations',
+    );
+    const client = new CovalApiClient(
+      'customer-api-key',
+      'https://api.example.com/v1',
+    );
+
+    await client.consultSofia({
+      prompt: 'Continue the prior analysis.',
+      conversation: [{ role: 'assistant', content: 'Prior answer.' }],
+      sessionId: 'legacy-session',
+    });
+
+    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
+      client_id: 'coval-mcp',
+      session_id: 'legacy-session',
+    });
+    expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
+      prompt: 'Continue the prior analysis.',
+      conversation: [{ role: 'assistant', content: 'Prior answer.' }],
+    });
   });
 
   it('falls back to the legacy delegation-token route only when the canonical route is missing', async () => {
