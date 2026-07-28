@@ -1,9 +1,18 @@
 import { z } from 'zod';
-import { PaginationInputSchema, ResourceIdSchema } from './common.js';
+import {
+  PaginationInputSchema,
+  ResourceIdSchema,
+  StrictPaginationInputSchema,
+} from './common.js';
 
-export const ListRunsInputSchema = PaginationInputSchema.extend({}).describe(
+export const ListRunsInputSchema = StrictPaginationInputSchema.extend({}).describe(
   'Input for listing evaluation runs'
 );
+
+export const LegacyListRunsInputSchema =
+  PaginationInputSchema.extend({}).describe(
+    'Input for listing evaluation runs',
+  );
 
 export const GetRunInputSchema = z.object({
   run_id: ResourceIdSchema.describe('The unique ID of the run to retrieve.'),
@@ -83,6 +92,7 @@ export const LegacyCreateRunInputSchema = z.object({
 });
 
 export type ListRunsInput = z.infer<typeof ListRunsInputSchema>;
+export type LegacyListRunsInput = z.infer<typeof LegacyListRunsInputSchema>;
 export type GetRunInput = z.infer<typeof GetRunInputSchema>;
 export type CreateRunInput = z.infer<typeof CreateRunInputSchema>;
 export type LegacyCreateRunInput = z.infer<typeof LegacyCreateRunInputSchema>;

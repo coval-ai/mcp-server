@@ -3,6 +3,7 @@ import type { Transport } from '@modelcontextprotocol/sdk/shared/transport.js';
 import {
   LegacyToolCallCompatibilityTransport,
   rewriteLegacyToolCalls,
+  rewriteOpenAiToolCalls,
 } from '../../src/compatibility.js';
 
 describe('legacy tool-call compatibility', () => {
@@ -35,6 +36,58 @@ describe('legacy tool-call compatibility', () => {
       listRequest,
       canonicalCall,
     ]);
+  });
+
+  it('minimizes cached Sofia calls only for the OpenAI profile', () => {
+    const cachedCall = {
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/call',
+      params: {
+        name: 'consult_sofia',
+        arguments: {
+          prompt: 'Inspect this run.',
+          conversation: [{ role: 'user', content: 'prior turn' }],
+          session_id: 'cached-session',
+        },
+      },
+    };
+
+    expect(rewriteOpenAiToolCalls(cachedCall)).toEqual({
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/call',
+      params: {
+        name: 'consult_sofia',
+        arguments: { prompt: 'Inspect this run.' },
+      },
+    });
+    expect(rewriteLegacyToolCalls(cachedCall)).toEqual(cachedCall);
+  });
+
+  it('renames and minimizes cached Covi calls for the OpenAI profile', () => {
+    expect(
+      rewriteOpenAiToolCalls({
+        jsonrpc: '2.0',
+        id: 3,
+        method: 'tools/call',
+        params: {
+          name: 'consult_covi',
+          arguments: {
+            prompt: 'Inspect this run.',
+            session_id: 'cached-session',
+          },
+        },
+      }),
+    ).toEqual({
+      jsonrpc: '2.0',
+      id: 3,
+      method: 'tools/call',
+      params: {
+        name: 'consult_sofia',
+        arguments: { prompt: 'Inspect this run.' },
+      },
+    });
   });
 
   it('rewrites legacy calls received over wrapped transports', async () => {

@@ -1,16 +1,28 @@
 import { z } from 'zod';
-import { PaginationInputSchema } from './common.js';
+import {
+  OpenAiTestSetIdSchema,
+  PaginationInputSchema,
+  ResourceIdSchema,
+  StrictPaginationInputSchema,
+} from './common.js';
 
-export const ListTestSetsInputSchema = PaginationInputSchema.extend({}).describe(
+export const ListTestSetsInputSchema = StrictPaginationInputSchema.extend({}).describe(
   'Input for listing test sets'
 );
 
+export const LegacyListTestSetsInputSchema = PaginationInputSchema.extend({}).describe(
+  'Input for listing test sets',
+);
+
 export const GetTestSetInputSchema = z.object({
-  test_set_id: z
-    .string()
-    .length(8)
-    .describe('The unique ID of the test set to retrieve.'),
+  test_set_id: OpenAiTestSetIdSchema.describe(
+    'The eight-character ID of the test set to retrieve.',
+  ),
 }).strict();
+
+export const LegacyGetTestSetInputSchema = z.object({
+  test_set_id: ResourceIdSchema.describe('The unique ID of the test set to retrieve.'),
+});
 
 export const CreateTestSetInputSchema = z.object({
   display_name: z
@@ -59,6 +71,8 @@ export const LegacyCreateTestSetInputSchema = z.object({
 });
 
 export type ListTestSetsInput = z.infer<typeof ListTestSetsInputSchema>;
+export type LegacyListTestSetsInput = z.infer<typeof LegacyListTestSetsInputSchema>;
 export type GetTestSetInput = z.infer<typeof GetTestSetInputSchema>;
+export type LegacyGetTestSetInput = z.infer<typeof LegacyGetTestSetInputSchema>;
 export type CreateTestSetInput = z.infer<typeof CreateTestSetInputSchema>;
 export type LegacyCreateTestSetInput = z.infer<typeof LegacyCreateTestSetInputSchema>;

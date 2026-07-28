@@ -42,6 +42,10 @@ authenticated tools.
 - Exercise every tool with valid inputs. Confirm write tools affect only disposable test data.
 - Confirm `consult_sofia` succeeds for the review organization. Direct API tools and Sofia
   consultation are separate capabilities, so test both.
+- Complete reviewer sign-in from a clean browser session using only the credentials supplied in
+  the submission portal. The account must require no MFA, SMS or email code, invitation
+  acceptance, private-network access, or other setup or verification step. It must already have
+  access to the populated review organization.
 - Confirm invalid inputs return actionable errors rather than generic server errors.
 - Revoke the connection and confirm the client can no longer access the organization.
 - Repeat the flow with a user who cannot access the selected organization.
@@ -55,7 +59,8 @@ authenticated tools.
 - Privacy policy: `https://www.coval.ai/privacy-policy`
 - Support contact: `support@coval.dev`
 - Production connector icon: `assets/coval-logo.svg`
-- A fully populated test account, provided only through the directory's secure review process
+- A fully populated test account whose portal-supplied credentials work without MFA, SMS or email
+  verification, invitations, private-network access, or additional setup
 - Example prompts and expected outcomes for both direct Coval tools and `consult_sofia`
 
 Never commit test credentials, access tokens, customer data, or private infrastructure details to
@@ -67,10 +72,10 @@ this public repository.
 
 **Tagline:** Evaluate and improve voice and chat agents
 
-**Description:** Connect Claude to your Coval workspace to inspect agents, test sets, personas,
-metrics, and evaluation runs. Launch evaluations and update supported resources through explicit
-write tools, or consult Sofia for read-only analysis grounded in your organization's evaluation data
-and Coval's evaluation workflows.
+**Description:** Connect ChatGPT, Claude, or another MCP client to your Coval workspace to inspect
+agents, test sets, personas, metrics, and evaluation runs. Launch evaluations and update supported
+resources through explicit write tools, or consult Sofia for read-only analysis grounded in your
+organization's evaluation data and Coval's evaluation workflows.
 
 **Primary use cases:**
 
@@ -87,9 +92,13 @@ write or destructive annotations as applicable.
 ## OpenAI review test cases
 
 The review account should use a populated, disposable Coval organization. Provide concrete fixture
-IDs and credentials only through the submission portal. Keep every case independently runnable:
-no case may depend on a resource created by another case, a moving "most recent" target, or a
-fixed-name disposable resource left by an earlier run. Reset disposable resources after review.
+IDs and credentials only through the submission portal. Replace every `PORTAL_*` placeholder in the
+submission artifact with the corresponding exact fixture ID before submitting. Replace generic
+expected results for stable fixtures with their exact names, configuration, completion state,
+progress, tags, and result summary so the reviewer can verify them objectively. Keep every case
+independently runnable: no case may depend on a resource created by another case, a moving "most
+recent" target, or a fixed-name disposable resource left by an earlier run. Reset disposable
+resources after review.
 
 ### Positive cases
 
@@ -98,26 +107,26 @@ fixed-name disposable resource left by an earlier run. Reset disposable resource
      retrieve it, and update only its display name.
    - Expected behavior: `create_agent`, `get_agent`, and `update_agent` each run once after the
      required confirmations; no evaluation starts and the SIP address is never contacted.
-   - Fixture: permission to create disposable agents. Generate a new UTC suffix and matching
-     `sip:<suffix>@invalid.example` address for every attempt.
+   - Fixture: permission to create disposable agents. Generate a fresh UUID v4 or equivalent
+     collision-resistant nonce and matching `sip:<nonce>@invalid.example` address for every attempt.
 2. **Stable evaluation setup inspection**
-   - Retrieve the uniquely named baseline test set, only its test cases, the reviewer metric, and
-     the reviewer persona.
-   - Expected behavior: use list tools only to resolve the portal-provided fixture IDs, then
-     retrieve those exact resources. Make no changes.
-   - Fixture: one uniquely named baseline test set with two cases, one metric, and one persona.
+   - Retrieve the portal-provided baseline test-set ID, only its test cases, the reviewer metric ID,
+     and the canonical reviewer persona ID.
+   - Expected behavior: retrieve only those exact resources. Make no changes and do not fall back
+     to mutable display-name discovery.
+   - Fixture: one baseline test set with two cases, one metric, and one canonical persona.
 3. **Independent disposable test content**
-   - Create one uniquely timestamped SCENARIO test set, add one duplicate-charge test case, and
+   - Create one SCENARIO test set named with a fresh UUID v4 or equivalent collision-resistant
+     nonce, add one duplicate-charge test case, and
      update only that case's description.
    - Expected behavior: `create_test_set`, `create_test_case`, and `update_test_case` each run once
      after confirmation. This case must not be reused by another submitted test.
    - Fixture: permission to create disposable test data.
-4. **Stable evaluation launch**
-   - Resolve the portal-provided stable agent, test set, persona, and metric IDs, then launch
-     exactly one tagged evaluation and retrieve it once.
-   - Expected behavior: use only those resolved fixtures, call `create_run` once after
-     confirmation, and report the new run's identifier and current status.
-   - Fixture: independently valid reviewer fixtures that do not depend on cases 1 or 3.
+4. **Stable agent and completed-run inspection**
+   - Retrieve the portal-provided stable agent ID and completed reviewer-run ID.
+   - Expected behavior: call `get_agent` and `get_run`, report only the requested configuration and
+     result fields, and perform no writes or evaluation launch.
+   - Fixture: an independently valid agent and completed run that do not depend on cases 1 or 3.
 5. **Bounded Sofia guidance**
    - Ask Sofia one standalone question containing only two Turn Count scores and a request for one
      task-completion metric.
@@ -128,15 +137,12 @@ fixed-name disposable resource left by an earlier run. Reset disposable resource
 
 ### Negative cases
 
-1. **Cross-organization resource**
-   - Scenario: ask for an agent using an ID that belongs to a different organization.
-   - Expected behavior: return a not-found or permission error without exposing the resource.
-   - Why it must not complete: OAuth access is bound to the organization selected during consent.
-2. **Malformed identifier**
-   - Scenario: "Open run `not-a-valid-run-id` and explain its results."
-   - Expected behavior: return an actionable validation or not-found error; do not retry with a
-     guessed identifier and do not mutate anything.
-   - Why it must not complete: the requested resource cannot be identified safely.
+1. **Unrelated calendar request**
+   - Scenario: ask what meetings are scheduled tomorrow and request that an afternoon call move.
+   - Expected behavior: do not invoke Coval because it cannot read or change calendar events.
+2. **Unrelated Slack request**
+   - Scenario: ask to send a message to a Slack channel.
+   - Expected behavior: do not invoke Coval because it cannot send Slack messages.
 3. **Unsupported destructive request**
    - Scenario: "Delete every agent and test set in this organization."
    - Expected behavior: explain that the connector does not expose those bulk destructive tools;
@@ -149,6 +155,15 @@ fixed-name disposable resource left by an earlier run. Reset disposable resource
 - Set `OPENAI_APPS_CHALLENGE` to the exact token generated by the OpenAI submission portal, deploy,
   and verify the well-known endpoint returns only that token before selecting **Verify**.
 - Supply reviewer credentials and fixture IDs through the platform's secure submission fields.
+- Select the verified Coval developer or business identity; do not submit while the portal shows
+  `No Identity Selected`.
+- After deploying the exact reviewed server head, run **Scan Tools** again on the submitted app
+  version and confirm the frozen snapshot contains exactly 19 tools with the current schemas and
+  annotations.
+- Replace any stale portal description with the client-neutral canonical copy in this repository;
+  do not claim write support for metrics or personas.
+- Run all five positive and three negative cases in fresh conversations with the clean reviewer
+  account, record the exact tool sequence and result, and resolve every mismatch before submitting.
 - Use `https://app.coval.dev` as the allowed application link origin if link opening is enabled.
 - Do not add challenge tokens, credentials, or fixture IDs to this repository.
 

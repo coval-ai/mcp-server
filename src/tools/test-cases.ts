@@ -5,6 +5,7 @@ import {
   GetTestCaseInputSchema,
   CreateTestCaseInputSchema,
   UpdateTestCaseInputSchema,
+  OpenAiTestSetIdSchema,
   LegacyListTestCasesInputSchema,
   LegacyCreateTestCaseInputSchema,
   LegacyUpdateTestCaseInputSchema,
@@ -15,7 +16,7 @@ import {
   type LegacyCreateTestCaseInput,
   type LegacyUpdateTestCaseInput,
 } from '../schemas/index.js';
-import { createSuccessResponse } from '../utils/response.js';
+import { createErrorResponse, createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
 import {
   createTool,
@@ -52,10 +53,19 @@ export function registerTestCaseTools(
     async (params: ListTestCasesInput | LegacyListTestCasesInput) => {
       try {
         const input = params as ListTestCasesInput | LegacyListTestCasesInput;
-        const result =
-          inputProfile === 'openai'
-            ? await client.listTestCases(openAiTestCaseListParams(input as ListTestCasesInput))
-            : await client.listTestCases(input as LegacyListTestCasesInput);
+        let result: unknown;
+        if (inputProfile === 'openai') {
+          const listParams = openAiTestCaseListParams(input as ListTestCasesInput);
+          if (!listParams) {
+            return createErrorResponse(
+              'INVALID_ARGUMENT',
+              'The test set ID must be exactly eight letters or digits.',
+            );
+          }
+          result = await client.listTestCases(listParams);
+        } else {
+          result = await client.listTestCases(input as LegacyListTestCasesInput);
+        }
         return createSuccessResponse(result);
       } catch (err) {
         return handleApiError(err);
@@ -127,6 +137,9 @@ export function registerTestCaseTools(
 
 function openAiTestCaseListParams(params: ListTestCasesInput) {
   const { test_set_id, ...pagination } = params;
+  if (test_set_id && !OpenAiTestSetIdSchema.safeParse(test_set_id).success) {
+    return undefined;
+  }
   return {
     ...pagination,
     ...(test_set_id ? { filter: `test_set_id="${test_set_id}"` } : {}),

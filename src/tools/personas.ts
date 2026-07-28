@@ -1,20 +1,37 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CovalApiClient } from '../client.js';
-import { ListPersonasInputSchema, GetPersonaInputSchema } from '../schemas/index.js';
+import {
+  ListPersonasInputSchema,
+  LegacyListPersonasInputSchema,
+  GetPersonaInputSchema,
+  type ListPersonasInput,
+  type LegacyListPersonasInput,
+} from '../schemas/index.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
-import { readOnlyTool } from './annotations.js';
+import { readOnlyTool, type ToolInputProfile } from './annotations.js';
 
-export function registerPersonaTools(server: McpServer, client: CovalApiClient) {
+export function registerPersonaTools(
+  server: McpServer,
+  client: CovalApiClient,
+  {
+    inputProfile = 'legacy',
+  }: {
+    inputProfile?: ToolInputProfile;
+  } = {},
+) {
   server.registerTool(
     'list_personas',
     {
       ...readOnlyTool('List personas'),
       description:
         'List personas (simulated users). Each has voice_name, language_code, background_sound, and a behavior prompt.',
-      inputSchema: ListPersonasInputSchema,
+      inputSchema:
+        inputProfile === 'openai'
+          ? ListPersonasInputSchema
+          : LegacyListPersonasInputSchema,
     },
-    async (params) => {
+    async (params: ListPersonasInput | LegacyListPersonasInput) => {
       try {
         const result = await client.listPersonas(params);
         return createSuccessResponse(result);

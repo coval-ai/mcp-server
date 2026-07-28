@@ -1,20 +1,37 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CovalApiClient } from '../client.js';
-import { ListMetricsInputSchema, GetMetricInputSchema } from '../schemas/index.js';
+import {
+  ListMetricsInputSchema,
+  LegacyListMetricsInputSchema,
+  GetMetricInputSchema,
+  type ListMetricsInput,
+  type LegacyListMetricsInput,
+} from '../schemas/index.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
-import { readOnlyTool } from './annotations.js';
+import { readOnlyTool, type ToolInputProfile } from './annotations.js';
 
-export function registerMetricTools(server: McpServer, client: CovalApiClient) {
+export function registerMetricTools(
+  server: McpServer,
+  client: CovalApiClient,
+  {
+    inputProfile = 'legacy',
+  }: {
+    inputProfile?: ToolInputProfile;
+  } = {},
+) {
   server.registerTool(
     'list_metrics',
     {
       ...readOnlyTool('List metrics'),
       description:
         'List available evaluation metrics. Metrics define how agent performance is measured. Set include_builtin=true to see built-in metrics.',
-      inputSchema: ListMetricsInputSchema,
+      inputSchema:
+        inputProfile === 'openai'
+          ? ListMetricsInputSchema
+          : LegacyListMetricsInputSchema,
     },
-    async (params) => {
+    async (params: ListMetricsInput | LegacyListMetricsInput) => {
       try {
         const result = await client.listMetrics(params);
         return createSuccessResponse(result);

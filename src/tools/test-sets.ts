@@ -2,9 +2,15 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CovalApiClient } from '../client.js';
 import {
   ListTestSetsInputSchema,
+  LegacyListTestSetsInputSchema,
   GetTestSetInputSchema,
+  LegacyGetTestSetInputSchema,
   CreateTestSetInputSchema,
   LegacyCreateTestSetInputSchema,
+  type ListTestSetsInput,
+  type LegacyListTestSetsInput,
+  type GetTestSetInput,
+  type LegacyGetTestSetInput,
   type CreateTestSetInput,
   type LegacyCreateTestSetInput,
 } from '../schemas/index.js';
@@ -34,9 +40,12 @@ export function registerTestSetTools(
       ...readOnlyTool('List test sets'),
       description:
         'List test sets (collections of test cases). Each contains evaluation scenarios and returns its ID, name, description, and test case count.',
-      inputSchema: ListTestSetsInputSchema,
+      inputSchema:
+        inputProfile === 'openai'
+          ? ListTestSetsInputSchema
+          : LegacyListTestSetsInputSchema,
     },
-    async (params) => {
+    async (params: ListTestSetsInput | LegacyListTestSetsInput) => {
       try {
         const result = await client.listTestSets(params);
         return createSuccessResponse(result);
@@ -52,9 +61,12 @@ export function registerTestSetTools(
       ...readOnlyTool('Get test set'),
       description:
         'Get test set details: display_name, description, and test case count.',
-      inputSchema: GetTestSetInputSchema,
+      inputSchema:
+        inputProfile === 'openai'
+          ? GetTestSetInputSchema
+          : LegacyGetTestSetInputSchema,
     },
-    async (params) => {
+    async (params: GetTestSetInput | LegacyGetTestSetInput) => {
       try {
         const result = await client.getTestSet(params.test_set_id);
         return createSuccessResponse(result);
