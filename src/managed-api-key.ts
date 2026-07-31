@@ -12,6 +12,23 @@ interface CacheEntry {
   expiresAt: number;
 }
 
+export interface ManagedApiKeyCredentials {
+  primary: string;
+  fallback?: string;
+}
+
+export function managedApiKeyCredentialsFromEnvironment(
+  environment: NodeJS.ProcessEnv = process.env,
+): ManagedApiKeyCredentials {
+  const dedicated = environment.COVAL_MCP_INTERNAL_API_KEY?.trim() || '';
+  const previous = environment.COVAL_INTERNAL_API_KEY?.trim() || '';
+  if (!dedicated) return { primary: previous };
+  return {
+    primary: dedicated,
+    ...(previous && previous !== dedicated ? { fallback: previous } : {}),
+  };
+}
+
 export class ManagedApiKeyError extends Error {
   constructor(
     message: string,
@@ -29,6 +46,7 @@ export class ManagedApiKeyProvider {
   constructor(
     private readonly internalApiKey: string,
     private readonly apiBaseUrl = process.env.COVAL_API_BASE_URL || DEFAULT_API_BASE_URL,
+    private readonly fallbackInternalApiKey = '',
   ) {}
 
   isConfigured(): boolean {
@@ -60,18 +78,27 @@ export class ManagedApiKeyProvider {
     clerkOrganizationId: string,
     clerkUserId: string,
   ): Promise<string> {
-    const response = await fetch(`${this.apiBaseUrl.replace(/\/$/, '')}/internal/mcp/api-key`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-Coval-Internal-Api-Key': this.internalApiKey,
-      },
-      body: JSON.stringify({
-        clerk_organization_id: clerkOrganizationId,
-        user_id: clerkUserId,
-      }),
-      signal: AbortSignal.timeout(15_000),
-    });
+    let response = await this.requestApiKey(
+      clerkOrganizationId,
+      clerkUserId,
+      this.internalApiKey,
+    );
+    const fallbackInternalApiKey = this.fallbackInternalApiKey.trim();
+    if (
+      response.status === 401 &&
+      fallbackInternalApiKey &&
+      fallbackInternalApiKey !== this.internalApiKey.trim()
+    ) {
+      // The initial credential cutover spans independently deployed services. Retry the previous
+      // credential once, and only for an explicit authentication rejection during that overlap.
+      if (response.body) await response.body.cancel().catch(() => undefined);
+      response = await this.requestApiKey(
+        clerkOrganizationId,
+        clerkUserId,
+        fallbackInternalApiKey,
+      );
+    }
+
     const payload = (await response.json().catch(() => ({}))) as Partial<ManagedKeyResponse> & {
       error?: string;
     };
@@ -92,5 +119,24 @@ export class ManagedApiKeyProvider {
       this.cache.delete(oldest);
     }
     return payload.api_key;
+  }
+
+  private requestApiKey(
+    clerkOrganizationId: string,
+    clerkUserId: string,
+    internalApiKey: string,
+  ): Promise<Response> {
+    return fetch(`${this.apiBaseUrl.replace(/\/$/, '')}/internal/mcp/api-key`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Coval-Internal-Api-Key': internalApiKey,
+      },
+      body: JSON.stringify({
+        clerk_organization_id: clerkOrganizationId,
+        user_id: clerkUserId,
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
   }
 }

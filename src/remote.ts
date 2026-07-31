@@ -15,7 +15,11 @@ import {
   rewriteLegacyToolCalls,
   rewriteOpenAiToolCalls,
 } from './compatibility.js';
-import { ManagedApiKeyError, ManagedApiKeyProvider } from './managed-api-key.js';
+import {
+  ManagedApiKeyError,
+  managedApiKeyCredentialsFromEnvironment,
+  ManagedApiKeyProvider,
+} from './managed-api-key.js';
 import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
 import type { ToolAnnotationProfile } from './tools/annotations.js';
 
@@ -148,7 +152,12 @@ export async function createRemoteApp(): Promise<express.Express> {
   });
   app.use(clerkMiddleware());
 
-  const managedKeys = new ManagedApiKeyProvider(process.env.COVAL_INTERNAL_API_KEY || '');
+  const managedKeyCredentials = managedApiKeyCredentialsFromEnvironment();
+  const managedKeys = new ManagedApiKeyProvider(
+    managedKeyCredentials.primary,
+    undefined,
+    managedKeyCredentials.fallback,
+  );
   const oauth = await mcpAuth(async (token, req): Promise<AuthInfo | undefined> => {
     const auth = getAuth(req, { acceptsToken: 'oauth_token' });
     if (!auth.isAuthenticated || !auth.scopes?.includes(REQUIRED_ORG_SCOPE)) {
