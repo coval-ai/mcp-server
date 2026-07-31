@@ -1,4 +1,5 @@
 const DEFAULT_BASE_URL = 'https://api.coval.dev/v1';
+const DEFAULT_API_TIMEOUT_MS = 30_000;
 const SOFIA_DELEGATION_TIMEOUT_MS = 120_000;
 const SOFIA_TOKEN_EXCHANGE_TIMEOUT_MS = 15_000;
 
@@ -83,20 +84,32 @@ export class CovalApiClient {
       });
     }
 
-    const response = await fetch(url.toString(), {
-      method,
-      headers: {
-        'X-API-Key': this.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: body ? JSON.stringify(body) : undefined,
-      signal,
-    });
+    const requestSignal = signal ?? AbortSignal.timeout(DEFAULT_API_TIMEOUT_MS);
+    let response: Response;
+    try {
+      response = await fetch(url.toString(), {
+        method,
+        headers: {
+          'X-API-Key': this.apiKey,
+          'Content-Type': 'application/json',
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal: requestSignal,
+      });
+    } catch (error) {
+      if (signal === undefined && requestSignal.aborted) {
+        throw createApiRequestTimeoutError();
+      }
+      throw error;
+    }
 
     let data: unknown;
     try {
       data = await response.json();
     } catch (error) {
+      if (signal === undefined && requestSignal.aborted) {
+        throw createApiRequestTimeoutError();
+      }
       if (response.ok) throw error;
       data = {};
     }
@@ -367,6 +380,15 @@ export class CovalApiClient {
       return requestToken('/covi/delegation-token');
     }
   }
+}
+
+function createApiRequestTimeoutError(): CovalApiError {
+  return new CovalApiError(
+    'REQUEST_TIMEOUT',
+    'The Coval API request timed out.',
+    undefined,
+    504,
+  );
 }
 
 function validateSofiaDelegationUrl(delegationUrl: string, apiBaseUrl: string): string {

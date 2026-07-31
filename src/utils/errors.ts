@@ -66,6 +66,13 @@ const SAFE_API_ERRORS = new Map<string, { message: string; suggestion?: string }
     },
   ],
   [
+    'REQUEST_TIMEOUT',
+    {
+      message: 'The Coval API request timed out.',
+      suggestion: 'Try the request again.',
+    },
+  ],
+  [
     'SOFIA_UNAVAILABLE',
     {
       message: 'Sofia is temporarily unavailable.',

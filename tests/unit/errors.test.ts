@@ -157,6 +157,15 @@ describe('handleApiError', () => {
       },
     ],
     [
+      'REQUEST_TIMEOUT',
+      504,
+      {
+        error: 'REQUEST_TIMEOUT',
+        message: 'The Coval API request timed out.',
+        suggestion: 'Try the request again.',
+      },
+    ],
+    [
       'INVALID_PROMPT',
       400,
       {
