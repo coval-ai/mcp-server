@@ -167,10 +167,12 @@ function assertToolCatalog(tools, profileName) {
     byName.get('create_run')?.annotations?.destructiveHint === true,
     `${profileName} did not preserve create_run as destructive`,
   );
+  const expectedCreateAgentDestructive = profileName === 'claude';
+  const actualCreateAgentDestructive = byName.get('create_agent')?.annotations?.destructiveHint;
   invariant(
-    byName.get('create_agent')?.annotations?.destructiveHint ===
-      (profileName === 'claude'),
-    `${profileName} did not preserve its create_agent risk profile`,
+    actualCreateAgentDestructive === expectedCreateAgentDestructive,
+    `${profileName} did not preserve its create_agent risk profile: ` +
+      `destructiveHint was ${actualCreateAgentDestructive}, expected ${expectedCreateAgentDestructive}`,
   );
 }
 
@@ -211,7 +213,11 @@ async function qualifyProfile({ imageId, packageVersion, profile, upstreamPort }
       imageId,
     );
     const { stdout: portOutput } = await docker('port', containerName, '8080/tcp');
-    const portMatch = portOutput.trim().match(/:(\d+)$/);
+    const portMatch = portOutput
+      .split('\n')
+      .map((line) => line.trim())
+      .map((line) => line.match(/^127\.0\.0\.1:(\d+)$/))
+      .find(Boolean);
     invariant(portMatch, `Docker returned an invalid port mapping: ${portOutput.trim()}`);
     const baseUrl = `http://127.0.0.1:${portMatch[1]}`;
     const healthResponse = await waitForHealth(baseUrl);
@@ -289,6 +295,17 @@ invariant(
   commandOutput.trim() === '["node","dist/remote.js"]',
   `Production image has an unexpected command: ${commandOutput.trim()}`,
 );
+const { stdout: entrypointOutput } = await docker(
+  'image',
+  'inspect',
+  '--format',
+  '{{json .Config.Entrypoint}}',
+  imageId,
+);
+invariant(
+  ['null', '[]'].includes(entrypointOutput.trim()),
+  `Production image must leave Cmd as the effective command, but declares an entrypoint: ${entrypointOutput.trim()}`,
+);
 await docker(
   'run',
   '--rm',
@@ -304,7 +321,13 @@ const fakeApi = createFakeApi();
 const upstreamPort = await listen(fakeApi.server);
 try {
   for (const profile of remoteProfiles) {
-    await qualifyProfile({ imageId, packageVersion: packageJson.version, profile, upstreamPort });
+    try {
+      await qualifyProfile({ imageId, packageVersion: packageJson.version, profile, upstreamPort });
+    } finally {
+      // A rejected upstream request surfaces to the client as an opaque MCP
+      // error, so report the recorded contract failure before it propagates.
+      invariant(fakeApi.failures.length === 0, `Fake API rejected a request: ${fakeApi.failures[0]}`);
+    }
   }
 } finally {
   await close(fakeApi.server);

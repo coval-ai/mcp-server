@@ -10,4 +10,16 @@ describe('MCP production image qualification', () => {
     expect(workflow).toContain('COVAL_MCP_SOURCE_SHA: ${{ github.sha }}');
     expect(workflow).toContain('run: npm run qualify:image');
   });
+
+  it('resolves qualify:image to the qualification script', () => {
+    const packageJson = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+    expect(packageJson.scripts['qualify:image']).toBe('node scripts/qualify-image.mjs');
+  });
+
+  it('qualifies the image only after it has been built', () => {
+    const buildStep = workflow.indexOf('name: Build production image');
+    const qualifyStep = workflow.indexOf('name: Qualify production image');
+    expect(buildStep).toBeGreaterThan(-1);
+    expect(qualifyStep).toBeGreaterThan(buildStep);
+  });
 });
