@@ -170,6 +170,30 @@ transport:
 The hosted connector can access only the Coval organization selected during OAuth consent. Remove
 the connector from the client or revoke its Coval access when it is no longer needed.
 
+### Hosted managed-key credential rotation
+
+Hosted deployments use `COVAL_MCP_INTERNAL_API_KEY` as the dedicated credential for managed-key
+exchange. It must be distinct from `COVAL_INTERNAL_API_KEY`, must match the exact immutable secret
+version selected by the API deployment, and must never be exposed to MCP clients.
+
+During a coordinated cutover, `COVAL_INTERNAL_API_KEY` may remain configured as a temporary
+compatibility credential. The server tries the dedicated credential first and retries the
+compatibility credential only once, only after an explicit `401` response. It does not fall back
+for timeouts, network errors, `403` responses, or other failures.
+
+Use this order for rotation:
+
+1. Provision a new dedicated secret version and pin the API deployment to that exact version.
+2. Deploy the MCP server with the new value in `COVAL_MCP_INTERNAL_API_KEY` and the prior shared
+   value temporarily retained in `COVAL_INTERNAL_API_KEY`.
+3. Activate dedicated-credential validation at the API only after both deployments are healthy.
+4. Confirm old instances and in-flight requests have drained, then remove
+   `COVAL_INTERNAL_API_KEY` from the MCP deployment.
+
+The overlap is bounded migration state, not a permanent dual-key configuration. If the dedicated
+exchange is rolled back, disable its API activation before removing or changing the pinned secret
+version.
+
 ## Development
 
 ```bash
@@ -196,6 +220,8 @@ npm run check:remote
 | `COVAL_API_KEY` | Stdio | - | Coval API key for the local stdio transport |
 | `COVAL_API_BASE_URL` | No | `https://api.coval.dev/v1` | API base URL |
 | `SOFIA_DELEGATION_ORIGIN` | No | Derived from `COVAL_API_BASE_URL` | Overrides the expected Sofia origin used to validate delegation URLs |
+| `COVAL_MCP_INTERNAL_API_KEY` | Hosted remote | - | Dedicated managed-key exchange credential; must be distinct from the shared compatibility credential |
+| `COVAL_INTERNAL_API_KEY` | Rotation only | - | Temporary hosted exchange fallback during a bounded dedicated-credential cutover; retried once only after `401` |
 | `LOG_LEVEL` | No | `info` | Logging level |
 | `MCP_ALLOWED_ORIGINS` | No | Claude and OpenAI web origins | Comma-separated exact browser origins allowed to call `/mcp` or `/claude/mcp`; clients that omit `Origin` remain supported |
 | `OPENAI_APPS_CHALLENGE` | No | - | OpenAI plugin-portal domain verification token served as plain text from `/.well-known/openai-apps-challenge` |
