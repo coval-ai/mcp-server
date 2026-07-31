@@ -15,6 +15,7 @@
     "start:http": "node dist/remote.js",
     "inspector": "npx @modelcontextprotocol/inspector",
     "check:remote": "node scripts/check-remote.mjs",
+    "qualify:image": "node scripts/qualify-image.mjs",
     "test": "NODE_OPTIONS=--experimental-vm-modules jest",
     "test:unit": "npm test -- --testPathPattern=unit",
     "test:e2e": "npm test -- --testPathPattern=e2e",
