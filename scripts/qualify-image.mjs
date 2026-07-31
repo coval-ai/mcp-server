@@ -302,9 +302,12 @@ const { stdout: entrypointOutput } = await docker(
   '{{json .Config.Entrypoint}}',
   imageId,
 );
+// node:22-alpine inherits ENTRYPOINT ["docker-entrypoint.sh"], a shim that
+// execs its arguments. Pin it so Cmd stays the effective command: any other
+// entrypoint would run something else while leaving the Cmd check above green.
 invariant(
-  ['null', '[]'].includes(entrypointOutput.trim()),
-  `Production image must leave Cmd as the effective command, but declares an entrypoint: ${entrypointOutput.trim()}`,
+  entrypointOutput.trim() === '["docker-entrypoint.sh"]',
+  `Production image has an unexpected entrypoint: ${entrypointOutput.trim()}`,
 );
 await docker(
   'run',
