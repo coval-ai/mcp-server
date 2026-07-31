@@ -2,13 +2,13 @@ import { CovalApiClient } from "../../src/client.js";
 import { jest } from "@jest/globals";
 
 const originalSofiaDelegationOrigin = process.env.SOFIA_DELEGATION_ORIGIN;
-const originalCoviDelegationOrigin = process.env.COVI_DELEGATION_ORIGIN;
+const originalLegacyDelegationOrigin = process.env.COVI_DELEGATION_ORIGIN;
 
 describe("CovalApiClient.consultSofia", () => {
   afterEach(() => {
     jest.restoreAllMocks();
     restoreEnvironmentVariable('SOFIA_DELEGATION_ORIGIN', originalSofiaDelegationOrigin);
-    restoreEnvironmentVariable('COVI_DELEGATION_ORIGIN', originalCoviDelegationOrigin);
+    restoreEnvironmentVariable('COVI_DELEGATION_ORIGIN', originalLegacyDelegationOrigin);
   });
 
   it("exchanges the API key for a delegation token and never forwards that key to Sofia", async () => {
