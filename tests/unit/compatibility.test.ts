@@ -65,7 +65,7 @@ describe('legacy tool-call compatibility', () => {
     expect(rewriteLegacyToolCalls(cachedCall)).toEqual(cachedCall);
   });
 
-  it('renames and minimizes cached Covi calls for the OpenAI profile', () => {
+  it('renames and minimizes cached legacy consultation calls for the OpenAI profile', () => {
     expect(
       rewriteOpenAiToolCalls({
         jsonrpc: '2.0',
