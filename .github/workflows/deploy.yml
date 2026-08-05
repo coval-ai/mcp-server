@@ -14,19 +14,31 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       deploy_ref: ${{ steps.release.outputs.deploy_ref }}
+      canonical_environment: ${{ steps.release.outputs.canonical_environment }}
       environment: ${{ steps.release.outputs.environment }}
+      mode: ${{ steps.release.outputs.mode }}
+      promotion_origin: ${{ steps.release.outputs.promotion_origin }}
       release_correlation_id: ${{ steps.release.outputs.release_correlation_id }}
+      selected_deploy_action_ids: ${{ steps.release.outputs.selected_deploy_action_ids }}
     steps:
       - name: Validate release dispatch
         id: release
         env:
           DEPLOY_REF: ${{ github.event.client_payload.deploy_ref }}
           MCP_ENVIRONMENT: ${{ github.event.client_payload.environment }}
+          DEPLOY_MODE: ${{ github.event.client_payload.mode }}
+          PROMOTION_ORIGIN: ${{ github.event.client_payload.promotion_origin }}
           RELEASE_CORRELATION_ID: ${{ github.event.client_payload.release_correlation_id }}
+          SELECTED_DEPLOY_ACTION_IDS: ${{ toJSON(github.event.client_payload.selected_deploy_action_ids) }}
         run: |
           set -euo pipefail
           case "$MCP_ENVIRONMENT" in
-            staging|v1) ;;
+            staging)
+              canonical_environment="staging"
+              ;;
+            v1)
+              canonical_environment="prod"
+              ;;
             *)
               echo "::error::Unsupported MCP environment."
               exit 1
@@ -40,15 +52,50 @@ jobs:
             echo "::error::Release correlation id is required."
             exit 1
           fi
+          deploy_mode="${DEPLOY_MODE:-safe}"
+          case "$deploy_mode" in
+            safe|plan|deploy_only) ;;
+            *)
+              echo "::error::Unsupported deployment mode."
+              exit 1
+              ;;
+          esac
+          promotion_origin="${PROMOTION_ORIGIN:-manual}"
+          case "$promotion_origin" in
+            automatic|manual) ;;
+            *)
+              echo "::error::Unsupported promotion origin."
+              exit 1
+              ;;
+          esac
+          selected_deploy_action_ids="$(
+            jq -c '
+              if type == "array" and length > 0
+              then .
+              else ["mcp_server.remote.deploy"]
+              end
+            ' <<<"$SELECTED_DEPLOY_ACTION_IDS"
+          )"
+          if ! jq -e 'index("mcp_server.remote.deploy") != null' <<<"$selected_deploy_action_ids" >/dev/null; then
+            echo "::error::The MCP deploy action was not selected."
+            exit 1
+          fi
           {
             echo "deploy_ref=${DEPLOY_REF}"
+            echo "canonical_environment=${canonical_environment}"
             echo "environment=${MCP_ENVIRONMENT}"
+            echo "mode=${deploy_mode}"
+            echo "promotion_origin=${promotion_origin}"
             echo "release_correlation_id=${RELEASE_CORRELATION_ID}"
+            echo "selected_deploy_action_ids=${selected_deploy_action_ids}"
           } >> "$GITHUB_OUTPUT"
 
   deploy:
     needs: validate
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
     environment: ${{ needs.validate.outputs.environment == 'v1' && 'production' || 'staging' }}
     concurrency:
       group: mcp-${{ needs.validate.outputs.environment }}-deploy
@@ -70,6 +117,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
       - uses: aws-actions/amazon-ecr-login@v2
       - name: Build and push immutable and current tags
+        id: image
         env:
           IMAGE_TAG: ${{ steps.source.outputs.sha }}
           REPOSITORY: sofia-${{ env.MCP_ENVIRONMENT }}-mcp
@@ -80,6 +128,22 @@ jobs:
           docker build -t "${image}:${IMAGE_TAG}" -t "${image}:latest" .
           docker push "${image}:${IMAGE_TAG}"
           docker push "${image}:latest"
+          image_digest="$(
+            aws ecr describe-images \
+              --repository-name "$REPOSITORY" \
+              --image-ids "imageTag=${IMAGE_TAG}" \
+              --query 'imageDetails[0].imageDigest' \
+              --output text
+          )"
+          if ! [[ "$image_digest" =~ ^sha256:[0-9a-f]{64}$ ]]; then
+            echo "::error::ECR did not return the immutable image digest."
+            exit 1
+          fi
+          {
+            echo "digest=${image_digest}"
+            echo "identity=${image}@${image_digest}"
+            echo "uri=${image}"
+          } >> "$GITHUB_OUTPUT"
       - name: Roll MCP service
         run: |
           set -euo pipefail
@@ -90,3 +154,116 @@ jobs:
           aws ecs wait services-stable \
             --cluster "sofia-${MCP_ENVIRONMENT}-cluster" \
             --services "sofia-${MCP_ENVIRONMENT}-mcp"
+      - name: Verify the running service uses the built image
+        env:
+          EXPECTED_DIGEST: ${{ steps.image.outputs.digest }}
+          IMAGE_URI: ${{ steps.image.outputs.uri }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          cluster="sofia-${MCP_ENVIRONMENT}-cluster"
+          service="sofia-${MCP_ENVIRONMENT}-mcp"
+          mapfile -t task_arns < <(
+            aws ecs list-tasks \
+              --cluster "$cluster" \
+              --service-name "$service" \
+              --desired-status RUNNING \
+              --query 'taskArns' \
+              --output text \
+              | tr '\t' '\n'
+          )
+          if [ "${#task_arns[@]}" -eq 0 ] || [ "${task_arns[0]}" = "None" ]; then
+            echo "::error::The stable MCP service has no running tasks."
+            exit 1
+          fi
+          tasks_json="$(aws ecs describe-tasks --cluster "$cluster" --tasks "${task_arns[@]}")"
+          task_count="$(jq '.tasks | length' <<<"$tasks_json")"
+          matching_task_count="$(
+            jq \
+              --arg image "$IMAGE_URI" \
+              --arg source_sha "$SOURCE_SHA" \
+              '[
+                .tasks[]
+                | select(any(.containers[];
+                    .image == ($image + ":latest")
+                    or .image == ($image + ":" + $source_sha)
+                    or (.image | startswith($image + "@"))))
+              ] | length' <<<"$tasks_json"
+          )"
+          if [ "$matching_task_count" -ne "$task_count" ]; then
+            echo "::error::At least one running task did not report the expected MCP image repository."
+            exit 1
+          fi
+          if ! jq -e \
+            --arg image "$IMAGE_URI" \
+            --arg source_sha "$SOURCE_SHA" \
+            --arg digest "$EXPECTED_DIGEST" \
+            '[
+              .tasks[].containers[]
+              | select(
+                  .image == ($image + ":latest")
+                  or .image == ($image + ":" + $source_sha)
+                  or (.image | startswith($image + "@")))
+              | .imageDigest
+            ] | length > 0 and all(. == $digest)' <<<"$tasks_json" >/dev/null; then
+            echo "::error::The live MCP service image digest does not match the built image."
+            exit 1
+          fi
+
+      - name: Record verified deployment result
+        env:
+          BUILT_IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+          BUILT_IMAGE_IDENTITY: ${{ steps.image.outputs.identity }}
+          CANONICAL_ENVIRONMENT: ${{ needs.validate.outputs.canonical_environment }}
+          DEPLOY_MODE: ${{ needs.validate.outputs.mode }}
+          REQUESTED_REF: ${{ needs.validate.outputs.deploy_ref }}
+          SELECTED_DEPLOY_ACTION_IDS: ${{ needs.validate.outputs.selected_deploy_action_ids }}
+          SOURCE_SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          result_path="${RUNNER_TEMP}/switchboard-deploy-result.json"
+          jq -n \
+            --arg canonical_environment "$CANONICAL_ENVIRONMENT" \
+            --arg digest "$BUILT_IMAGE_DIGEST" \
+            --arg identity "$BUILT_IMAGE_IDENTITY" \
+            --arg mode "$DEPLOY_MODE" \
+            --arg requested_ref "$REQUESTED_REF" \
+            --arg run_url "$run_url" \
+            --arg source_sha "$SOURCE_SHA" \
+            --argjson selected_deploy_action_ids "$SELECTED_DEPLOY_ACTION_IDS" \
+            '{
+              schema_version: 1,
+              service: "mcp_server.remote",
+              environment: $canonical_environment,
+              mode: $mode,
+              source: {repository: "coval-ai/mcp-server", requested_ref: $requested_ref, resolved_sha: $source_sha},
+              adapter: {kind: "repository_dispatch", run_url: $run_url},
+              selected_deploy_action_ids: $selected_deploy_action_ids,
+              deploy_action_results: ($selected_deploy_action_ids | map({id: ., conclusion: "success", evidence_url: $run_url})),
+              deployment_performed: true,
+              built_artifact: {kind: "container_image", identity: $identity, digest: $digest},
+              live_artifact: {identity: $identity, verified: true, evidence_url: $run_url},
+              canaries: [{id: "mcp-server.live-image", name: "Running ECS image", conclusion: "success", evidence_url: $run_url}],
+              generated_artifact_publications: [],
+              overall_status: "success",
+              evidence_urls: [$run_url]
+            }' > "$result_path"
+
+      - name: Upload verified deployment result
+        uses: actions/upload-artifact@v6
+        with:
+          name: switchboard-deploy-result
+          path: ${{ runner.temp }}/switchboard-deploy-result.json
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Publish manually selected deployment state
+        if: needs.validate.outputs.promotion_origin == 'manual'
+        uses: coval-ai/ci-cd-switchboard/.github/actions/switchboard-publish-deployment-state@a973276e4639129a06cef4cf92409d4aa8e1e305
+        with:
+          environment: ${{ needs.validate.outputs.canonical_environment }}
+          repository: coval-ai/mcp-server
+          result-path: ${{ runner.temp }}/switchboard-deploy-result.json
+          service: mcp_server.remote
+          token: ${{ github.token }}

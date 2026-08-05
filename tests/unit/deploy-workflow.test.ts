@@ -23,7 +23,8 @@ describe("remote MCP deployment workflow", () => {
   });
 
   it("keeps the public adapter environment allowlist narrow", () => {
-    expect(workflow).toContain("staging|v1) ;;");
+    expect(workflow).toContain('canonical_environment="staging"');
+    expect(workflow).toContain('canonical_environment="prod"');
     expect(workflow).toContain("needs: validate");
     expect(workflow).toContain(
       "environment: ${{ needs.validate.outputs.environment == 'v1' && 'production' || 'staging' }}",
@@ -34,5 +35,26 @@ describe("remote MCP deployment workflow", () => {
     expect(workflow).toContain(
       "MCP_ENVIRONMENT: ${{ needs.validate.outputs.environment }}",
     );
+  });
+
+  it("verifies every running task against the built image digest", () => {
+    expect(workflow).toContain("aws ecr describe-images");
+    expect(workflow).toContain("aws ecs list-tasks");
+    expect(workflow).toContain("aws ecs describe-tasks");
+    expect(workflow).toContain('all(. == $digest)');
+    expect(workflow).toContain(
+      "The live MCP service image digest does not match the built image.",
+    );
+  });
+
+  it("records deployment evidence without activating the promotion guard", () => {
+    expect(workflow).toContain('service: "mcp_server.remote"');
+    expect(workflow).toContain('source: {repository: "coval-ai/mcp-server"');
+    expect(workflow).toContain("name: switchboard-deploy-result");
+    expect(workflow).toContain(
+      "needs.validate.outputs.promotion_origin == 'manual'",
+    );
+    expect(workflow).toContain("switchboard-publish-deployment-state@");
+    expect(workflow).not.toContain("switchboard-automatic-promotion");
   });
 });
