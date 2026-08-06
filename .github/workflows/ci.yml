@@ -33,4 +33,5 @@ jobs:
         env:
           COVAL_MCP_IMAGE: coval-mcp:${{ github.sha }}
           COVAL_MCP_SOURCE_SHA: ${{ github.sha }}
+          COVAL_MCP_ENV: ci
         run: npm run qualify:image

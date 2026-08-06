@@ -10,6 +10,7 @@ describe('MCP production image qualification', () => {
     expect(workflow).toContain('--tag "coval-mcp:${GITHUB_SHA}"');
     expect(workflow).toContain('COVAL_MCP_IMAGE: coval-mcp:${{ github.sha }}');
     expect(workflow).toContain('COVAL_MCP_SOURCE_SHA: ${{ github.sha }}');
+    expect(workflow).toContain('COVAL_MCP_ENV: ci');
     expect(workflow).toContain('run: npm run qualify:image');
   });
 

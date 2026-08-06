@@ -18,6 +18,7 @@ export type RequestCompletion = RuntimeIdentity & {
 };
 
 const REMOTE_PATHS = new Set(['/mcp', '/claude/mcp']);
+const REMOTE_METHODS = new Set(['DELETE', 'GET', 'OPTIONS', 'POST']);
 
 function writeStructuredLog(payload: object): void {
   if (process.env.NODE_ENV === 'test') return;
@@ -37,6 +38,11 @@ function requestPath(originalUrl: string): string {
   return REMOTE_PATHS.has(path) ? path : 'other';
 }
 
+function requestMethod(method: string): string {
+  const normalized = method.toUpperCase();
+  return REMOTE_METHODS.has(normalized) ? normalized : 'OTHER';
+}
+
 export function requestCompletion(
   req: Pick<Request, 'method' | 'originalUrl'>,
   httpStatus: number,
@@ -48,7 +54,7 @@ export function requestCompletion(
     message: 'mcp_request_completed',
     ...runtimeIdentity(env),
     surface: 'mcp',
-    http_method: req.method.toUpperCase(),
+    http_method: requestMethod(req.method),
     http_path: requestPath(req.originalUrl),
     http_status: httpStatus,
     status: httpStatus < 400 ? 'ok' : httpStatus === 401 || httpStatus === 403 ? 'auth_error' : 'error',
@@ -75,8 +81,11 @@ export function requestCompletionLogger(
   };
 }
 
-export function logServiceStarted(port: number): void {
-  writeStructuredLog({
+export function logServiceStarted(
+  port: number,
+  write: (payload: object) => void = writeStructuredLog,
+): void {
+  write({
     event: 'mcp.service.started',
     message: 'mcp_service_started',
     ...runtimeIdentity(),
