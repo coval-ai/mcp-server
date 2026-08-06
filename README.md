@@ -199,6 +199,9 @@ npm run check:remote
 | `LOG_LEVEL` | No | `info` | Logging level |
 | `MCP_ALLOWED_ORIGINS` | No | Claude and OpenAI web origins | Comma-separated exact browser origins allowed to call `/mcp` or `/claude/mcp`; clients that omit `Origin` remain supported |
 | `OPENAI_APPS_CHALLENGE` | No | - | OpenAI plugin-portal domain verification token served as plain text from `/.well-known/openai-apps-challenge` |
+| `DD_ENV` | No | `local` | Deployment environment included in structured hosted-request logs |
+| `DD_SERVICE` | No | `coval-mcp-server` | Service name included in structured hosted-request logs |
+| `DD_VERSION` | No | `COVAL_MCP_SOURCE_SHA` or `unknown` | Immutable release identifier included in structured hosted-request logs |
 
 ## Documentation
 

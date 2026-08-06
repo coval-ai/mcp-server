@@ -276,6 +276,20 @@ invariant(
   revisionOutput.trim() === sourceSha,
   `Image revision ${revisionOutput.trim()} did not match ${sourceSha}`,
 );
+const { stdout: environmentOutput } = await docker(
+  'image',
+  'inspect',
+  '--format',
+  '{{json .Config.Env}}',
+  imageId,
+);
+const imageEnvironment = JSON.parse(environmentOutput);
+invariant(
+  imageEnvironment.includes(`COVAL_MCP_SOURCE_SHA=${sourceSha}`),
+  'Production image omitted COVAL_MCP_SOURCE_SHA',
+);
+invariant(imageEnvironment.includes(`DD_VERSION=${sourceSha}`), 'Production image omitted DD_VERSION');
+invariant(imageEnvironment.includes('DD_SERVICE=coval-mcp-server'), 'Production image omitted DD_SERVICE');
 const { stdout: userOutput } = await docker(
   'image',
   'inspect',

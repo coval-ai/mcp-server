@@ -77,7 +77,12 @@ jobs:
           set -euo pipefail
           account_id="$(aws sts get-caller-identity --query Account --output text)"
           image="${account_id}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY}"
-          docker build -t "${image}:${IMAGE_TAG}" -t "${image}:latest" .
+          docker build \
+            --build-arg "COVAL_MCP_SOURCE_SHA=${IMAGE_TAG}" \
+            --build-arg "COVAL_MCP_ENV=${MCP_ENVIRONMENT}" \
+            -t "${image}:${IMAGE_TAG}" \
+            -t "${image}:latest" \
+            .
           docker push "${image}:${IMAGE_TAG}"
           docker push "${image}:latest"
       - name: Roll MCP service

@@ -18,6 +18,8 @@ describe("remote MCP deployment workflow", () => {
     expect(workflow).toContain("ref: ${{ needs.validate.outputs.deploy_ref }}");
     expect(workflow).toContain('sha=$(git rev-parse HEAD)');
     expect(workflow).toContain("IMAGE_TAG: ${{ steps.source.outputs.sha }}");
+    expect(workflow).toContain('--build-arg "COVAL_MCP_SOURCE_SHA=${IMAGE_TAG}"');
+    expect(workflow).toContain('--build-arg "COVAL_MCP_ENV=${MCP_ENVIRONMENT}"');
     expect(workflow).toContain('docker push "${image}:${IMAGE_TAG}"');
     expect(workflow).not.toContain('docker push "${image}:${GITHUB_SHA}"');
   });
