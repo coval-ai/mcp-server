@@ -6,7 +6,7 @@ export type RuntimeIdentity = {
   version: string;
 };
 
-type RequestCompletion = RuntimeIdentity & {
+export type RequestCompletion = RuntimeIdentity & {
   event: 'mcp.request.completed';
   message: 'mcp_request_completed';
   surface: 'mcp';
@@ -56,17 +56,21 @@ export function requestCompletion(
   };
 }
 
-export function requestCompletionLogger() {
+export function requestCompletionLogger(
+  write: (payload: RequestCompletion) => void = writeStructuredLog,
+) {
   return (req: Request, res: Response, next: NextFunction): void => {
     const startedAt = performance.now();
     let emitted = false;
-    const emit = (): void => {
+    const emit = (httpStatus: number): void => {
       if (emitted) return;
       emitted = true;
-      writeStructuredLog(requestCompletion(req, res.statusCode, performance.now() - startedAt));
+      write(requestCompletion(req, httpStatus, performance.now() - startedAt));
     };
-    res.once('finish', emit);
-    res.once('close', emit);
+    res.once('finish', () => emit(res.statusCode));
+    // Node defaults statusCode to 200 before a response is written. A socket can close before
+    // `finish`, so use nginx's conventional 499 rather than recording an aborted request as ok.
+    res.once('close', () => emit(res.writableFinished ? res.statusCode : 499));
     next();
   };
 }

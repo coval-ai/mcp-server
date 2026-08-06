@@ -1,4 +1,11 @@
-import { requestCompletion, runtimeIdentity } from '../../src/observability.js';
+import { EventEmitter } from 'node:events';
+import type { NextFunction, Request, Response } from 'express';
+import {
+  requestCompletion,
+  requestCompletionLogger,
+  type RequestCompletion,
+  runtimeIdentity,
+} from '../../src/observability.js';
 
 describe('hosted MCP observability', () => {
   it('uses the immutable source SHA as the release identity', () => {
@@ -43,5 +50,24 @@ describe('hosted MCP observability', () => {
       500,
       -1,
     )).toMatchObject({ http_path: 'other', status: 'error', duration_ms: 0 });
+  });
+
+  it('classifies a socket close before response finish as an error', () => {
+    const req = { method: 'POST', originalUrl: '/mcp' } as Request;
+    const res = new EventEmitter() as Response;
+    res.statusCode = 200;
+    Object.defineProperty(res, 'writableFinished', { value: false });
+    const entries: RequestCompletion[] = [];
+
+    requestCompletionLogger((entry) => entries.push(entry))(
+      req,
+      res,
+      (() => undefined) as NextFunction,
+    );
+    res.emit('close');
+    res.emit('finish');
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ http_status: 499, status: 'error' });
   });
 });
