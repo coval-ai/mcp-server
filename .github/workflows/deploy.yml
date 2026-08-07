@@ -265,7 +265,7 @@ jobs:
 
       - name: Publish manually selected deployment state
         if: needs.validate.outputs.promotion_origin == 'manual'
-        uses: coval-ai/ci-cd-switchboard/.github/actions/switchboard-publish-deployment-state@a973276e4639129a06cef4cf92409d4aa8e1e305
+        uses: coval-ai/ci-cd-switchboard/.github/actions/switchboard-publish-deployment-state@main
         with:
           environment: ${{ needs.validate.outputs.canonical_environment }}
           repository: coval-ai/mcp-server

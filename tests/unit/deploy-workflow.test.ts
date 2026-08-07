@@ -56,7 +56,7 @@ describe("remote MCP deployment workflow", () => {
     expect(workflow).toContain(
       "needs.validate.outputs.promotion_origin == 'manual'",
     );
-    expect(workflow).toContain("switchboard-publish-deployment-state@");
+    expect(workflow).toContain("switchboard-publish-deployment-state@main");
     expect(workflow).not.toContain("switchboard-automatic-promotion");
   });
 });
