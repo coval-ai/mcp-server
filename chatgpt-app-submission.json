@@ -235,6 +235,102 @@
         "open_world_justification": "Does not publish content or change public or third-party state.",
         "destructive_justification": "Cannot create, modify, run, or delete resources."
       }
+    },
+    "list_reports": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves saved report summaries from the authenticated Coval organization without changing them.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or change any report."
+      }
+    },
+    "get_report": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves one saved report and a bounded page of its results from the authenticated Coval organization.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or change the selected report."
+      }
+    },
+    "create_report": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Creates an organization-private saved report over explicitly identified evaluation runs.",
+        "open_world_justification": "Creates only a private report in the authenticated Coval organization and cannot publish it publicly.",
+        "destructive_justification": "Creates a new private report without deleting or overwriting an existing resource."
+      }
+    },
+    "list_run_templates": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves reusable evaluation configurations from the authenticated Coval organization.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or change any run template."
+      }
+    },
+    "list_scheduled_runs": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves recurring evaluation schedule summaries from the authenticated Coval organization.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or change any schedule."
+      }
+    },
+    "get_scheduled_run": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only retrieves one recurring evaluation schedule and a bounded page of its history.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or change the selected schedule."
+      }
+    },
+    "create_scheduled_run": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Creates a recurring evaluation schedule from a selected run template in the authenticated Coval organization.",
+        "open_world_justification": "A schedule can later trigger evaluations that contact configured agents, phone numbers, webhooks, or other external endpoints.",
+        "destructive_justification": "Creates recurring configuration that can trigger future evaluation activity and costs."
+      }
+    },
+    "update_scheduled_run": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": true,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Updates selected fields on one recurring evaluation schedule in the authenticated Coval organization.",
+        "open_world_justification": "Enabling or changing the timing of a schedule can trigger evaluations that contact configured external endpoints.",
+        "destructive_justification": "Overwrites selected schedule fields and can change future evaluation activity and costs."
+      }
     }
   },
   "test_cases": [
@@ -276,6 +372,22 @@
       "file_attachment_urls": null,
       "tools_triggered": "consult_sofia",
       "expected_output": "Calls Sofia once with only the bounded standalone prompt, with no conversation history or session identifier. Returns one task-success or task-completion metric recommendation and a concise rationale, and performs no writes.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Inspect a stable saved report and create an organization-private disposable report.",
+      "user_prompt": "List saved reports, then retrieve the report with reviewer fixture ID <PORTAL_REPORT_ID> with page_size 20 and reviewer metric ID <PORTAL_METRIC_ID>. Next, create one uniquely named report over completed run <PORTAL_COMPLETED_RUN_ID>. Do not request public visibility or modify any existing report.",
+      "file_attachment_urls": null,
+      "tools_triggered": "list_reports, get_report, create_report",
+      "expected_output": "Lists report summaries, retrieves no more than 20 rows from the specified report with an explicit continuation signal when more rows are available, and creates exactly one organization-private report over the specified completed run. Does not publish or modify any report.",
+      "expected_output_url": null
+    },
+    {
+      "description": "Inspect recurring evaluation history and prepare a disabled disposable schedule.",
+      "user_prompt": "List reusable run templates and recurring schedules. Retrieve schedule <PORTAL_SCHEDULE_ID> with history_size 20. Then create one uniquely named weekday schedule from disposable template <PORTAL_RUN_TEMPLATE_ID> in timezone America/Los_Angeles with enabled false. Update only the new schedule's display name and keep it disabled.",
+      "file_attachment_urls": null,
+      "tools_triggered": "list_run_templates, list_scheduled_runs, get_scheduled_run, create_scheduled_run, update_scheduled_run",
+      "expected_output": "Lists reusable templates and schedule summaries, retrieves no more than 20 recent runs with a continuation signal or an explicit upstream-history limit, then creates exactly one disabled schedule and changes only its display name without enabling it or triggering an evaluation.",
       "expected_output_url": null
     }
   ],
