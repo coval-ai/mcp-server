@@ -9,6 +9,16 @@ export interface PaginationParams {
   filter?: string;
 }
 
+export interface ReportPaginationParams {
+  page_size?: number;
+  page_token?: string;
+}
+
+export interface ScheduledRunPaginationParams extends ReportPaginationParams {
+  enabled?: boolean;
+  template_id?: string;
+}
+
 export interface ApiError {
   code: string;
   message: string;
@@ -276,6 +286,118 @@ export class CovalApiClient {
     }
   ) {
     return this.request<{ test_case: unknown }>('PATCH', `/test-cases/${testCaseId}`, data);
+  }
+
+  // Reports
+  async listReports(params?: ReportPaginationParams) {
+    const result = await this.request<{
+      reports: unknown[];
+      next_cursor?: string | null;
+    }>('GET', '/reports', undefined, {
+      limit: params?.page_size,
+      cursor: params?.page_token,
+    });
+    return {
+      reports: result.reports,
+      next_page_token: result.next_cursor ?? undefined,
+    };
+  }
+
+  async getReport(reportId: string) {
+    return this.request<{ report: unknown }>('GET', `/reports/${reportId}`);
+  }
+
+  async listReportRows(
+    reportId: string,
+    params: ReportPaginationParams & { metric_ids?: string[] },
+  ) {
+    return this.request<{ rows: unknown[]; next_page_token?: string | null }>(
+      'GET',
+      `/reports/${reportId}/rows`,
+      undefined,
+      {
+        limit: params.page_size,
+        cursor: params.page_token,
+        metric_ids: params.metric_ids?.join(','),
+      },
+    );
+  }
+
+  async createReport(data: {
+    name: string;
+    run_ids: string[];
+    compare_by?: 'none' | 'run' | 'agent' | 'mutation' | 'persona' | 'test_case' | 'metadata';
+    metadata_key?: string;
+    view_mode?: 'rows' | 'grouped';
+    permissions: 'PRIVATE';
+  }) {
+    return this.request<{ report: unknown }>('POST', '/reports', data);
+  }
+
+  // Run templates and scheduled runs
+  async listRunTemplates(params?: ReportPaginationParams) {
+    return this.request<{
+      run_templates: unknown[];
+      next_page_token?: string | null;
+      total_count?: number;
+    }>('GET', '/run-templates', undefined, {
+      page_size: params?.page_size,
+      page_token: params?.page_token,
+    });
+  }
+
+  async listScheduledRuns(params?: ScheduledRunPaginationParams) {
+    return this.request<{
+      scheduled_runs: unknown[];
+      next_page_token?: string | null;
+      total_count?: number;
+    }>('GET', '/scheduled-runs', undefined, {
+      page_size: params?.page_size,
+      page_token: params?.page_token,
+      enabled: params?.enabled,
+      template_id: params?.template_id,
+    });
+  }
+
+  async getScheduledRun(scheduledRunId: string) {
+    return this.request<{ scheduled_run: unknown }>(
+      'GET',
+      `/scheduled-runs/${scheduledRunId}`,
+    );
+  }
+
+  async listScheduledRunHistory(scheduledRunId: string) {
+    return this.request<{ runs: unknown[] }>(
+      'GET',
+      `/scheduled-runs/${scheduledRunId}/runs`,
+    );
+  }
+
+  async createScheduledRun(data: {
+    display_name: string;
+    run_template_id: string;
+    schedule_expression: string;
+    schedule_timezone?: string;
+    enabled: boolean;
+  }) {
+    return this.request<{ scheduled_run: unknown }>('POST', '/scheduled-runs', data);
+  }
+
+  async updateScheduledRun(
+    scheduledRunId: string,
+    data: {
+      display_name?: string;
+      run_template_id?: string;
+      schedule_expression?: string;
+      schedule_timezone?: string;
+      enabled?: boolean;
+    },
+  ) {
+    return this.request<{ scheduled_run: unknown }>(
+      'PATCH',
+      `/scheduled-runs/${scheduledRunId}`,
+      data,
+    );
   }
 
   /**
