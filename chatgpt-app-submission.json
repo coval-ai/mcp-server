@@ -343,27 +343,27 @@
       "expected_output_url": null
     },
     {
-      "description": "Inspect the stable reviewer evaluation setup without changing it.",
-      "user_prompt": "Retrieve the test set with reviewer fixture ID <PORTAL_TEST_SET_ID> and list only the test cases in that test set. Also retrieve the metric with reviewer fixture ID <PORTAL_METRIC_ID> and the persona with reviewer fixture ID <PORTAL_PERSONA_ID>. Summarize the scenarios, expected behaviors, metric purpose, and persona behavior without changing anything.",
+      "description": "Inspect stable reviewer evaluation, report, and schedule resources without changing them.",
+      "user_prompt": "Retrieve the test set with reviewer fixture ID <PORTAL_TEST_SET_ID> and list only the test cases in that test set. Also retrieve the metric with reviewer fixture ID <PORTAL_METRIC_ID> and the persona with reviewer fixture ID <PORTAL_PERSONA_ID>. List saved reports and retrieve report <PORTAL_REPORT_ID> with page_size 20 and metric ID <PORTAL_METRIC_ID>. List run templates and recurring schedules, then retrieve schedule <PORTAL_SCHEDULE_ID> with history_size 20. Summarize the resources and all continuation signals without changing anything.",
       "file_attachment_urls": null,
-      "tools_triggered": "get_test_set, list_test_cases, get_metric, get_persona",
-      "expected_output": "Retrieves Directory Review Baseline with exactly two cases: safe, scoped mild-headache guidance with escalation signs; and concise routine-appointment preparation without inventing a booking. Identifies Directory Review: Helpful and Safe as checking helpful, safe, appropriately scoped replies, and Standard Customer as a cooperative, on-topic en-US persona that waits for the agent. Performs no writes and omits credentials and unrelated internal fields.",
+      "tools_triggered": "get_test_set, list_test_cases, get_metric, get_persona, list_reports, get_report, list_run_templates, list_scheduled_runs, get_scheduled_run",
+      "expected_output": "Retrieves Directory Review Baseline with exactly two cases: safe, scoped mild-headache guidance with escalation signs; and concise routine-appointment preparation without inventing a booking. Identifies Directory Review: Helpful and Safe as checking helpful, safe, appropriately scoped replies, and Standard Customer as a cooperative, on-topic en-US persona that waits for the agent. Lists report, template, and schedule summaries, and returns no more than 20 report rows and 20 schedule-history runs with explicit continuation or upstream-history-limit signals. Performs no writes and omits credentials and unrelated internal fields.",
       "expected_output_url": null
     },
     {
-      "description": "Create and refine independent disposable evaluation content.",
-      "user_prompt": "Generate one fresh UUID v4 for this attempt. Create a SCENARIO test set named OpenAI Reviewer Billing <that UUID>. Add exactly one test case where a customer disputes a duplicate charge, with expected behaviors to verify the duplicate and explain the next step. Then update only that test case's description to 'OpenAI reviewer disposable fixture.'",
+      "description": "Create and refine independent disposable evaluation content and a private report.",
+      "user_prompt": "Generate one fresh UUID v4 for this attempt. Create a SCENARIO test set named OpenAI Reviewer Billing <that UUID>. Add exactly one test case where a customer disputes a duplicate charge, with expected behaviors to verify the duplicate and explain the next step. Then update only that test case's description to 'OpenAI reviewer disposable fixture.' Separately create one uniquely named private saved report over completed run <PORTAL_COMPLETED_RUN_ID>. Do not request public visibility or modify any existing report.",
       "file_attachment_urls": null,
-      "tools_triggered": "create_test_set, create_test_case, update_test_case",
-      "expected_output": "After the required confirmations, creates exactly one test set named with a fresh collision-resistant UUID and one linked test case, then applies the requested description. Reports the resulting resource names without depending on another test case or changing anything else.",
+      "tools_triggered": "create_test_set, create_test_case, update_test_case, create_report",
+      "expected_output": "After the required confirmations, creates exactly one test set named with a fresh collision-resistant UUID and one linked test case, then applies the requested description. Also creates exactly one organization-private report over the specified completed run. Reports the resulting resource names without depending on another test case or changing anything else.",
       "expected_output_url": null
     },
     {
-      "description": "Inspect a stable reviewer agent and completed run without launching work.",
-      "user_prompt": "Retrieve the agent with reviewer fixture ID <PORTAL_AGENT_ID> and the completed run with reviewer fixture ID <PORTAL_COMPLETED_RUN_ID>. Summarize the agent's display name, model type, and endpoint-configured status, then report the run's status, progress, tags, and result overview. Do not create or update anything and do not start a run.",
+      "description": "Inspect a stable reviewer agent and completed run, then prepare a disabled schedule.",
+      "user_prompt": "Retrieve the agent with reviewer fixture ID <PORTAL_AGENT_ID> and the completed run with reviewer fixture ID <PORTAL_COMPLETED_RUN_ID>. Summarize the agent's display name, model type, and endpoint-configured status, then report the run's status, progress, tags, and result overview. Next, create one uniquely named weekday schedule from disposable template <PORTAL_RUN_TEMPLATE_ID> in timezone America/Los_Angeles with enabled false. Update only the new schedule's display name and keep it disabled.",
       "file_attachment_urls": null,
-      "tools_triggered": "get_agent, get_run",
-      "expected_output": "Reports Review Voice Agent as MODEL_TYPE_VOICE with endpoint_configured false. Reports the completed reviewer run as COMPLETED with 2/2 test cases completed, 0 failed, tags directory-review and openai-review, and Directory Review: Helpful and Safe = YES for both outputs. Performs no writes, does not depend on another test case, and starts no run.",
+      "tools_triggered": "get_agent, get_run, create_scheduled_run, update_scheduled_run",
+      "expected_output": "Reports Review Voice Agent as MODEL_TYPE_VOICE with endpoint_configured false. Reports the completed reviewer run as COMPLETED with 2/2 test cases completed, 0 failed, tags directory-review and openai-review, and Directory Review: Helpful and Safe = YES for both outputs. After the required confirmations, creates exactly one disabled schedule and changes only its display name without enabling it or triggering an evaluation.",
       "expected_output_url": null
     },
     {
@@ -372,22 +372,6 @@
       "file_attachment_urls": null,
       "tools_triggered": "consult_sofia",
       "expected_output": "Calls Sofia once with only the bounded standalone prompt, with no conversation history or session identifier. Returns one task-success or task-completion metric recommendation and a concise rationale, and performs no writes.",
-      "expected_output_url": null
-    },
-    {
-      "description": "Inspect a stable saved report and create an organization-private disposable report.",
-      "user_prompt": "List saved reports, then retrieve the report with reviewer fixture ID <PORTAL_REPORT_ID> with page_size 20 and reviewer metric ID <PORTAL_METRIC_ID>. Next, create one uniquely named report over completed run <PORTAL_COMPLETED_RUN_ID>. Do not request public visibility or modify any existing report.",
-      "file_attachment_urls": null,
-      "tools_triggered": "list_reports, get_report, create_report",
-      "expected_output": "Lists report summaries, retrieves no more than 20 rows from the specified report with an explicit continuation signal when more rows are available, and creates exactly one organization-private report over the specified completed run. Does not publish or modify any report.",
-      "expected_output_url": null
-    },
-    {
-      "description": "Inspect recurring evaluation history and prepare a disabled disposable schedule.",
-      "user_prompt": "List reusable run templates and recurring schedules. Retrieve schedule <PORTAL_SCHEDULE_ID> with history_size 20. Then create one uniquely named weekday schedule from disposable template <PORTAL_RUN_TEMPLATE_ID> in timezone America/Los_Angeles with enabled false. Update only the new schedule's display name and keep it disabled.",
-      "file_attachment_urls": null,
-      "tools_triggered": "list_run_templates, list_scheduled_runs, get_scheduled_run, create_scheduled_run, update_scheduled_run",
-      "expected_output": "Lists reusable templates and schedule summaries, retrieves no more than 20 recent runs with a continuation signal or an explicit upstream-history limit, then creates exactly one disabled schedule and changes only its display name without enabling it or triggering an evaluation.",
       "expected_output_url": null
     }
   ],

@@ -118,24 +118,35 @@ resources after review.
      required confirmations; no evaluation starts and the SIP address is never contacted.
    - Fixture: permission to create disposable agents. Generate a fresh UUID v4 or equivalent
      collision-resistant nonce and matching `sip:<nonce>@invalid.example` address for every attempt.
-2. **Stable evaluation setup inspection**
+2. **Stable evaluation, report, and schedule inspection**
    - Retrieve the portal-provided baseline test-set ID, only its test cases, the reviewer metric ID,
-     and the canonical reviewer persona ID.
-   - Expected behavior: retrieve only those exact resources. Make no changes and do not fall back
-     to mutable display-name discovery.
-   - Fixture: one baseline test set with two cases, one metric, and one canonical persona.
-3. **Independent disposable test content**
+     and the canonical reviewer persona ID. List reports, retrieve the stable report with a page
+     size of 20 and the reviewer metric filter, then list run templates and schedules and retrieve
+     the stable schedule with 20 recent runs.
+   - Expected behavior: retrieve only those exact resources. Report explicit continuation signals
+     for report rows and schedule history; make no changes and do not fall back to mutable
+     display-name discovery.
+   - Fixture: one baseline test set with two cases, one metric, one canonical persona, one stable
+     saved report, and one stable schedule with history.
+3. **Independent disposable test content and private report**
    - Create one SCENARIO test set named with a fresh UUID v4 or equivalent collision-resistant
      nonce, add one duplicate-charge test case, and
-     update only that case's description.
-   - Expected behavior: `create_test_set`, `create_test_case`, and `update_test_case` each run once
-     after confirmation. This case must not be reused by another submitted test.
-   - Fixture: permission to create disposable test data.
-4. **Stable agent and completed-run inspection**
-   - Retrieve the portal-provided stable agent ID and completed reviewer-run ID.
+     update only that case's description. Separately create one uniquely named, organization-private
+     report over the completed reviewer run.
+   - Expected behavior: `create_test_set`, `create_test_case`, `update_test_case`, and
+     `create_report` each run once after confirmation. This case must not be reused by another
+     submitted test; the new report must not accept public-sharing input.
+   - Fixture: permission to create disposable test data and one stable completed run.
+4. **Stable agent and completed-run inspection plus disabled schedule**
+   - Retrieve the portal-provided stable agent ID and completed reviewer-run ID. Create one
+     uniquely named weekday schedule from the disposable template with a concrete timezone and
+     without activation, then update only its display name while it remains disabled.
    - Expected behavior: call `get_agent` and `get_run`, report only the requested configuration and
-     result fields, and perform no writes or evaluation launch.
-   - Fixture: an independently valid agent and completed run that do not depend on cases 1 or 3.
+     result fields, then create and update exactly one disabled schedule without triggering an
+     evaluation.
+   - Fixture: an independently valid agent and completed run that do not depend on cases 1 or 3,
+     plus a disposable run template that can be used for a disabled schedule. Remove the disposable
+     schedule through the Coval app or API after review.
 5. **Bounded Sofia guidance**
    - Ask Sofia one standalone question containing only two Turn Count scores and a request for one
      task-completion metric.
@@ -143,23 +154,6 @@ resources after review.
      caller session identifier.
    - Expected result: one task-success or task-completion metric recommendation and a concise
      rationale, with no writes.
-6. **Private saved report workflow**
-   - List saved reports, retrieve the portal-provided stable report with a page size of 20 and the
-     reviewer metric filter, then create one uniquely named report over the completed reviewer run.
-   - Expected behavior: the stable read returns no more than 20 rows and accurately indicates
-     whether more rows exist. The new report is organization-private and accepts no public-sharing
-     input.
-   - Fixture: one stable saved report, one stable completed run, and one reviewer metric.
-7. **Disabled recurring evaluation workflow**
-   - List run templates and schedules, retrieve the portal-provided schedule with 20 recent runs,
-     then create a uniquely named weekday schedule from the disposable template with a concrete
-     timezone and without activation. Update only its display name while it remains disabled.
-   - Expected behavior: history returns no more than 20 runs with a continuation token, or clearly
-     marks completeness unknown if the 500-run API window is exhausted. Creation sends
-     `enabled: false`; the update does not activate or trigger an evaluation.
-   - Fixture: one stable schedule with history, plus a disposable run template that can be used for
-     a disabled schedule. Remove the disposable schedule through the Coval app or API after review.
-
 ### Negative cases
 
 1. **Unrelated calendar request**
@@ -187,7 +181,7 @@ resources after review.
   annotations.
 - Replace any stale portal description with the client-neutral canonical copy in this repository;
   do not claim write support for metrics or personas.
-- Run all seven positive and three negative cases in fresh conversations with the clean reviewer
+- Run all five positive and three negative cases in fresh conversations with the clean reviewer
   account, record the exact tool sequence and result, and resolve every mismatch before submitting.
 - Use `https://app.coval.dev` as the allowed application link origin if link opening is enabled.
 - Do not add challenge tokens, credentials, or fixture IDs to this repository.

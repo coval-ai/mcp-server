@@ -17,6 +17,10 @@ const submission = JSON.parse(
 };
 
 describe('ChatGPT app submission artifact', () => {
+  it('keeps the positive review workflows within the portal limit', () => {
+    expect(submission.test_cases).toHaveLength(5);
+  });
+
   it('declares the full production MCP tool catalog', () => {
     expect(Object.keys(submission.tools).sort()).toEqual([
       'consult_sofia',
