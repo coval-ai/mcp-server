@@ -24,6 +24,8 @@ jobs:
       - name: Build production image
         run: |
           docker build \
+            --build-arg "COVAL_MCP_SOURCE_SHA=${GITHUB_SHA}" \
+            --build-arg "COVAL_MCP_ENV=ci" \
             --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
             --tag "coval-mcp:${GITHUB_SHA}" \
             .
@@ -31,4 +33,5 @@ jobs:
         env:
           COVAL_MCP_IMAGE: coval-mcp:${{ github.sha }}
           COVAL_MCP_SOURCE_SHA: ${{ github.sha }}
+          COVAL_MCP_ENV: ci
         run: npm run qualify:image
