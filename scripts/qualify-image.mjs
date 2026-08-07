@@ -11,22 +11,30 @@ const sourceSha = process.env.COVAL_MCP_SOURCE_SHA;
 const expectedToolNames = [
   'consult_sofia',
   'create_agent',
+  'create_report',
   'create_run',
+  'create_scheduled_run',
   'create_test_case',
   'create_test_set',
   'get_agent',
   'get_metric',
   'get_persona',
+  'get_report',
   'get_run',
+  'get_scheduled_run',
   'get_test_case',
   'get_test_set',
   'list_agents',
   'list_metrics',
   'list_personas',
+  'list_reports',
+  'list_run_templates',
   'list_runs',
+  'list_scheduled_runs',
   'list_test_cases',
   'list_test_sets',
   'update_agent',
+  'update_scheduled_run',
   'update_test_case',
 ].sort();
 const remoteProfiles = [
@@ -156,6 +164,10 @@ function assertToolCatalog(tools, profileName) {
       typeof tool.annotations?.destructiveHint === 'boolean',
       `${profileName}/${tool.name} omitted destructiveHint`,
     );
+    invariant(
+      typeof tool.annotations?.openWorldHint === 'boolean',
+      `${profileName}/${tool.name} omitted openWorldHint`,
+    );
   }
 
   const byName = new Map(tools.map((tool) => [tool.name, tool]));
@@ -163,17 +175,30 @@ function assertToolCatalog(tools, profileName) {
     byName.get('list_agents')?.annotations?.readOnlyHint === true,
     `${profileName} did not preserve list_agents as read-only`,
   );
-  invariant(
-    byName.get('create_run')?.annotations?.destructiveHint === true,
-    `${profileName} did not preserve create_run as destructive`,
-  );
-  const expectedCreateAgentDestructive = profileName === 'claude';
-  const actualCreateAgentDestructive = byName.get('create_agent')?.annotations?.destructiveHint;
-  invariant(
-    actualCreateAgentDestructive === expectedCreateAgentDestructive,
-    `${profileName} did not preserve its create_agent risk profile: ` +
-      `destructiveHint was ${actualCreateAgentDestructive}, expected ${expectedCreateAgentDestructive}`,
-  );
+  for (const toolName of ['create_run', 'create_scheduled_run', 'update_scheduled_run']) {
+    invariant(
+      byName.get(toolName)?.annotations?.destructiveHint === true,
+      `${profileName} did not preserve ${toolName} as destructive`,
+    );
+    invariant(
+      byName.get(toolName)?.annotations?.openWorldHint === true,
+      `${profileName} did not preserve ${toolName} as open-world`,
+    );
+  }
+  for (const toolName of [
+    'create_agent',
+    'create_report',
+    'create_test_case',
+    'create_test_set',
+  ]) {
+    const expectedDestructive = profileName === 'claude';
+    const actualDestructive = byName.get(toolName)?.annotations?.destructiveHint;
+    invariant(
+      actualDestructive === expectedDestructive,
+      `${profileName} did not preserve its ${toolName} risk profile: ` +
+        `destructiveHint was ${actualDestructive}, expected ${expectedDestructive}`,
+    );
+  }
 }
 
 function assertListAgentsResult(result, profileName) {
