@@ -25,13 +25,14 @@ authenticated tools.
 - Connect `https://mcp.coval.dev/mcp` for OpenAI and generic MCP review, and
   `https://mcp.coval.dev/claude/mcp` for Claude review, using OAuth.
 - Select a populated Coval test organization during consent.
-- Confirm tool discovery returns exactly 19 tools with a title and correct read/write annotations
-  for every tool. The six write tools (`create_agent`, `create_run`, `create_test_set`,
-  `create_test_case`, `update_agent`, and `update_test_case`) must advertise
-  `readOnlyHint: false`. On `/mcp`, the additive create tools (`create_agent`, `create_test_set`,
-  and `create_test_case`) advertise `destructiveHint: false`, while `create_run`, `update_agent`,
-  and `update_test_case` advertise `destructiveHint: true`. On `/claude/mcp`, all six write tools
-  advertise `destructiveHint: true`. On both paths, `create_run` alone advertises
+- Confirm tool discovery returns exactly 27 tools with a title and correct read/write annotations
+  for every tool. The nine write tools (`create_agent`, `create_run`, `create_test_set`,
+  `create_test_case`, `create_report`, `create_scheduled_run`, `update_agent`, `update_test_case`,
+  and `update_scheduled_run`) must advertise `readOnlyHint: false`. On `/mcp`, the additive create
+  tools (`create_agent`, `create_test_set`, `create_test_case`, and `create_report`) advertise
+  `destructiveHint: false`; the other five write tools advertise `destructiveHint: true`. On
+  `/claude/mcp`, all nine write tools advertise `destructiveHint: true`. On both paths,
+  `create_run`, `create_scheduled_run`, and `update_scheduled_run` advertise
   `openWorldHint: true`; all other tools advertise `openWorldHint: false`.
 - Inspect every input schema discovered from the OpenAI `/mcp` endpoint. No tool may request
   ChatGPT conversation history, a caller-provided session identifier, arbitrary metadata, or an
@@ -39,6 +40,10 @@ authenticated tools.
   `create_agent` clearly identifies the connection field required by its selected model type.
   The Claude endpoint and local package retain their existing advanced input fields as a separate
   compatibility profile.
+- Confirm report reads expose bounded row pages and an explicit `has_more` signal. Confirm report
+  creation accepts no visibility field and produces an organization-private report.
+- Confirm schedule history is bounded and cursor-aware, cron creation and cadence updates require
+  an explicit timezone, and schedule creation remains disabled unless `enabled: true` is supplied.
 - Exercise every tool with valid inputs. Confirm write tools affect only disposable test data.
 - Confirm `consult_sofia` succeeds for the review organization. Direct API tools and Sofia
   consultation are separate capabilities, so test both.
@@ -73,14 +78,18 @@ this public repository.
 **Tagline:** Evaluate and improve voice and chat agents
 
 **Description:** Connect ChatGPT, Claude, or another MCP client to your Coval workspace to inspect
-agents, test sets, personas, metrics, and evaluation runs. Launch evaluations and update supported
-resources through explicit write tools, or consult Sofia for read-only analysis grounded in your
-organization's evaluation data and Coval's evaluation workflows.
+agents, test sets, personas, metrics, evaluation runs, saved reports, run templates, and recurring
+schedules. Launch evaluations and update supported resources through explicit write tools, or
+consult Sofia for read-only analysis grounded in your organization's evaluation data and Coval's
+evaluation workflows.
 
 **Primary use cases:**
 
 - Inspect recent evaluation runs and diagnose performance or configuration issues.
 - Create and refine agents, test sets, and test cases, then launch evaluation runs.
+- Read bounded report results, create private reports, and inspect recurring evaluation history.
+- Prepare disabled schedules from reusable run templates and activate them only when explicitly
+  requested.
 - Ask Sofia for read-only, organization-grounded evaluation guidance.
 
 **Connection requirements:** A Coval account with access to the organization being connected. The
@@ -134,6 +143,22 @@ resources after review.
      caller session identifier.
    - Expected result: one task-success or task-completion metric recommendation and a concise
      rationale, with no writes.
+6. **Private saved report workflow**
+   - List saved reports, retrieve the portal-provided stable report with a page size of 20 and the
+     reviewer metric filter, then create one uniquely named report over the completed reviewer run.
+   - Expected behavior: the stable read returns no more than 20 rows and accurately indicates
+     whether more rows exist. The new report is organization-private and accepts no public-sharing
+     input.
+   - Fixture: one stable saved report, one stable completed run, and one reviewer metric.
+7. **Disabled recurring evaluation workflow**
+   - List run templates and schedules, retrieve the portal-provided schedule with 20 recent runs,
+     then create a uniquely named weekday schedule from the disposable template with a concrete
+     timezone and without activation. Update only its display name while it remains disabled.
+   - Expected behavior: history returns no more than 20 runs with a continuation token, or clearly
+     marks completeness unknown if the 500-run API window is exhausted. Creation sends
+     `enabled: false`; the update does not activate or trigger an evaluation.
+   - Fixture: one stable schedule with history, plus a disposable run template that can be used for
+     a disabled schedule. Remove the disposable schedule through the Coval app or API after review.
 
 ### Negative cases
 
@@ -158,11 +183,11 @@ resources after review.
 - Select the verified Coval developer or business identity; do not submit while the portal shows
   `No Identity Selected`.
 - After deploying the exact reviewed server head, run **Scan Tools** again on the submitted app
-  version and confirm the frozen snapshot contains exactly 19 tools with the current schemas and
+  version and confirm the frozen snapshot contains exactly 27 tools with the current schemas and
   annotations.
 - Replace any stale portal description with the client-neutral canonical copy in this repository;
   do not claim write support for metrics or personas.
-- Run all five positive and three negative cases in fresh conversations with the clean reviewer
+- Run all seven positive and three negative cases in fresh conversations with the clean reviewer
   account, record the exact tool sequence and result, and resolve every mismatch before submitting.
 - Use `https://app.coval.dev` as the allowed application link origin if link opening is enabled.
 - Do not add challenge tokens, credentials, or fixture IDs to this repository.

@@ -1,8 +1,11 @@
 import {
   CreateAgentInputSchema,
   CreateRunInputSchema,
+  CreateReportInputSchema,
+  CreateScheduledRunInputSchema,
   CreateTestCaseInputSchema,
   CreateTestSetInputSchema,
+  GetScheduledRunInputSchema,
   GetTestSetInputSchema,
   LegacyGetTestSetInputSchema,
   ListTestCasesInputSchema,
@@ -10,6 +13,7 @@ import {
   ResourceIdSchema,
   StrictPaginationInputSchema,
   UpdateAgentInputSchema,
+  UpdateScheduledRunInputSchema,
   UpdateTestCaseInputSchema,
 } from '../../src/schemas/index.js';
 
@@ -50,9 +54,99 @@ describe('shared public input boundaries', () => {
       ListTestCasesInputSchema.safeParse({ test_set_id: 'Ab12Cd3"' }).success,
     ).toBe(false);
   });
+
+  it('bounds scheduled-run history continuation tokens to the API window', () => {
+    expect(
+      GetScheduledRunInputSchema.safeParse({
+        scheduled_run_id: 'schedule_example',
+        history_page_token: '499',
+      }).success,
+    ).toBe(true);
+    expect(
+      GetScheduledRunInputSchema.safeParse({
+        scheduled_run_id: 'schedule_example',
+        history_page_token: '500',
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe('public write input schemas', () => {
+  it('keeps saved reports private and their grouping inputs internally consistent', () => {
+    expect(
+      CreateReportInputSchema.safeParse({
+        name: 'Regression summary',
+        run_ids: ['run_example'],
+        compare_by: 'metadata',
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateReportInputSchema.safeParse({
+        name: 'Regression summary',
+        run_ids: ['run_example'],
+        compare_by: 'agent',
+        metadata_key: 'environment',
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateReportInputSchema.safeParse({
+        name: 'Regression summary',
+        run_ids: ['run_example'],
+        permissions: 'PUBLIC',
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateReportInputSchema.safeParse({
+        name: 'Regression summary',
+        run_ids: ['run_example'],
+        compare_by: 'metadata',
+        metadata_key: 'environment',
+      }).success,
+    ).toBe(true);
+  });
+
+  it('requires explicit cron timezones and at least one schedule update field', () => {
+    expect(
+      CreateScheduledRunInputSchema.safeParse({
+        display_name: 'Weekday regression',
+        run_template_id: 'template_example',
+        schedule_expression: 'cron(0 9 ? * MON-FRI *)',
+      }).success,
+    ).toBe(false);
+    expect(
+      CreateScheduledRunInputSchema.safeParse({
+        display_name: 'Weekday regression',
+        run_template_id: 'template_example',
+        schedule_expression: 'cron(0 9 ? * MON-FRI *)',
+        schedule_timezone: 'America/Los_Angeles',
+      }).success,
+    ).toBe(true);
+    expect(
+      UpdateScheduledRunInputSchema.safeParse({
+        scheduled_run_id: 'schedule_example',
+      }).success,
+    ).toBe(false);
+    expect(
+      UpdateScheduledRunInputSchema.safeParse({
+        scheduled_run_id: 'schedule_example',
+        schedule_expression: 'cron(0 9 ? * MON-FRI *)',
+      }).success,
+    ).toBe(false);
+    expect(
+      UpdateScheduledRunInputSchema.safeParse({
+        scheduled_run_id: 'schedule_example',
+        schedule_expression: 'cron(0 9 ? * MON-FRI *)',
+        schedule_timezone: 'America/Los_Angeles',
+      }).success,
+    ).toBe(true);
+    expect(
+      UpdateScheduledRunInputSchema.safeParse({
+        scheduled_run_id: 'schedule_example',
+        enabled: false,
+      }).success,
+    ).toBe(true);
+  });
+
   it('advertises create_agent as an MCP-serializable object with bounded connection fields', () => {
     expect(
       CreateAgentInputSchema.safeParse({
