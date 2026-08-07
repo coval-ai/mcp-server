@@ -10,7 +10,7 @@ describe("remote MCP Lambda", () => {
       requestContext: { http: { method: "GET" } },
       headers: {},
     } as Parameters<typeof handler>[0]);
-    expect(JSON.parse(health.body).version).toBe("0.3.0");
+    expect(JSON.parse(health.body).version).toBe("0.4.0");
 
     const initialize = await handler({
       rawPath: "/mcp",
@@ -19,7 +19,7 @@ describe("remote MCP Lambda", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} }),
       isBase64Encoded: false,
     } as Parameters<typeof handler>[0]);
-    expect(JSON.parse(initialize.body).result.serverInfo.version).toBe("0.3.0");
+    expect(JSON.parse(initialize.body).result.serverInfo.version).toBe("0.4.0");
   });
 
   it("does not advertise consult_sofia until it has a long-lived transport", async () => {

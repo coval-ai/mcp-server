@@ -7,7 +7,7 @@ import {
   type ToolInputProfile,
 } from './tools/annotations.js';
 
-export const COVAL_MCP_SERVER_VERSION = '0.3.0';
+export const COVAL_MCP_SERVER_VERSION = '0.4.0';
 
 const COVAL_OVERVIEW = `Coval evaluates AI agents (voice, SMS, chat) by running simulated conversations.
 
