@@ -1,6 +1,6 @@
 {
   "name": "@coval/mcp-server",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "Coval MCP Server - AI evaluation platform integration for Claude Desktop, Cursor, and other MCP clients",
   "type": "module",
   "main": "dist/index.js",
