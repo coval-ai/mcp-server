@@ -31,6 +31,9 @@ describe('pagination input profiles', () => {
     'list_test_cases',
     'list_personas',
     'list_metrics',
+    'list_reports',
+    'list_run_templates',
+    'list_scheduled_runs',
   ])(
     'keeps %s strict for OpenAI and permissive for legacy callers',
     (toolName) => {

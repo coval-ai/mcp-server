@@ -16,6 +16,7 @@ import {
   rewriteOpenAiToolCalls,
 } from './compatibility.js';
 import { ManagedApiKeyError, ManagedApiKeyProvider } from './managed-api-key.js';
+import { logServiceStarted, requestCompletionLogger } from './observability.js';
 import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
 import type { ToolAnnotationProfile } from './tools/annotations.js';
 
@@ -129,6 +130,8 @@ export async function createRemoteApp(): Promise<express.Express> {
   const origins = allowedOrigins();
   app.disable('x-powered-by');
   app.set('trust proxy', 1);
+  app.use('/mcp', requestCompletionLogger());
+  app.use('/claude/mcp', requestCompletionLogger());
   app.use('/mcp', validateOrigin(origins));
   app.use('/claude/mcp', validateOrigin(origins));
   app.use(express.json({ limit: '1mb' }));
@@ -272,7 +275,7 @@ export async function createRemoteApp(): Promise<express.Express> {
 async function main(): Promise<void> {
   const app = await createRemoteApp();
   app.listen(PORT, '0.0.0.0', () => {
-    console.error(`Coval MCP HTTP server listening on port ${PORT}`);
+    logServiceStarted(PORT);
   });
 }
 

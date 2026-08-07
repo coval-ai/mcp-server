@@ -45,7 +45,10 @@ export function createTool(
   };
 }
 
-export function updateTool(title: string): ToolMetadata {
+export function updateTool(
+  title: string,
+  { openWorldHint = false }: { openWorldHint?: boolean } = {},
+): ToolMetadata {
   return {
     title,
     annotations: {
@@ -53,7 +56,7 @@ export function updateTool(title: string): ToolMetadata {
       readOnlyHint: false,
       destructiveHint: true,
       idempotentHint: false,
-      openWorldHint: false,
+      openWorldHint,
     },
   };
 }

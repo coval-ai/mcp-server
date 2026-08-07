@@ -53,7 +53,9 @@ describe('registerAllTools', () => {
     expect(registrations.get('create_agent')?.annotations?.destructiveHint).toBe(false);
     expect(registrations.get('create_test_set')?.annotations?.destructiveHint).toBe(false);
     expect(registrations.get('create_test_case')?.annotations?.destructiveHint).toBe(false);
+    expect(registrations.get('create_report')?.annotations?.destructiveHint).toBe(false);
     expect(registrations.get('create_run')?.annotations?.destructiveHint).toBe(true);
+    expect(registrations.get('create_scheduled_run')?.annotations?.destructiveHint).toBe(true);
   });
 
   it('exposes only bounded, task-specific input fields', () => {
@@ -106,6 +108,42 @@ describe('registerAllTools', () => {
       ['get_metric', ['metric_id']],
       ['list_personas', ['filter', 'order_by', 'page_size', 'page_token']],
       ['get_persona', ['persona_id']],
+      ['list_reports', ['page_size', 'page_token']],
+      ['get_report', ['metric_ids', 'page_size', 'page_token', 'report_id']],
+      [
+        'create_report',
+        ['compare_by', 'metadata_key', 'name', 'run_ids', 'view_mode'],
+      ],
+      ['list_run_templates', ['page_size', 'page_token']],
+      [
+        'list_scheduled_runs',
+        ['enabled', 'page_size', 'page_token', 'template_id'],
+      ],
+      [
+        'get_scheduled_run',
+        ['history_page_token', 'history_size', 'scheduled_run_id'],
+      ],
+      [
+        'create_scheduled_run',
+        [
+          'display_name',
+          'enabled',
+          'run_template_id',
+          'schedule_expression',
+          'schedule_timezone',
+        ],
+      ],
+      [
+        'update_scheduled_run',
+        [
+          'display_name',
+          'enabled',
+          'run_template_id',
+          'schedule_expression',
+          'schedule_timezone',
+          'scheduled_run_id',
+        ],
+      ],
       ['consult_sofia', ['prompt']],
     ]);
     const forbiddenFields = new Set([
@@ -264,11 +302,25 @@ describe('registerAllTools', () => {
         ['get_metric', readOnlyAnnotations],
         ['list_personas', readOnlyAnnotations],
         ['get_persona', readOnlyAnnotations],
+        ['list_reports', readOnlyAnnotations],
+        ['get_report', readOnlyAnnotations],
+        ['create_report', additiveWriteAnnotations],
+        ['list_run_templates', readOnlyAnnotations],
+        ['list_scheduled_runs', readOnlyAnnotations],
+        ['get_scheduled_run', readOnlyAnnotations],
+        [
+          'create_scheduled_run',
+          { ...destructiveWriteAnnotations, openWorldHint: true },
+        ],
+        [
+          'update_scheduled_run',
+          { ...destructiveWriteAnnotations, openWorldHint: true },
+        ],
         ['consult_sofia', readOnlyAnnotations],
       ]);
 
       expect([...toolNames].sort()).toEqual([...expectedAnnotations.keys()].sort());
-      expect(toolNames).toHaveLength(19);
+      expect(toolNames).toHaveLength(27);
 
       for (const [name, expected] of expectedAnnotations) {
         const registration = registrations.get(name);

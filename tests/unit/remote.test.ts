@@ -293,7 +293,7 @@ describe('remote OAuth organization binding', () => {
           toolsByProfile.set(annotationProfile, tools);
           expect(tools.map((tool) => tool.name)).toContain('consult_sofia');
           expect(tools.map((tool) => tool.name)).not.toContain('consult_covi');
-          expect(tools).toHaveLength(19);
+          expect(tools).toHaveLength(27);
           for (const tool of tools) {
             expect(tool.title).toBeTruthy();
             expect(typeof tool.annotations?.readOnlyHint).toBe('boolean');
@@ -350,11 +350,22 @@ describe('remote OAuth organization binding', () => {
       const standardDestructive = destructiveByName(standardTools);
       const claudeDestructive = destructiveByName(claudeTools);
 
-      for (const name of ['create_agent', 'create_test_set', 'create_test_case']) {
+      for (const name of [
+        'create_agent',
+        'create_test_set',
+        'create_test_case',
+        'create_report',
+      ]) {
         expect(standardDestructive.get(name)).toBe(false);
         expect(claudeDestructive.get(name)).toBe(true);
       }
-      for (const name of ['create_run', 'update_agent', 'update_test_case']) {
+      for (const name of [
+        'create_run',
+        'update_agent',
+        'update_test_case',
+        'create_scheduled_run',
+        'update_scheduled_run',
+      ]) {
         expect(standardDestructive.get(name)).toBe(true);
         expect(claudeDestructive.get(name)).toBe(true);
       }

@@ -9,6 +9,7 @@ Coval's evaluation APIs, enabling you to:
 - Launch and monitor evaluation runs
 - Manage AI agents and test sets
 - Retrieve evaluation metrics and results
+- Inspect saved reports and recurring evaluation schedules
 
 ## Hosted connector
 
@@ -141,6 +142,14 @@ Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
 | `get_metric` | Get metric details |
 | `list_personas` | List available personas |
 | `get_persona` | Get persona details |
+| `list_reports` | List saved evaluation reports |
+| `get_report` | Get report details and a bounded page of result rows |
+| `create_report` | Create an organization-private saved report |
+| `list_run_templates` | List reusable evaluation configurations |
+| `list_scheduled_runs` | List recurring evaluation schedules |
+| `get_scheduled_run` | Get a schedule and paginated recent-run history |
+| `create_scheduled_run` | Create a schedule, disabled by default |
+| `update_scheduled_run` | Update selected schedule fields |
 | `consult_sofia` | Delegate a read-only Coval evaluation question to Sofia |
 
 ## Example Usage
@@ -148,13 +157,13 @@ Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
 Once connected, you can ask Claude things like:
 
 > "Show me my recent evaluation runs"
-
 > "List all my agents"
-
 > "Run an evaluation of my customer-support-agent against the billing-inquiries test set"
-
 > "What are the metrics for run abc123?"
-
+> "Show the first 20 rows of my regression report for the task-success metric"
+> "Create a private report comparing these completed runs by agent"
+> "Show my enabled evaluation schedules and the latest runs from the nightly regression"
+> "Create a disabled weekday schedule from my regression run template"
 > "Use `consult_sofia` to analyze my latest failed run and recommend the most useful next test."
 
 The same tools, including `consult_sofia`, are available through every supported endpoint and
@@ -199,6 +208,9 @@ npm run check:remote
 | `LOG_LEVEL` | No | `info` | Logging level |
 | `MCP_ALLOWED_ORIGINS` | No | Claude and OpenAI web origins | Comma-separated exact browser origins allowed to call `/mcp` or `/claude/mcp`; clients that omit `Origin` remain supported |
 | `OPENAI_APPS_CHALLENGE` | No | - | OpenAI plugin-portal domain verification token served as plain text from `/.well-known/openai-apps-challenge` |
+| `DD_ENV` | No | `local` | Deployment environment included in structured hosted-request logs |
+| `DD_SERVICE` | No | `coval-mcp-server` | Service name included in structured hosted-request logs |
+| `DD_VERSION` | No | `COVAL_MCP_SOURCE_SHA` or `unknown` | Immutable release identifier included in structured hosted-request logs |
 
 ## Documentation
 

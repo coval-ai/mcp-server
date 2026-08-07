@@ -7,6 +7,8 @@ import { registerTestCaseTools } from './test-cases.js';
 import { registerMetricTools } from './metrics.js';
 import { registerPersonaTools } from './personas.js';
 import { registerSofiaTools } from './sofia.js';
+import { registerReportTools } from './reports.js';
+import { registerSchedulingTools } from './scheduling.js';
 import type {
   ToolAnnotationProfile,
   ToolInputProfile,
@@ -35,6 +37,8 @@ export function registerAllTools(
   registerPersonaTools(server, client, {
     inputProfile: options.inputProfile,
   });
+  registerReportTools(server, client, createToolOptions);
+  registerSchedulingTools(server, client, createToolOptions);
   if (options.includeSofia ?? true) {
     registerSofiaTools(server, client, {
       inputProfile: options.inputProfile,
