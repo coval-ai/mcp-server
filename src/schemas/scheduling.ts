@@ -83,6 +83,14 @@ export const GetScheduledRunInputSchema = z.object({
     .max(100)
     .optional()
     .describe('Number of recent triggered runs to return (1-100, default 20).'),
+  history_page_token: z
+    .string()
+    .regex(/^\d{1,3}$/, 'History page token must contain one to three digits')
+    .refine((value) => Number(value) < 500, {
+      message: 'History page token must be less than 500',
+    })
+    .optional()
+    .describe('Token for continuing within the API history window.'),
 }).strict();
 
 export const CreateScheduledRunInputSchema = z.object({
@@ -124,17 +132,30 @@ export const UpdateScheduledRunInputSchema = z.object({
   schedule_expression: ScheduleExpressionSchema.optional(),
   schedule_timezone: ScheduleTimezoneSchema.optional(),
   enabled: z.boolean().optional(),
-}).strict().refine(
-  (value) =>
-    value.display_name !== undefined ||
-    value.run_template_id !== undefined ||
-    value.schedule_expression !== undefined ||
-    value.schedule_timezone !== undefined ||
-    value.enabled !== undefined,
-  {
-    message: 'At least one scheduled run field must be provided',
-  },
-);
+}).strict().superRefine((value, context) => {
+  if (
+    value.display_name === undefined &&
+    value.run_template_id === undefined &&
+    value.schedule_expression === undefined &&
+    value.schedule_timezone === undefined &&
+    value.enabled === undefined
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'At least one scheduled run field must be provided',
+    });
+  }
+  if (
+    value.schedule_expression?.startsWith('cron(') &&
+    !value.schedule_timezone
+  ) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      path: ['schedule_timezone'],
+      message: 'schedule_timezone is required when changing to a cron schedule',
+    });
+  }
+});
 
 export type ListRunTemplatesInput = z.infer<typeof ListRunTemplatesInputSchema>;
 export type LegacyListRunTemplatesInput = z.infer<

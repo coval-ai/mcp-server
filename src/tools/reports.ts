@@ -86,7 +86,11 @@ function fitPayloadToBudget(value: unknown, budget: number): [unknown, boolean] 
       maxObjectKeys === MIN_OBJECT_KEYS;
     if (payloadChars(bounded) <= budget) return [bounded, true];
   }
-  return [bounded, true];
+  const omitted = {
+    output_omitted: true,
+    reason: 'Value exceeded the serialized output budget after field truncation.',
+  };
+  return [payloadChars(omitted) <= budget ? omitted : null, true];
 }
 
 function minimalReportRow(value: unknown): unknown {
@@ -118,6 +122,20 @@ function minimalReportRow(value: unknown): unknown {
     maxListItems: MIN_LIST_ITEMS,
     maxObjectKeys: MIN_OBJECT_KEYS,
   });
+}
+
+function reportRowIdentity(value: unknown): Record<string, unknown> {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+    return { fields_omitted: true };
+  }
+  const row = value as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const key of ['simulation_id', 'run_id', 'status']) {
+    const field = row[key];
+    if (typeof field === 'string') result[key] = field.slice(0, 128);
+  }
+  result.fields_omitted = true;
+  return result;
 }
 
 export function registerReportTools(
@@ -196,8 +214,24 @@ export function registerReportTools(
             REPORT_RESULT_CHAR_BUDGET - REPORT_RESULT_RESERVE_CHARS
           ) {
             if (rows.length === 0) {
-              rows.push(minimalReportRow(rawRow));
-              rowFieldsTrimmed = true;
+              const remainingBudget = Math.max(
+                REPORT_RESULT_CHAR_BUDGET -
+                  REPORT_RESULT_RESERVE_CHARS -
+                  payloadChars(baseResult),
+                500,
+              );
+              const [minimalRow] = fitPayloadToBudget(
+                minimalReportRow(rawRow),
+                remainingBudget,
+              );
+              const minimalCandidate = { ...baseResult, rows: [minimalRow] };
+              if (
+                payloadChars(minimalCandidate) <=
+                REPORT_RESULT_CHAR_BUDGET - REPORT_RESULT_RESERVE_CHARS
+              ) {
+                rows.push(minimalRow);
+                rowFieldsTrimmed = true;
+              }
             }
             break;
           }
@@ -210,7 +244,7 @@ export function registerReportTools(
           ? String(cursorStart + rows.length)
           : rowsResult.next_page_token ?? undefined;
         const outputTruncated = reportTrimmed || rowFieldsTrimmed || rowsOmitted > 0;
-        return createSuccessResponse({
+        const result = {
           report,
           rows,
           next_page_token: nextPageToken,
@@ -227,6 +261,57 @@ export function registerReportTools(
                   'Some report fields, metric entries, or rows were trimmed to fit the output budget. Use metric_ids and a smaller page_size for more detail, then continue with next_page_token.',
               }
             : {}),
+        };
+        if (payloadChars(result) <= REPORT_RESULT_CHAR_BUDGET) {
+          return createSuccessResponse(result);
+        }
+
+        // Keep valid JSON and forward progress even if unexpected envelope
+        // growth consumes the reserved space.
+        const [emergencyReport] = fitPayloadToBudget(reportResult.report, 2_000);
+        const emergencyRows = rowsResult.rows.length
+          ? [fitPayloadToBudget(minimalReportRow(rowsResult.rows[0]), 4_000)[0]]
+          : [];
+        const emergencyNextPageToken = rowsResult.rows.length
+          ? String(cursorStart + emergencyRows.length)
+          : rowsResult.next_page_token ?? undefined;
+        const emergencyResult = {
+          report: emergencyReport,
+          rows: emergencyRows,
+          next_page_token: emergencyNextPageToken,
+          scope: {
+            returned: emergencyRows.length,
+            examined: rowsResult.rows.length,
+            page_size: pageSize,
+            has_more: Boolean(emergencyNextPageToken),
+          },
+          output_truncated: true,
+          note:
+            'Report content was reduced to a minimal bounded representation. Continue with next_page_token.',
+        };
+        if (payloadChars(emergencyResult) <= REPORT_RESULT_CHAR_BUDGET) {
+          return createSuccessResponse(emergencyResult);
+        }
+
+        const identityRows = rowsResult.rows.length
+          ? [reportRowIdentity(rowsResult.rows[0])]
+          : [];
+        const identityNextPageToken = rowsResult.rows.length
+          ? String(cursorStart + identityRows.length)
+          : rowsResult.next_page_token ?? undefined;
+        return createSuccessResponse({
+          report: { output_omitted: true },
+          rows: identityRows,
+          next_page_token: identityNextPageToken,
+          scope: {
+            returned: identityRows.length,
+            examined: rowsResult.rows.length,
+            page_size: pageSize,
+            has_more: Boolean(identityNextPageToken),
+          },
+          output_truncated: true,
+          note:
+            'Report content exceeded the output budget. Only row identity was retained; continue with next_page_token.',
         });
       } catch (err) {
         return handleApiError(err);

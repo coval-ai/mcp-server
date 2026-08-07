@@ -147,7 +147,7 @@ Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
 | `create_report` | Create an organization-private saved report |
 | `list_run_templates` | List reusable evaluation configurations |
 | `list_scheduled_runs` | List recurring evaluation schedules |
-| `get_scheduled_run` | Get a schedule and bounded recent run history |
+| `get_scheduled_run` | Get a schedule and paginated recent-run history |
 | `create_scheduled_run` | Create a schedule, disabled by default |
 | `update_scheduled_run` | Update selected schedule fields |
 | `consult_sofia` | Delegate a read-only Coval evaluation question to Sofia |
@@ -157,21 +157,13 @@ Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
 Once connected, you can ask Claude things like:
 
 > "Show me my recent evaluation runs"
-
 > "List all my agents"
-
 > "Run an evaluation of my customer-support-agent against the billing-inquiries test set"
-
 > "What are the metrics for run abc123?"
-
 > "Show the first 20 rows of my regression report for the task-success metric"
-
 > "Create a private report comparing these completed runs by agent"
-
 > "Show my enabled evaluation schedules and the latest runs from the nightly regression"
-
 > "Create a disabled weekday schedule from my regression run template"
-
 > "Use `consult_sofia` to analyze my latest failed run and recommend the most useful next test."
 
 The same tools, including `consult_sofia`, are available through every supported endpoint and

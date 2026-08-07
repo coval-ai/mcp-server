@@ -84,7 +84,7 @@ export function registerSchedulingTools(
     {
       ...readOnlyTool('Get scheduled run'),
       description:
-        'Retrieve one recurring evaluation schedule plus a bounded slice of its most recent triggered runs. Inspect history_scope.has_more before assuming the history is complete.',
+        'Retrieve one recurring evaluation schedule plus a bounded page from the API history window. Continue with next_history_page_token; history_scope reports when older upstream history may exist beyond that window.',
       inputSchema: GetScheduledRunInputSchema,
     },
     async (params: GetScheduledRunInput) => {
@@ -92,17 +92,32 @@ export function registerSchedulingTools(
         const historySize = params.history_size ?? 20;
         const [scheduledRunResult, historyResult] = await Promise.all([
           client.getScheduledRun(params.scheduled_run_id),
-          client.listScheduledRunHistory(params.scheduled_run_id),
+          client.listScheduledRunHistory(params.scheduled_run_id, {
+            page_size: historySize,
+            page_token: params.history_page_token,
+          }),
         ]);
-        const runs = historyResult.runs.slice(0, historySize);
+        const nextHistoryPageToken = historyResult.next_page_token;
         return createSuccessResponse({
           scheduled_run: scheduledRunResult.scheduled_run,
-          runs,
+          runs: historyResult.runs,
+          next_history_page_token: nextHistoryPageToken,
           history_scope: {
-            returned: runs.length,
-            available: historyResult.runs.length,
-            has_more: historyResult.runs.length > runs.length,
+            returned: historyResult.runs.length,
+            available_in_api_window: historyResult.available_in_api_window,
+            has_more: nextHistoryPageToken
+              ? true
+              : historyResult.upstream_capped
+                ? null
+                : false,
+            upstream_capped: historyResult.upstream_capped,
           },
+          ...(historyResult.upstream_capped
+            ? {
+                note:
+                  'The API history window is capped at 500 recent runs, so older history may exist after this window is exhausted.',
+              }
+            : {}),
         });
       } catch (err) {
         return handleApiError(err);

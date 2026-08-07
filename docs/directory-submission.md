@@ -42,8 +42,8 @@ authenticated tools.
   compatibility profile.
 - Confirm report reads expose bounded row pages and an explicit `has_more` signal. Confirm report
   creation accepts no visibility field and produces an organization-private report.
-- Confirm schedule history is bounded, cron creation requires an explicit timezone, and schedule
-  creation remains disabled unless `enabled: true` is explicitly supplied.
+- Confirm schedule history is bounded and cursor-aware, cron creation and cadence updates require
+  an explicit timezone, and schedule creation remains disabled unless `enabled: true` is supplied.
 - Exercise every tool with valid inputs. Confirm write tools affect only disposable test data.
 - Confirm `consult_sofia` succeeds for the review organization. Direct API tools and Sofia
   consultation are separate capabilities, so test both.
@@ -154,8 +154,9 @@ resources after review.
    - List run templates and schedules, retrieve the portal-provided schedule with 20 recent runs,
      then create a uniquely named weekday schedule from the disposable template with a concrete
      timezone and without activation. Update only its display name while it remains disabled.
-   - Expected behavior: history returns no more than 20 runs and accurately indicates whether more
-     exist. Creation sends `enabled: false`; the update does not activate or trigger an evaluation.
+   - Expected behavior: history returns no more than 20 runs with a continuation token, or clearly
+     marks completeness unknown if the 500-run API window is exhausted. Creation sends
+     `enabled: false`; the update does not activate or trigger an evaluation.
    - Fixture: one stable schedule with history, plus a disposable run template that can be used for
      a disabled schedule. Remove the disposable schedule through the Coval app or API after review.
 

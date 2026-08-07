@@ -19,6 +19,11 @@ export interface ScheduledRunPaginationParams extends ReportPaginationParams {
   template_id?: string;
 }
 
+export interface ScheduledRunHistoryPaginationParams {
+  page_size?: number;
+  page_token?: string;
+}
+
 export interface ApiError {
   code: string;
   message: string;
@@ -366,11 +371,30 @@ export class CovalApiClient {
     );
   }
 
-  async listScheduledRunHistory(scheduledRunId: string) {
-    return this.request<{ runs: unknown[] }>(
+  async listScheduledRunHistory(
+    scheduledRunId: string,
+    params: ScheduledRunHistoryPaginationParams = {},
+  ) {
+    const result = await this.request<{ runs: unknown[] }>(
       'GET',
       `/scheduled-runs/${scheduledRunId}/runs`,
     );
+    // The public API returns a compact, most-recent-first window capped at 500
+    // entries and currently has no query pagination. Page that bounded window
+    // locally and disclose when older upstream history may exist.
+    const pageSize = params.page_size ?? 20;
+    const parsedCursor = Number(params.page_token ?? '0');
+    const cursor =
+      Number.isSafeInteger(parsedCursor) && parsedCursor >= 0 ? parsedCursor : 0;
+    const runs = result.runs.slice(cursor, cursor + pageSize);
+    const nextCursor = cursor + runs.length;
+    return {
+      runs,
+      next_page_token:
+        nextCursor < result.runs.length ? String(nextCursor) : undefined,
+      available_in_api_window: result.runs.length,
+      upstream_capped: result.runs.length === 500,
+    };
   }
 
   async createScheduledRun(data: {

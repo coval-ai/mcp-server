@@ -83,4 +83,27 @@ describe('CovalApiClient report and scheduling resources', () => {
       enabled: false,
     });
   });
+
+  it('pages within the bounded scheduled-run history API window', async () => {
+    const allRuns = Array.from({ length: 25 }, (_, index) => ({ id: `run_${index}` }));
+    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValueOnce(
+      new Response(JSON.stringify({ runs: allRuns }), { status: 200 }),
+    );
+    const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
+
+    await expect(
+      client.listScheduledRunHistory('schedule_1', {
+        page_size: 10,
+        page_token: '5',
+      }),
+    ).resolves.toEqual({
+      runs: allRuns.slice(5, 15),
+      next_page_token: '15',
+      available_in_api_window: 25,
+      upstream_capped: false,
+    });
+    expect(fetchMock.mock.calls[0][0]).toBe(
+      'https://api.example.com/v1/scheduled-runs/schedule_1/runs',
+    );
+  });
 });

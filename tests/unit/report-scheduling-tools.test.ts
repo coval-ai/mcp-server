@@ -70,7 +70,10 @@ describe('report tools', () => {
       getReport: jest.fn(async () => ({
         report: { id: 'report_example', description: largeText },
       })),
-      listReportRows: jest.fn(async () => ({ rows: rawRows })),
+      listReportRows: jest.fn(async () => ({
+        rows: rawRows,
+        next_page_token: '25',
+      })),
     } as unknown as CovalApiClient;
     const handlers = collectHandlers(registerReportTools, client);
 
@@ -91,9 +94,49 @@ describe('report tools', () => {
     expect(content.text.length).toBeLessThanOrEqual(11_000);
     expect(payload.output_truncated).toBe(true);
     expect(payload.scope.examined).toBe(20);
-    expect(payload.scope.returned).toBeLessThan(20);
+    expect(payload.scope.returned).toBeLessThanOrEqual(20);
     expect(payload.scope.has_more).toBe(true);
-    expect(payload.next_page_token).toBe(String(5 + payload.scope.returned));
+    expect(payload.next_page_token).toBe('25');
+  });
+
+  it('omits oversized nested metric structures without exceeding the hard budget', async () => {
+    const nestedMetricValue = Object.fromEntries(
+      Array.from({ length: 100 }, (_, index) => [
+        `field_${index}`,
+        Array.from({ length: 10 }, () => 'nested-value '.repeat(100)),
+      ]),
+    );
+    const client = {
+      getReport: jest.fn(async () => ({ report: { id: 'report_example' } })),
+      listReportRows: jest.fn(async () => ({
+        rows: [
+          {
+            simulation_id: 'simulation_example',
+            run_id: 'run_example',
+            metrics: [
+              {
+                metric_id: 'metric_example',
+                value: nestedMetricValue,
+              },
+            ],
+          },
+        ],
+      })),
+    } as unknown as CovalApiClient;
+    const handlers = collectHandlers(registerReportTools, client);
+
+    const result = await handlers.get('get_report')!({
+      report_id: 'report_example',
+      page_size: 1,
+    });
+    const content = result.content[0];
+    if (content?.type !== 'text') throw new Error('Expected a text tool response');
+    const payload = JSON.parse(content.text) as {
+      output_truncated: boolean;
+    };
+
+    expect(content.text.length).toBeLessThanOrEqual(11_000);
+    expect(payload.output_truncated).toBe(true);
   });
 
   it('forces every created report to remain private', async () => {
@@ -144,26 +187,68 @@ describe('scheduling tools', () => {
     });
   });
 
-  it('caps returned schedule history and exposes whether more exists', async () => {
-    const allRuns = Array.from({ length: 25 }, (_, index) => ({ id: `run_${index}` }));
+  it('passes history bounds and exposes its continuation token', async () => {
+    const runs = Array.from({ length: 10 }, (_, index) => ({ id: `run_${index + 10}` }));
+    const listScheduledRunHistory = jest.fn(async () => ({
+      runs,
+      next_page_token: '20',
+      available_in_api_window: 25,
+      upstream_capped: false,
+    }));
     const client = {
       getScheduledRun: jest.fn(async () => ({
         scheduled_run: { id: 'schedule_example' },
       })),
-      listScheduledRunHistory: jest.fn(async () => ({ runs: allRuns })),
+      listScheduledRunHistory,
     } as unknown as CovalApiClient;
     const handlers = collectHandlers(registerSchedulingTools, client);
 
     const result = await handlers.get('get_scheduled_run')!({
       scheduled_run_id: 'schedule_example',
+      history_size: 10,
+      history_page_token: '10',
     });
     const payload = responsePayload(result);
 
-    expect(payload.runs).toHaveLength(20);
-    expect(payload.history_scope).toEqual({
-      returned: 20,
-      available: 25,
-      has_more: true,
+    expect(listScheduledRunHistory).toHaveBeenCalledWith('schedule_example', {
+      page_size: 10,
+      page_token: '10',
     });
+    expect(payload.runs).toEqual(runs);
+    expect(payload.next_history_page_token).toBe('20');
+    expect(payload.history_scope).toEqual({
+      returned: 10,
+      available_in_api_window: 25,
+      has_more: true,
+      upstream_capped: false,
+    });
+  });
+
+  it('marks completeness unknown when the API history window is exhausted at its cap', async () => {
+    const client = {
+      getScheduledRun: jest.fn(async () => ({
+        scheduled_run: { id: 'schedule_example' },
+      })),
+      listScheduledRunHistory: jest.fn(async () => ({
+        runs: [{ id: 'run_499' }],
+        next_page_token: undefined,
+        available_in_api_window: 500,
+        upstream_capped: true,
+      })),
+    } as unknown as CovalApiClient;
+    const handlers = collectHandlers(registerSchedulingTools, client);
+
+    const result = await handlers.get('get_scheduled_run')!({
+      scheduled_run_id: 'schedule_example',
+      history_page_token: '499',
+    });
+    const payload = responsePayload(result);
+
+    expect(payload.next_history_page_token).toBeUndefined();
+    expect(payload.history_scope).toMatchObject({
+      has_more: null,
+      upstream_capped: true,
+    });
+    expect(payload.note).toContain('capped at 500 recent runs');
   });
 });

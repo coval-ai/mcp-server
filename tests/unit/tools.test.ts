@@ -119,7 +119,10 @@ describe('registerAllTools', () => {
         'list_scheduled_runs',
         ['enabled', 'page_size', 'page_token', 'template_id'],
       ],
-      ['get_scheduled_run', ['history_size', 'scheduled_run_id']],
+      [
+        'get_scheduled_run',
+        ['history_page_token', 'history_size', 'scheduled_run_id'],
+      ],
       [
         'create_scheduled_run',
         [
