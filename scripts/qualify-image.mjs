@@ -363,7 +363,30 @@ await docker(
   '-c',
   'test ! -e /app/src && test ! -e /app/tsconfig.json && test -f /app/dist/remote.js',
 );
-await docker('run', '--rm', '--entrypoint', 'npm', imageId, 'ls', '--omit=dev', '--depth=0', '--silent');
+// npm is stripped from the production image because it vendors its own dependency tree into
+// the ECR scan surface, so resolve the declared production tree with node instead of `npm ls`.
+await docker(
+  'run',
+  '--rm',
+  '--entrypoint',
+  'node',
+  imageId,
+  '-e',
+  'const fs = require("fs");' +
+    'for (const name of Object.keys(require("/app/package.json").dependencies)) {' +
+    'if (!fs.existsSync(`/app/node_modules/${name}/package.json`)) {' +
+    'throw new Error(`Missing production dependency: ${name}`); } }',
+);
+await docker(
+  'run',
+  '--rm',
+  '--entrypoint',
+  'sh',
+  imageId,
+  '-c',
+  'test ! -e /usr/local/bin/npm && test ! -e /usr/local/bin/npx && test ! -e /usr/local/bin/yarn ' +
+    '&& test ! -e /usr/local/bin/corepack && test ! -e /usr/local/lib/node_modules/npm',
+);
 
 const fakeApi = createFakeApi();
 const upstreamPort = await listen(fakeApi.server);
