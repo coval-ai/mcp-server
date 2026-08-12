@@ -372,11 +372,18 @@ await docker(
   'node',
   imageId,
   '-e',
+  // Every non-dev lockfile entry, not just the seven direct dependencies: a missing transitive
+  // package would otherwise pass qualification and fail at runtime.
   'const fs = require("fs");' +
-    'for (const name of Object.keys(require("/app/package.json").dependencies)) {' +
-    'if (!fs.existsSync(`/app/node_modules/${name}/package.json`)) {' +
-    'throw new Error(`Missing production dependency: ${name}`); } }',
+    'const lock = require("/app/package-lock.json");' +
+    'const missing = Object.entries(lock.packages)' +
+    '.filter(([path, meta]) => path && !meta.dev && !meta.devOptional)' +
+    '.filter(([path]) => !fs.existsSync(`/app/${path}/package.json`))' +
+    '.map(([path]) => path);' +
+    'if (missing.length) {' +
+    'throw new Error(`Missing production packages: ${missing.join(", ")}`); }',
 );
+// Mirrors every path the Dockerfile removes -- a partial cleanup must not pass qualification.
 await docker(
   'run',
   '--rm',
@@ -384,8 +391,10 @@ await docker(
   'sh',
   imageId,
   '-c',
-  'test ! -e /usr/local/bin/npm && test ! -e /usr/local/bin/npx && test ! -e /usr/local/bin/yarn ' +
-    '&& test ! -e /usr/local/bin/corepack && test ! -e /usr/local/lib/node_modules/npm',
+  'for path in /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg ' +
+    '/usr/local/bin/corepack /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack; do ' +
+    'test ! -e "$path" || exit 1; done; ' +
+    'set -- /opt/yarn-v*; test ! -e "$1"',
 );
 
 const fakeApi = createFakeApi();
