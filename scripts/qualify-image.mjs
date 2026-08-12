@@ -363,7 +363,39 @@ await docker(
   '-c',
   'test ! -e /app/src && test ! -e /app/tsconfig.json && test -f /app/dist/remote.js',
 );
-await docker('run', '--rm', '--entrypoint', 'npm', imageId, 'ls', '--omit=dev', '--depth=0', '--silent');
+// npm is stripped from the production image because it vendors its own dependency tree into
+// the ECR scan surface, so resolve the declared production tree with node instead of `npm ls`.
+await docker(
+  'run',
+  '--rm',
+  '--entrypoint',
+  'node',
+  imageId,
+  '-e',
+  // Every non-dev lockfile entry, not just the seven direct dependencies: a missing transitive
+  // package would otherwise pass qualification and fail at runtime.
+  'const fs = require("fs");' +
+    'const lock = require("/app/package-lock.json");' +
+    'const missing = Object.entries(lock.packages)' +
+    '.filter(([path, meta]) => path && !meta.dev && !meta.devOptional)' +
+    '.filter(([path]) => !fs.existsSync(`/app/${path}/package.json`))' +
+    '.map(([path]) => path);' +
+    'if (missing.length) {' +
+    'throw new Error(`Missing production packages: ${missing.join(", ")}`); }',
+);
+// Mirrors every path the Dockerfile removes -- a partial cleanup must not pass qualification.
+await docker(
+  'run',
+  '--rm',
+  '--entrypoint',
+  'sh',
+  imageId,
+  '-c',
+  'for path in /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/yarn /usr/local/bin/yarnpkg ' +
+    '/usr/local/bin/corepack /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/corepack; do ' +
+    'test ! -e "$path" || exit 1; done; ' +
+    'set -- /opt/yarn-v*; test ! -e "$1"',
+);
 
 const fakeApi = createFakeApi();
 const upstreamPort = await listen(fakeApi.server);
