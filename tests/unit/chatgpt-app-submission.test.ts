@@ -1,8 +1,9 @@
 import fs from 'node:fs';
 
 const submission = JSON.parse(
-  fs.readFileSync('chatgpt-app-submission.json', 'utf8'),
+  fs.readFileSync('chatgpt-app-submission.template.json', 'utf8'),
 ) as {
+  $schema: string;
   tools: Record<
     string,
     {
@@ -13,12 +14,43 @@ const submission = JSON.parse(
       };
     }
   >;
-  test_cases: Array<{ tools_triggered: string }>;
+  test_cases: Array<{
+    expected_output: string | null;
+    tools_triggered: string;
+    user_prompt: string;
+  }>;
 };
 
 describe('ChatGPT app submission artifact', () => {
+  it('keeps reviewer fixture IDs only in the materialized portal export', () => {
+    expect(submission.$schema).toBe(
+      'https://developers.openai.com/plugins/schemas/chatgpt-app-submission.v1.json',
+    );
+
+    const placeholders = submission.test_cases.flatMap(({ user_prompt }) =>
+      [...user_prompt.matchAll(/<PORTAL_[A-Z_]+>/g)].map(([placeholder]) => placeholder),
+    );
+
+    expect([...new Set(placeholders)].sort()).toEqual([
+      '<PORTAL_AGENT_ID>',
+      '<PORTAL_COMPLETED_RUN_ID>',
+      '<PORTAL_METRIC_ID>',
+      '<PORTAL_PERSONA_ID>',
+      '<PORTAL_REPORT_ID>',
+      '<PORTAL_RUN_TEMPLATE_ID>',
+      '<PORTAL_SCHEDULE_ID>',
+      '<PORTAL_TEST_SET_ID>',
+    ]);
+  });
+
   it('keeps the positive review workflows within the portal limit', () => {
     expect(submission.test_cases).toHaveLength(5);
+  });
+
+  it('documents a concrete expected result for every positive workflow', () => {
+    for (const testCase of submission.test_cases) {
+      expect(testCase.expected_output?.trim()).toBeTruthy();
+    }
   });
 
   it('declares the full production MCP tool catalog', () => {
