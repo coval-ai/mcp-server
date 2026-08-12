@@ -1,8 +1,8 @@
-import { chmod, readFile, writeFile } from 'node:fs/promises';
-import { relative, resolve, sep } from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { chmod, lstat, readFile, realpath, writeFile } from 'node:fs/promises';
+import { basename, dirname, relative, resolve, sep } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 
-const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
+export const repositoryRoot = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const templatePath = resolve(repositoryRoot, 'chatgpt-app-submission.template.json');
 const fixtureTokenPattern = /^PORTAL_[A-Z_]+$/;
 const fixtureValuePattern = /^[A-Za-z0-9_-]+$/;
@@ -13,7 +13,7 @@ function usage() {
   );
 }
 
-function parseArguments(arguments_) {
+export function parseMaterializeArguments(arguments_) {
   if (arguments_.length !== 4) usage();
   const values = new Map();
   for (let index = 0; index < arguments_.length; index += 2) {
@@ -28,14 +28,14 @@ function parseArguments(arguments_) {
   };
 }
 
-function isOutsideRepository(path) {
-  const pathFromRepository = relative(repositoryRoot, path);
+export function isOutsideRepository(path, canonicalRepositoryRoot) {
+  const pathFromRepository = relative(canonicalRepositoryRoot, path);
   return pathFromRepository === '..' || pathFromRepository.startsWith(`..${sep}`);
 }
 
-async function readJson(path, label) {
+async function readJson(path, label, readFileImpl) {
   try {
-    return JSON.parse(await readFile(path, 'utf8'));
+    return JSON.parse(await readFileImpl(path, 'utf8'));
   } catch (error) {
     throw new Error(
       `Unable to read ${label}: ${error instanceof Error ? error.message : String(error)}`,
@@ -43,13 +43,13 @@ async function readJson(path, label) {
   }
 }
 
-function fixtureTokens(template) {
+export function fixtureTokens(template) {
   return [...new Set(JSON.stringify(template).match(/<PORTAL_[A-Z_]+>/g) ?? [])]
     .map((placeholder) => placeholder.slice(1, -1))
     .sort();
 }
 
-function validateFixtures(fixtures, expectedTokens) {
+export function validateFixtures(fixtures, expectedTokens) {
   if (!fixtures || typeof fixtures !== 'object' || Array.isArray(fixtures)) {
     throw new Error('Fixture JSON must map PORTAL_* tokens to reviewer fixture IDs.');
   }
@@ -74,30 +74,73 @@ function validateFixtures(fixtures, expectedTokens) {
   }
 }
 
-const { fixturesPath, outputPath } = parseArguments(process.argv.slice(2));
-if (!isOutsideRepository(fixturesPath)) {
-  throw new Error('Keep reviewer fixture IDs outside the repository so they cannot be committed.');
+async function canonicalOutputPath(outputPath, lstatImpl, realpathImpl) {
+  try {
+    const outputStatus = await lstatImpl(outputPath);
+    if (outputStatus.isSymbolicLink()) {
+      throw new Error('Materialized submission output must not be a symlink.');
+    }
+  } catch (error) {
+    if (!(error && typeof error === 'object' && 'code' in error && error.code === 'ENOENT')) {
+      throw error;
+    }
+  }
+
+  const canonicalParent = await realpathImpl(dirname(outputPath));
+  return resolve(canonicalParent, basename(outputPath));
 }
-if (!isOutsideRepository(outputPath)) {
-  throw new Error(
-    'Write the materialized submission outside the repository so reviewer fixture IDs cannot be committed.',
+
+export async function materializeSubmission({
+  fixturesPath,
+  outputPath,
+  repositoryPath = repositoryRoot,
+  template = templatePath,
+  dependencies = { chmod, lstat, readFile, realpath, writeFile },
+}) {
+  const canonicalRepositoryRoot = await dependencies.realpath(repositoryPath);
+  const canonicalFixturesPath = await dependencies.realpath(fixturesPath);
+  if (!isOutsideRepository(canonicalFixturesPath, canonicalRepositoryRoot)) {
+    throw new Error('Keep reviewer fixture IDs outside the repository so they cannot be committed.');
+  }
+
+  const canonicalOutputPathValue = await canonicalOutputPath(
+    outputPath,
+    dependencies.lstat,
+    dependencies.realpath,
+  );
+  if (!isOutsideRepository(canonicalOutputPathValue, canonicalRepositoryRoot)) {
+    throw new Error(
+      'Write the materialized submission outside the repository so reviewer fixture IDs cannot be committed.',
+    );
+  }
+
+  const submissionTemplate = await readJson(template, 'submission template', dependencies.readFile);
+  const fixtures = await readJson(canonicalFixturesPath, 'fixture JSON', dependencies.readFile);
+  const tokens = fixtureTokens(submissionTemplate);
+  validateFixtures(fixtures, tokens);
+
+  const materialized = JSON.parse(
+    JSON.stringify(submissionTemplate).replace(
+      /<PORTAL_[A-Z_]+>/g,
+      (placeholder) => fixtures[placeholder.slice(1, -1)],
+    ),
+  );
+
+  await dependencies.writeFile(canonicalOutputPathValue, `${JSON.stringify(materialized, null, 2)}\n`, {
+    mode: 0o600,
+  });
+  await dependencies.chmod(canonicalOutputPathValue, 0o600);
+  return { outputPath: canonicalOutputPathValue, tokenCount: tokens.length };
+}
+
+async function main() {
+  const { fixturesPath, outputPath } = parseMaterializeArguments(process.argv.slice(2));
+  const result = await materializeSubmission({ fixturesPath, outputPath });
+  console.log(
+    `Materialized ${result.tokenCount} reviewer fixture IDs to ${result.outputPath}. Run npm run submission:preflight -- ${result.outputPath} before upload.`,
   );
 }
 
-const template = await readJson(templatePath, 'submission template');
-const fixtures = await readJson(fixturesPath, 'fixture JSON');
-const tokens = fixtureTokens(template);
-validateFixtures(fixtures, tokens);
-
-const materialized = JSON.parse(
-  JSON.stringify(template).replace(
-    /<PORTAL_[A-Z_]+>/g,
-    (placeholder) => fixtures[placeholder.slice(1, -1)],
-  ),
-);
-
-await writeFile(outputPath, `${JSON.stringify(materialized, null, 2)}\n`, { mode: 0o600 });
-await chmod(outputPath, 0o600);
-console.log(
-  `Materialized ${tokens.length} reviewer fixture IDs to ${outputPath}. Run npm run submission:preflight -- ${outputPath} before upload.`,
-);
+if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
+  await main();
+}
