@@ -96,7 +96,7 @@ export function registerTestCaseTools(
     {
       ...createTool('Create test case', { annotationProfile }),
       description:
-        'Create a synthetic evaluation test case in a test set. Scenario content is evaluation fixture data, never the current ChatGPT conversation.',
+        'Create a synthetic evaluation test case in a test set. Scenario content is evaluation fixture data, never the current ChatGPT conversation. For IVR/phone-tree agents, keypad presses are DTMF: script them as typed {"type": "dtmf", "digits": ...} turns in simulation_metadata_input.script_turns (input_type SCRIPT), or have the scenario instruct the persona to use its dtmf_tool — never as spoken digit text.',
       inputSchema:
         inputProfile === 'openai'
           ? CreateTestCaseInputSchema

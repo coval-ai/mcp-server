@@ -285,6 +285,7 @@ export class CovalApiClient {
     input_str: string;
     expected_behaviors?: string[];
     description?: string;
+    input_type?: string;
     simulation_metadata_input?: Record<string, unknown>;
     metric_input?: Record<string, unknown>;
     user_notes?: string;
@@ -298,6 +299,7 @@ export class CovalApiClient {
       input_str?: string;
       expected_behaviors?: string[];
       description?: string;
+      input_type?: string;
       simulation_metadata_input?: Record<string, unknown>;
       metric_input?: Record<string, unknown>;
       user_notes?: string;

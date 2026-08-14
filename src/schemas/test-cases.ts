@@ -89,10 +89,16 @@ export const LegacyCreateTestCaseInputSchema = z.object({
   description: z.string().optional().describe(
     'Human-readable description of what this test case validates.',
   ),
+  input_type: z
+    .enum(['SCENARIO', 'TRANSCRIPT', 'IVR', 'AUDIO', 'MANUAL', 'SCRIPT'])
+    .optional()
+    .describe('Input type; defaults to SCENARIO. Use SCRIPT with simulation_metadata_input.script_turns for exact ordered turns.'),
   simulation_metadata_input: z
     .record(z.unknown())
     .optional()
-    .describe('Additional context passed to the simulation environment.'),
+    .describe(
+      'Additional context passed to the simulation environment. For scripted (input_type SCRIPT) cases, set {"script_turns": [...]} here: entries are plain strings the persona speaks verbatim, or typed keypad presses {"type": "dtmf", "digits": "1"} (digits allow 0-9 * #). Never write DTMF as spoken text like "dtmf:1" — it would be read aloud. For SCENARIO cases against IVRs, instead instruct the persona in input_str to use its dtmf_tool for each keypress.',
+    ),
   metric_input: z
     .record(z.unknown())
     .optional()
@@ -108,10 +114,16 @@ export const LegacyUpdateTestCaseInputSchema = z.object({
     .optional()
     .describe('Updated list of expected agent behaviors.'),
   description: z.string().optional().describe('Updated description.'),
+  input_type: z
+    .enum(['SCENARIO', 'TRANSCRIPT', 'IVR', 'AUDIO', 'MANUAL', 'SCRIPT'])
+    .optional()
+    .describe('Updated input type. Switching away from SCRIPT clears stored script_turns.'),
   simulation_metadata_input: z
     .record(z.unknown())
     .optional()
-    .describe('Updated simulation context.'),
+    .describe(
+      'Updated simulation context. Replaces the stored object wholesale — include every key you want to keep. For scripted (input_type SCRIPT) cases, set {"script_turns": [...]} here: entries are plain strings the persona speaks verbatim, or typed keypad presses {"type": "dtmf", "digits": "1"} (digits allow 0-9 * #). Never write DTMF as spoken text like "dtmf:1" — it would be read aloud. For SCENARIO cases against IVRs, instead instruct the persona in input_str to use its dtmf_tool for each keypress.',
+    ),
   metric_input: z.record(z.unknown()).optional().describe('Updated metric inputs.'),
   user_notes: z.string().optional().describe('Updated internal notes.'),
 });
