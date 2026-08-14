@@ -117,7 +117,7 @@ export function registerTestCaseTools(
     {
       ...updateTool('Update test case'),
       description:
-        'Update the scenario, expected behaviors, or description of one synthetic evaluation test case.',
+        'Update the scenario, expected behaviors, description, or script turns of one synthetic evaluation test case. To change turns, prefer the top-level script_turns field (server-side merge); simulation_metadata_input replaces the stored object wholesale.',
       inputSchema:
         inputProfile === 'openai'
           ? UpdateTestCaseInputSchema

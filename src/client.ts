@@ -300,6 +300,7 @@ export class CovalApiClient {
       expected_behaviors?: string[];
       description?: string;
       input_type?: string;
+      script_turns?: Array<string | Record<string, unknown>>;
       simulation_metadata_input?: Record<string, unknown>;
       metric_input?: Record<string, unknown>;
       user_notes?: string;

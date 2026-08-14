@@ -118,6 +118,15 @@ export const LegacyUpdateTestCaseInputSchema = z.object({
     .enum(['SCENARIO', 'TRANSCRIPT', 'IVR', 'AUDIO', 'MANUAL', 'SCRIPT'])
     .optional()
     .describe('Updated input type. Switching away from SCRIPT clears stored script_turns.'),
+  script_turns: z
+    .array(z.union([z.string(), z.record(z.unknown())]))
+    .optional()
+    .describe(
+      'Replacement turn list, merged into stored simulation metadata server-side (sibling keys preserved). '
+      + 'Preferred over simulation_metadata_input for turn edits. Entries: plain strings the persona speaks '
+      + 'verbatim, or typed keypad presses {"type": "dtmf", "digits": "1"} (digits allow 0-9 * #). Never '
+      + 'write DTMF as spoken text like "dtmf:1".',
+    ),
   simulation_metadata_input: z
     .record(z.unknown())
     .optional()
