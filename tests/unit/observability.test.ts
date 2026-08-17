@@ -111,6 +111,24 @@ describe('hosted MCP observability', () => {
     expect(entries[0]).toMatchObject({ http_status: 499, status: 'error' });
   });
 
+  it('classifies a GET long-poll socket close as client_closed, not error', () => {
+    const req = { method: 'GET', originalUrl: '/mcp' } as Request;
+    const res = new EventEmitter() as Response;
+    res.statusCode = 200;
+    Object.defineProperty(res, 'writableFinished', { value: false });
+    const entries: RequestCompletion[] = [];
+
+    requestCompletionLogger((entry) => entries.push(entry))(
+      req,
+      res,
+      (() => undefined) as NextFunction,
+    );
+    res.emit('close');
+
+    expect(entries).toHaveLength(1);
+    expect(entries[0]).toMatchObject({ http_status: 499, status: 'client_closed' });
+  });
+
   it('logs the startup event with the runtime identity', () => {
     const previous = {
       DD_ENV: process.env.DD_ENV,

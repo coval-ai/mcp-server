@@ -13,7 +13,7 @@ export type RequestCompletion = RuntimeIdentity & {
   http_method: string;
   http_path: string;
   http_status: number;
-  status: 'ok' | 'auth_error' | 'error';
+  status: 'ok' | 'auth_error' | 'error' | 'client_closed';
   duration_ms: number;
 };
 
@@ -57,7 +57,16 @@ export function requestCompletion(
     http_method: requestMethod(req.method),
     http_path: requestPath(req.originalUrl),
     http_status: httpStatus,
-    status: httpStatus < 400 ? 'ok' : httpStatus === 401 || httpStatus === 403 ? 'auth_error' : 'error',
+    status:
+      httpStatus < 400
+        ? 'ok'
+        : httpStatus === 401 || httpStatus === 403
+          ? 'auth_error'
+          : // 499 is only ever synthesized by the close-before-finish branch below; on a GET it is
+            // the SSE long-poll ending at the ALB idle timeout, not a failure. Aborted writes stay errors.
+            httpStatus === 499 && requestMethod(req.method) === 'GET'
+            ? 'client_closed'
+            : 'error',
     duration_ms: Math.max(0, Math.round(durationMs)),
   };
 }
