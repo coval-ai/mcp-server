@@ -5,6 +5,8 @@ import {
   CreateScheduledRunInputSchema,
   CreateTestCaseInputSchema,
   CreateTestSetInputSchema,
+  LegacyCreateTestCaseInputSchema,
+  LegacyUpdateTestCaseInputSchema,
   GetScheduledRunInputSchema,
   GetTestSetInputSchema,
   LegacyGetTestSetInputSchema,
@@ -243,5 +245,75 @@ describe('public write input schemas', () => {
         [field]: { arbitrary: { nested: true } },
       }).success,
     ).toBe(false);
+  });
+});
+
+describe('legacy test-case script turns', () => {
+  const validTurns = [
+    'I need to check my balance',
+    { type: 'text', text: 'Route me to billing' },
+    { type: 'dtmf', digits: '1' },
+    { type: 'dtmf', digits: '(408) 555-0134' },
+    { type: 'skip' },
+  ];
+
+  it('accepts every documented turn shape on update', () => {
+    expect(
+      LegacyUpdateTestCaseInputSchema.safeParse({
+        test_case_id: 'tc1',
+        script_turns: validTurns,
+      }).success,
+    ).toBe(true);
+  });
+
+  it('accepts the same shapes nested in create simulation metadata', () => {
+    expect(
+      LegacyCreateTestCaseInputSchema.safeParse({
+        test_set_id: 'abc12345',
+        input_str: 'Walk the billing IVR',
+        input_type: 'SCRIPT',
+        simulation_metadata_input: { ani: '5551234', script_turns: validTurns },
+      }).success,
+    ).toBe(true);
+  });
+
+  it.each([
+    ['empty object', {}],
+    ['numeric digits', { type: 'dtmf', digits: 1 }],
+    ['separator-only digits', { type: 'dtmf', digits: '(-) .' }],
+    ['letters in digits', { type: 'dtmf', digits: '12w3' }],
+    ['empty text', { type: 'text', text: '' }],
+    ['unknown turn type', { type: 'wave', hand: 'left' }],
+    ['empty string turn', ''],
+  ])('rejects a malformed turn: %s', (_label, turn) => {
+    expect(
+      LegacyUpdateTestCaseInputSchema.safeParse({
+        test_case_id: 'tc1',
+        script_turns: [turn],
+      }).success,
+    ).toBe(false);
+    expect(
+      LegacyCreateTestCaseInputSchema.safeParse({
+        test_set_id: 'abc12345',
+        input_str: 'Walk the billing IVR',
+        simulation_metadata_input: { script_turns: [turn] },
+      }).success,
+    ).toBe(false);
+  });
+
+  it('still passes arbitrary sibling metadata keys through', () => {
+    const parsed = LegacyCreateTestCaseInputSchema.safeParse({
+      test_set_id: 'abc12345',
+      input_str: 'Walk the billing IVR',
+      simulation_metadata_input: { ani: '5551234', dob: '01/01/1980', path: 'moat' },
+    });
+    expect(parsed.success).toBe(true);
+    if (parsed.success) {
+      expect(parsed.data.simulation_metadata_input).toEqual({
+        ani: '5551234',
+        dob: '01/01/1980',
+        path: 'moat',
+      });
+    }
   });
 });
