@@ -261,9 +261,26 @@ describe('legacy test-case script turns', () => {
     expect(
       LegacyUpdateTestCaseInputSchema.safeParse({
         test_case_id: 'tc1',
+        input_type: 'SCRIPT',
         script_turns: validTurns,
       }).success,
     ).toBe(true);
+  });
+
+  it('rejects an unsupported input_type on either legacy schema', () => {
+    expect(
+      LegacyCreateTestCaseInputSchema.safeParse({
+        test_set_id: 'abc12345',
+        input_str: 'Walk the billing IVR',
+        input_type: 'UNSUPPORTED',
+      }).success,
+    ).toBe(false);
+    expect(
+      LegacyUpdateTestCaseInputSchema.safeParse({
+        test_case_id: 'tc1',
+        input_type: 'UNSUPPORTED',
+      }).success,
+    ).toBe(false);
   });
 
   it('accepts the same shapes nested in create simulation metadata', () => {
