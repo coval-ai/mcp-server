@@ -2,13 +2,11 @@ import { CovalApiClient } from "../../src/client.js";
 import { jest } from "@jest/globals";
 
 const originalSofiaDelegationOrigin = process.env.SOFIA_DELEGATION_ORIGIN;
-const originalLegacyDelegationOrigin = process.env.COVI_DELEGATION_ORIGIN;
 
 describe("CovalApiClient.consultSofia", () => {
   afterEach(() => {
     jest.restoreAllMocks();
     restoreEnvironmentVariable('SOFIA_DELEGATION_ORIGIN', originalSofiaDelegationOrigin);
-    restoreEnvironmentVariable('COVI_DELEGATION_ORIGIN', originalLegacyDelegationOrigin);
   });
 
   it("exchanges the API key for a delegation token and never forwards that key to Sofia", async () => {
@@ -108,47 +106,23 @@ describe("CovalApiClient.consultSofia", () => {
     });
   });
 
-  it('falls back to the legacy delegation-token route only when the canonical route is missing', async () => {
+  it('propagates a canonical delegation-token 404 instead of retrying a legacy route', async () => {
     const fetchMock = jest
       .spyOn(global, 'fetch')
-      .mockResolvedValueOnce(
-        new Response(null, { status: 404 }),
-      )
-      .mockResolvedValueOnce(
-        delegationTokenResponse('https://sofia.example.com/v1/external/delegations'),
-      )
-      .mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({
-            contract_version: '1',
-            request_id: 'request-fallback',
-            mode: 'read_only',
-            summary: 'Legacy route consultation.',
-            evidence: [],
-            proposed_actions: [],
-          }),
-          { status: 200 },
-        ),
-      );
+      .mockResolvedValueOnce(new Response(null, { status: 404 }));
     const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
 
-    await expect(client.consultSofia({ prompt: 'Inspect the latest run.' })).resolves.toMatchObject({
-      requestId: 'request-fallback',
-      mode: 'read_only',
+    await expect(client.consultSofia({ prompt: 'Inspect the latest run.' })).rejects.toMatchObject({
+      status: 404,
     });
 
     expect(fetchMock.mock.calls.map(([url]) => url)).toEqual([
       'https://api.example.com/v1/sofia/delegation-token',
-      'https://api.example.com/v1/covi/delegation-token',
-      'https://sofia.example.com/v1/external/delegations',
     ]);
-    expect(fetchMock.mock.calls[1][1]).toMatchObject({
-      headers: expect.objectContaining({ 'X-API-Key': 'customer-api-key' }),
-    });
   });
 
-  it.each([400, 401, 403, 500])(
-    'does not fall back to the legacy route when the canonical route returns %i',
+  it.each([400, 401, 403, 404, 500])(
+    'makes exactly one delegation-token request when the canonical route returns %i',
     async (status) => {
       const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValueOnce(
         new Response(
@@ -238,9 +212,8 @@ describe("CovalApiClient.consultSofia", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
-  it('prefers SOFIA_DELEGATION_ORIGIN over COVI_DELEGATION_ORIGIN', async () => {
+  it('honours SOFIA_DELEGATION_ORIGIN when it is set', async () => {
     process.env.SOFIA_DELEGATION_ORIGIN = 'https://sofia-primary.example.com';
-    process.env.COVI_DELEGATION_ORIGIN = 'https://sofia-legacy.example.com';
     const fetchMock = mockSuccessfulConsultation('https://sofia-primary.example.com/v1/external/delegations');
     const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
 
@@ -249,15 +222,15 @@ describe("CovalApiClient.consultSofia", () => {
     expect(fetchMock.mock.calls[1][0]).toBe('https://sofia-primary.example.com/v1/external/delegations');
   });
 
-  it('falls back to COVI_DELEGATION_ORIGIN when SOFIA_DELEGATION_ORIGIN is unset', async () => {
+  it('ignores the retired COVI_DELEGATION_ORIGIN and derives the origin from the API host', async () => {
     delete process.env.SOFIA_DELEGATION_ORIGIN;
     process.env.COVI_DELEGATION_ORIGIN = 'https://sofia-legacy.example.com';
-    const fetchMock = mockSuccessfulConsultation('https://sofia-legacy.example.com/v1/external/delegations');
+    const fetchMock = mockSuccessfulConsultation('https://sofia.example.com/v1/external/delegations');
     const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
 
     await client.consultSofia({ prompt: 'Inspect the latest run.' });
 
-    expect(fetchMock.mock.calls[1][0]).toBe('https://sofia-legacy.example.com/v1/external/delegations');
+    expect(fetchMock.mock.calls[1][0]).toBe('https://sofia.example.com/v1/external/delegations');
   });
 
   it('uses the typed unavailable error for a null non-OK consultation payload', async () => {
