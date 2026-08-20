@@ -509,25 +509,16 @@ export class CovalApiClient {
   }
 
   private async requestSofiaDelegationToken(sessionId?: string): Promise<SofiaDelegationTokenResponse> {
-    const requestToken = (path: string) =>
-      this.request<SofiaDelegationTokenResponse>(
-        'POST',
-        path,
-        {
-          client_id: 'coval-mcp',
-          ...(sessionId ? { session_id: sessionId } : {}),
-        },
-        undefined,
-        AbortSignal.timeout(SOFIA_TOKEN_EXCHANGE_TIMEOUT_MS),
-      );
-
-    try {
-      return await requestToken('/sofia/delegation-token');
-    } catch (error) {
-      // A missing route is the only safe signal that this backend predates the canonical Sofia path.
-      if (!(error instanceof CovalApiError) || error.status !== 404) throw error;
-      return requestToken('/covi/delegation-token');
-    }
+    return this.request<SofiaDelegationTokenResponse>(
+      'POST',
+      '/sofia/delegation-token',
+      {
+        client_id: 'coval-mcp',
+        ...(sessionId ? { session_id: sessionId } : {}),
+      },
+      undefined,
+      AbortSignal.timeout(SOFIA_TOKEN_EXCHANGE_TIMEOUT_MS),
+    );
   }
 }
 
@@ -551,9 +542,7 @@ function validateSofiaDelegationUrl(delegationUrl: string, apiBaseUrl: string): 
   }
   const environmentSuffix = apiUrl.pathname.includes('staging') ? '-staging' : '';
   const expectedHost = apiUrl.hostname.replace(/^api(?=[.-])/, `sofia${environmentSuffix}`);
-  const configuredOrigin = (
-    process.env.SOFIA_DELEGATION_ORIGIN || process.env.COVI_DELEGATION_ORIGIN
-  )?.replace(/\/$/, '');
+  const configuredOrigin = process.env.SOFIA_DELEGATION_ORIGIN?.replace(/\/$/, '');
   const expectedOrigin = configuredOrigin || `https://${expectedHost}`;
   let expectedOriginUrl: URL;
   try {
