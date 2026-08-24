@@ -1,6 +1,6 @@
 const DEFAULT_BASE_URL = 'https://api.coval.dev/v1';
 const DEFAULT_API_TIMEOUT_MS = 30_000;
-const SOFIA_DELEGATION_TIMEOUT_MS = 120_000;
+const SOFIA_DELEGATION_TIMEOUT_MS = 240_000;
 const SOFIA_TOKEN_EXCHANGE_TIMEOUT_MS = 15_000;
 
 export interface PaginationParams {

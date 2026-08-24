@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 
 describe('CovalApiClient request timeouts', () => {
   afterEach(() => {
+    jest.useRealTimers();
     jest.restoreAllMocks();
   });
 
@@ -61,7 +62,7 @@ describe('CovalApiClient request timeouts', () => {
     });
   });
 
-  it('preserves the explicit Sofia timeout overrides', async () => {
+  it('uses the Sofia-specific timeout overrides', async () => {
     const timeoutSpy = jest
       .spyOn(AbortSignal, 'timeout')
       .mockImplementation(() => new AbortController().signal);
@@ -95,6 +96,59 @@ describe('CovalApiClient request timeouts', () => {
 
     await client.consultSofia({ prompt: 'What should I inspect?' });
 
-    expect(timeoutSpy.mock.calls).toEqual([[15_000], [120_000]]);
+    expect(timeoutSpy.mock.calls).toEqual([[15_000], [240_000]]);
+  });
+
+  it('allows a Sofia consultation to complete after two minutes', async () => {
+    jest.useFakeTimers();
+    const timeoutSpy = jest.spyOn(AbortSignal, 'timeout').mockImplementation((timeoutMs) => {
+      const controller = new AbortController();
+      setTimeout(() => controller.abort(new DOMException('The operation timed out', 'TimeoutError')), timeoutMs);
+      return controller.signal;
+    });
+    jest
+      .spyOn(global, 'fetch')
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({
+            delegation_token: 'signed.jwt.token',
+            delegation_url: 'https://sofia.example.com/v1/external/delegations',
+            expires_at: 1234,
+            mode: 'read_only',
+          }),
+          { status: 200 },
+        ),
+      )
+      .mockImplementationOnce(
+        (_input, init) =>
+          new Promise<Response>((resolve, reject) => {
+            const requestSignal = init?.signal;
+            requestSignal?.addEventListener('abort', () => reject(requestSignal.reason), { once: true });
+            setTimeout(
+              () =>
+                resolve(
+                  new Response(
+                    JSON.stringify({
+                      contract_version: '1',
+                      request_id: 'request-123',
+                      mode: 'read_only',
+                      summary: 'Inspect the latest run.',
+                      evidence: [],
+                      proposed_actions: [],
+                    }),
+                    { status: 200 },
+                  ),
+                ),
+              145_000,
+            );
+          }),
+      );
+    const client = new CovalApiClient('customer-api-key', 'https://api.example.com/v1');
+
+    const consultation = client.consultSofia({ prompt: 'What should I inspect?' });
+    await jest.advanceTimersByTimeAsync(145_000);
+
+    await expect(consultation).resolves.toMatchObject({ requestId: 'request-123' });
+    expect(timeoutSpy.mock.calls).toEqual([[15_000], [240_000]]);
   });
 });
