@@ -258,6 +258,17 @@ describe('registerAllTools', () => {
     }
   );
 
+  it('distinguishes runs from simulated and uploaded conversations', () => {
+    for (const inputProfile of ['openai', 'legacy'] as const) {
+      const { registrations } = collectRegistrations('standard', inputProfile);
+      const description = registrations.get('consult_sofia')?.description;
+
+      expect(description).toContain('runs');
+      expect(description).toContain('simulated conversations');
+      expect(description).toContain('uploaded conversations');
+    }
+  });
+
   it.each([
     ['standard', false],
     ['claude', true],

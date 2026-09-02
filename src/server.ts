@@ -9,14 +9,16 @@ import {
 
 export const COVAL_MCP_SERVER_VERSION = '0.4.0';
 
-const COVAL_OVERVIEW = `Coval evaluates AI agents (voice, SMS, chat) by running simulated conversations.
+const COVAL_OVERVIEW = `Coval evaluates AI agents (voice, SMS, chat) across simulated conversations and uploaded conversations.
 
 Entities:
 - Agent: The AI being evaluated
 - Persona: Simulated user behavior
 - Test Set: Collection of test cases
 - Test Case: Single scenario
-- Run: Agent + persona + test set evaluation
+- Run: Batch of simulated conversations
+- Simulated Conversation: Conversation created by Coval as part of a run
+- Uploaded Conversation: Production conversation submitted to Coval
 - Metrics: Organization-specific evaluation criteria`;
 
 export interface CovalMcpServerOptions {
