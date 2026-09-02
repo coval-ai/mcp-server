@@ -58,6 +58,8 @@ describe("remote MCP Lambda", () => {
     const authenticated = JSON.parse((await readOverview("customer-api-key")).body).result
       .contents[0].text;
     expect(authenticated).toContain("Use direct tools");
+    expect(authenticated).toContain("Run: Batch of simulated conversations");
+    expect(authenticated).toContain("Uploaded Conversation: Production conversation");
     expect(authenticated).not.toContain("consult_sofia");
 
     const unauthenticated = JSON.parse((await readOverview()).body).result.contents[0].text;

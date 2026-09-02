@@ -61,8 +61,8 @@ export function registerSofiaTools(
       ...readOnlyTool('Consult Sofia'),
       description:
         inputProfile === 'openai'
-          ? "Delegate one standalone, read-only Coval evaluation question to Sofia. Sofia can inspect the authenticated organization's evaluation resources, including run transcripts, but this tool never requests ChatGPT conversation history. It cannot create, modify, run, or delete anything."
-          : "Delegate a read-only Coval evaluation question to Sofia. Sofia can use Coval playbooks and the authenticated organization's runs, simulations, conversations, metrics, agents, personas, test sets, and dashboards. It cannot create, modify, run, or delete anything.",
+          ? "Delegate one standalone, read-only Coval evaluation question to Sofia. Sofia can inspect the authenticated organization's evaluation resources, including runs, simulated conversations, and uploaded conversations, but this tool never requests ChatGPT conversation history. It cannot create, modify, run, or delete anything."
+          : "Delegate a read-only Coval evaluation question to Sofia. Sofia can use Coval playbooks and the authenticated organization's runs, simulated conversations, uploaded conversations, metrics, agents, personas, test sets, and dashboards. It cannot create, modify, run, or delete anything.",
       inputSchema:
         inputProfile === 'openai'
           ? SofiaConsultInputSchema
