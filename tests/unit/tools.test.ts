@@ -145,6 +145,41 @@ describe('registerAllTools', () => {
         ],
       ],
       ['consult_sofia', ['prompt']],
+      ['list_issues', ['agent_id', 'owner', 'page_size', 'status']],
+      ['get_issue', ['issue_id']],
+      [
+        'create_issue',
+        [
+          'agent_id',
+          'business_outcome',
+          'expected_behavior',
+          'failure_pattern',
+          'finding_id',
+          'observed_behavior',
+          'severity',
+          'title',
+        ],
+      ],
+      [
+        'issue_action',
+        [
+          'action',
+          'agent_version_id',
+          'clearance_policy',
+          'expected_version',
+          'external_ticket_label',
+          'external_ticket_url',
+          'issue_id',
+          'merged_into_id',
+          'note',
+          'owner_user_id',
+          'run_id',
+          'severity',
+          'suite_test_set_id',
+        ],
+      ],
+      ['get_issues_summary', ['buckets', 'period']],
+      ['list_regression_suite', ['agent_id']],
     ]);
     const forbiddenFields = new Set([
       'conversation',
@@ -328,6 +363,12 @@ describe('registerAllTools', () => {
           { ...destructiveWriteAnnotations, openWorldHint: true },
         ],
         ['consult_sofia', readOnlyAnnotations],
+        ['list_issues', readOnlyAnnotations],
+        ['get_issue', readOnlyAnnotations],
+        ['create_issue', additiveWriteAnnotations],
+        ['issue_action', destructiveWriteAnnotations],
+        ['get_issues_summary', readOnlyAnnotations],
+        ['list_regression_suite', readOnlyAnnotations],
       ]);
 
       expect([...toolNames].sort()).toEqual([...expectedAnnotations.keys()].sort());

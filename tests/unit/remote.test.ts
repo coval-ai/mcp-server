@@ -293,7 +293,7 @@ describe('remote OAuth organization binding', () => {
           toolsByProfile.set(annotationProfile, tools);
           expect(tools.map((tool) => tool.name)).toContain('consult_sofia');
           expect(tools.map((tool) => tool.name)).not.toContain('consult_covi');
-          expect(tools).toHaveLength(27);
+          expect(tools).toHaveLength(33);
           for (const tool of tools) {
             expect(tool.title).toBeTruthy();
             expect(typeof tool.annotations?.readOnlyHint).toBe('boolean');
