@@ -520,6 +520,59 @@ export class CovalApiClient {
       AbortSignal.timeout(SOFIA_TOKEN_EXCHANGE_TIMEOUT_MS),
     );
   }
+
+  // -- Issues: the agent improvement loop --------------------------------------------------
+
+  async listIssues(params?: {
+    status?: string[];
+    owner?: string;
+    agent_id?: string;
+    page_size?: number;
+  }) {
+    return this.request<{ issues: unknown[]; next_page_token?: string | null }>(
+      'GET',
+      '/issues',
+      undefined,
+      {
+        status: params?.status?.join(','),
+        owner: params?.owner,
+        agent_id: params?.agent_id,
+        page_size: params?.page_size,
+      },
+    );
+  }
+
+  async getIssue(issueId: string) {
+    return this.request<{ issue: unknown; events: unknown[]; clearance_attempts: unknown[] }>(
+      'GET',
+      `/issues/${issueId}`,
+    );
+  }
+
+  async createIssue(body: unknown) {
+    return this.request<{ issue: unknown; event: unknown }>('POST', '/issues', body);
+  }
+
+  async applyIssueAction(issueId: string, body: unknown) {
+    return this.request<{ issue: unknown; event: unknown; clearance_attempt?: unknown }>(
+      'POST',
+      `/issues/${issueId}/actions`,
+      body,
+    );
+  }
+
+  async getIssuesSummary(params?: { period?: string; buckets?: number }) {
+    return this.request<Record<string, unknown>>('GET', '/issues/summary', undefined, {
+      period: params?.period,
+      buckets: params?.buckets,
+    });
+  }
+
+  async listRegressionSuite(params?: { agent_id?: string }) {
+    return this.request<{ memberships: unknown[] }>('GET', '/regression-suite', undefined, {
+      agent_id: params?.agent_id,
+    });
+  }
 }
 
 function createApiRequestTimeoutError(): CovalApiError {
@@ -563,6 +616,7 @@ function validateSofiaDelegationUrl(delegationUrl: string, apiBaseUrl: string): 
     throw new CovalApiError('INVALID_DELEGATION', 'Sofia delegation response was invalid');
   }
   return endpoint.toString();
+
 }
 
 function parseSofiaConsultation(payload: unknown): SofiaConsultationResponse {

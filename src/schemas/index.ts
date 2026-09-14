@@ -7,3 +7,4 @@ export * from './metrics.js';
 export * from './personas.js';
 export * from './reports.js';
 export * from './scheduling.js';
+export * from './issues.js';

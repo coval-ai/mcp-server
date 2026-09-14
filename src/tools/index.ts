@@ -9,6 +9,7 @@ import { registerPersonaTools } from './personas.js';
 import { registerSofiaTools } from './sofia.js';
 import { registerReportTools } from './reports.js';
 import { registerSchedulingTools } from './scheduling.js';
+import { registerIssueTools } from './issues.js';
 import type {
   ToolAnnotationProfile,
   ToolInputProfile,
@@ -39,6 +40,7 @@ export function registerAllTools(
   });
   registerReportTools(server, client, createToolOptions);
   registerSchedulingTools(server, client, createToolOptions);
+  registerIssueTools(server, client, createToolOptions);
   if (options.includeSofia ?? true) {
     registerSofiaTools(server, client, {
       inputProfile: options.inputProfile,
