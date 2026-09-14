@@ -372,7 +372,7 @@ describe('registerAllTools', () => {
       ]);
 
       expect([...toolNames].sort()).toEqual([...expectedAnnotations.keys()].sort());
-      expect(toolNames).toHaveLength(27);
+      expect(toolNames).toHaveLength(33);
 
       for (const [name, expected] of expectedAnnotations) {
         const registration = registrations.get(name);
