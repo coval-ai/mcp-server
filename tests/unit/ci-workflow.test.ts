@@ -35,6 +35,20 @@ describe('MCP production image qualification', () => {
     }
   });
 
+  it('pins the issue lifecycle catalog in image qualification', () => {
+    const qualifier = fs.readFileSync('scripts/qualify-image.mjs', 'utf8');
+    for (const toolName of [
+      'create_issue',
+      'get_issue',
+      'get_issues_summary',
+      'issue_action',
+      'list_issues',
+      'list_regression_suite',
+    ]) {
+      expect(qualifier).toContain(`'${toolName}'`);
+    }
+  });
+
   it('qualifies the image only after it has been built', () => {
     const buildStep = workflow.indexOf('name: Build production image');
     const qualifyStep = workflow.indexOf('name: Qualify production image');

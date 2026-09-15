@@ -150,6 +150,12 @@ Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
 | `get_scheduled_run` | Get a schedule and paginated recent-run history |
 | `create_scheduled_run` | Create a schedule, disabled by default |
 | `update_scheduled_run` | Update selected schedule fields |
+| `list_issues` | List agent issues, filtered by status, owner, or agent |
+| `get_issue` | Get an issue with its activity log and clearance attempts |
+| `create_issue` | Create an issue for review |
+| `issue_action` | Move an issue through its lifecycle, guarded by its expected version |
+| `get_issues_summary` | Summarize open, verified-resolved, and recurring issues over time |
+| `list_regression_suite` | List the test sets protecting an agent's established behavior |
 | `consult_sofia` | Delegate a read-only Coval evaluation question to Sofia |
 
 ## Example Usage

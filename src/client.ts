@@ -616,7 +616,6 @@ function validateSofiaDelegationUrl(delegationUrl: string, apiBaseUrl: string): 
     throw new CovalApiError('INVALID_DELEGATION', 'Sofia delegation response was invalid');
   }
   return endpoint.toString();
-
 }
 
 function parseSofiaConsultation(payload: unknown): SofiaConsultationResponse {

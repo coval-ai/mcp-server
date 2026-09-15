@@ -101,7 +101,7 @@ export const IssueActionInputSchema = z
     severity: IssueSeveritySchema.optional().describe('confirm: severity to record.'),
     suite_test_set_id: ResourceIdSchema.optional().describe('attach_suite: the focused test set that asks "did we fix this?"'),
     clearance_policy: ClearancePolicySchema.optional().describe('set_clearance_policy: the tolerance to freeze per attempt.'),
-    run_id: ResourceIdSchema.optional().describe('start_clearance: a run of the attached suite to judge. Launch it with launch_run first.'),
+    run_id: ResourceIdSchema.optional().describe('start_clearance: a run of the attached suite to judge. Launch it with create_run first.'),
     merged_into_id: ResourceIdSchema.optional().describe('merge: the surviving issue.'),
     agent_version_id: z.string().max(64).optional().describe('record_change: the agent version the change was tested on.'),
     external_ticket_url: z.string().url().max(2000).optional(),
