@@ -164,7 +164,6 @@ export class CovalApiClient {
     persona_id: string;
     test_set_id: string;
     metric_ids?: string[];
-    tags?: string[];
     options?: { iteration_count?: number; concurrency?: number };
     metadata?: Record<string, unknown>;
   }) {
