@@ -198,6 +198,45 @@ npm test
 npm run check:remote
 ```
 
+## API Coverage Audit
+
+`scripts/audit_api_coverage.py` compares the live public OpenAPI catalog
+(`https://api.coval.dev/v1/openapi`) with what the MCP server actually calls. It
+has two layers:
+
+- **Operations:** every published operation is either reached by a registered
+  tool (traced from `src/tools/` through `src/client.ts`, including private
+  client helpers) or recorded in `api-coverage.toml` with a reason.
+- **Request fields:** for every covered `POST`/`PATCH`/`PUT` operation, every
+  published `application/json` request-body property is either declared on the
+  body type the client sends or recorded with a reason. A field the client
+  sends but the API does not publish is also reported, because the API may
+  ignore it.
+
+The MCP server exposes a curated tool set, so most operations are reviewed
+gaps. The audit's job is to surface what the API adds or changes so each change
+gets a decision.
+
+```bash
+python3 -m pip install --requirement scripts/requirements-audit.txt
+python3 -m unittest discover --start-directory scripts --pattern 'test_*.py'
+python3 scripts/audit_api_coverage.py --write-markdown api-coverage-report.md
+```
+
+The audit fails for new or stale gaps, a stale `[snapshot]` in the manifest, or
+tool calls to client methods that do not exist. Resolve a failure by exposing
+the operation or field through a tool, or by recording it in
+`api-coverage.toml` with a reason, then regenerate the report.
+
+Every Monday at 10:00 UTC, `.github/workflows/api-parity-audit.yml` refreshes
+the report and opens or updates one rolling pull request from
+`chore/weekly-api-parity`. This is the same mechanism and schedule the Coval CLI
+uses. The live audit is strict on that pull request and advisory on others, so
+an API change never blocks unrelated work. Push reconciliation commits onto the
+rolling pull request. The next weekly run leaves a branch with non-bot commits
+unchanged and comments instead of resetting it. If the automation itself fails,
+the run opens an issue.
+
 ## Environment Variables
 
 | Variable | Required | Default | Description |

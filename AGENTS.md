@@ -58,6 +58,9 @@ npm run build
 Run the smallest useful checks while iterating, then run lint, typecheck, unit tests, and the
 production build before marking a behavior change ready for review.
 
+When a change touches `src/client.ts` or `src/tools/`, also run the API coverage audit described in
+`README.md` and update `api-coverage.toml` and `api-coverage-report.md` in the same change.
+
 ## TypeScript Conventions
 
 - Keep strict TypeScript checks passing. Do not use `any` to bypass a contract.

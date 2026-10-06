@@ -1,0 +1,776 @@
+# Reviewed against the live public OpenAPI catalog by scripts/audit_api_coverage.py.
+# Every published operation must either be reachable from an MCP tool or have a reason here,
+# and every published request-body property on a covered operation must either be declared on
+# the body src/client.ts sends or have a reason in the request-field sections below.
+#
+# The MCP server exposes a curated tool set, not the whole API, so most operations are reviewed
+# gaps. The weekly parity PR flags what the API adds or changes so each one gets a decision.
+
+[snapshot]
+catalog_url = "https://api.coval.dev/v1/openapi"
+reviewed_at = "2026-10-05"
+published_operations = 183
+mcp_supported_operations = 29
+published_request_fields = 86
+mcp_modeled_request_fields = 57
+
+[[known_gap]]
+operation = "DELETE /agents/{agent_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /agents/{agent_id}/mutations/{mutation_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /alerts/{alert_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /api-keys/{api_key_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /conversations/simulated/{simulation_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /conversations/uploaded/{conversation_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /dashboards/{dashboard_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /dashboards/{dashboard_id}/widgets/{widget_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /integrations/slack"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /metrics/flows/{flow_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /metrics/{metric_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /metrics/{metric_id}/baselines/{baseline_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /metrics/{metric_id}/thresholds/{threshold_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /personas/{persona_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /reports/{report_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /review-annotations/{annotation_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /review-projects/{project_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /run-templates/{run_template_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /runs/{run_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /scheduled-runs/{scheduled_run_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /tags/{tag_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /test-cases/{test_case_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /test-sets/{test_set_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /test-sets/{test_set_id}/agents/{agent_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /webhooks/{webhook_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "DELETE /workspaces/{workspace_id}"
+reason = "No MCP tool deletes resources."
+
+[[known_gap]]
+operation = "GET /agents/{agent_id}/mutations"
+reason = "Outside the curated MCP tool set; agent tools cover list, get, create, and update."
+
+[[known_gap]]
+operation = "GET /agents/{agent_id}/mutations/{mutation_id}"
+reason = "Outside the curated MCP tool set; agent tools cover list, get, create, and update."
+
+[[known_gap]]
+operation = "GET /agents/{agent_id}/versions"
+reason = "Outside the curated MCP tool set; agent tools cover list, get, create, and update."
+
+[[known_gap]]
+operation = "GET /alerts"
+reason = "Outside the curated MCP tool set; no alert tools are exposed."
+
+[[known_gap]]
+operation = "GET /alerts/{alert_id}"
+reason = "Outside the curated MCP tool set; no alert tools are exposed."
+
+[[known_gap]]
+operation = "GET /alerts/{alert_id}/events"
+reason = "Outside the curated MCP tool set; no alert tools are exposed."
+
+[[known_gap]]
+operation = "GET /api-keys"
+reason = "Outside the curated MCP tool set; no API key tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/simulated"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/simulated/{simulation_id}"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/simulated/{simulation_id}/audio"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/simulated/{simulation_id}/metrics"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/simulated/{simulation_id}/metrics/{metric_output_id}"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/uploaded"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/uploaded/{conversation_id}"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/uploaded/{conversation_id}/audio"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/uploaded/{conversation_id}/metrics"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /conversations/uploaded/{conversation_id}/metrics/{metric_output_id}"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /dashboards"
+reason = "Outside the curated MCP tool set; no dashboard tools are exposed."
+
+[[known_gap]]
+operation = "GET /dashboards/{dashboard_id}"
+reason = "Outside the curated MCP tool set; no dashboard tools are exposed."
+
+[[known_gap]]
+operation = "GET /dashboards/{dashboard_id}/widgets"
+reason = "Outside the curated MCP tool set; no dashboard tools are exposed."
+
+[[known_gap]]
+operation = "GET /dashboards/{dashboard_id}/widgets/{widget_id}"
+reason = "Outside the curated MCP tool set; no dashboard tools are exposed."
+
+[[known_gap]]
+operation = "GET /integrations/slack"
+reason = "Outside the curated MCP tool set; no integration tools are exposed."
+
+[[known_gap]]
+operation = "GET /metrics/flows"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/recently-deleted"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/sql-schema"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/tags"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/template-variables"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/{metric_id}/baselines"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/{metric_id}/baselines/{baseline_id}"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/{metric_id}/baselines/{baseline_id}/history"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/{metric_id}/threshold"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/{metric_id}/thresholds"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /metrics/{metric_id}/versions"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "GET /models/metric"
+reason = "Outside the curated MCP tool set; no model catalog tools are exposed."
+
+[[known_gap]]
+operation = "GET /organization/conversation-metrics"
+reason = "Outside the curated MCP tool set; no organization configuration tools are exposed."
+
+[[known_gap]]
+operation = "GET /organization/monitoring-metrics"
+reason = "Outside the curated MCP tool set; no organization configuration tools are exposed."
+
+[[known_gap]]
+operation = "GET /personas/background-sounds"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "GET /personas/phone-numbers"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "GET /personas/tags"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "GET /personas/voices"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "GET /personas/{persona_id}/versions"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "GET /review-annotations"
+reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
+
+[[known_gap]]
+operation = "GET /review-annotations/metric-health-stats"
+reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
+
+[[known_gap]]
+operation = "GET /review-annotations/{annotation_id}"
+reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
+
+[[known_gap]]
+operation = "GET /review-projects"
+reason = "Outside the curated MCP tool set; no review project tools are exposed."
+
+[[known_gap]]
+operation = "GET /review-projects/{project_id}"
+reason = "Outside the curated MCP tool set; no review project tools are exposed."
+
+[[known_gap]]
+operation = "GET /review-projects/{project_id}/insights"
+reason = "Outside the curated MCP tool set; no review project tools are exposed."
+
+[[known_gap]]
+operation = "GET /review-projects/{project_id}/metric-agreement"
+reason = "Outside the curated MCP tool set; no review project tools are exposed."
+
+[[known_gap]]
+operation = "GET /review-projects/{project_id}/progress"
+reason = "Outside the curated MCP tool set; no review project tools are exposed."
+
+[[known_gap]]
+operation = "GET /run-templates/{run_template_id}"
+reason = "Outside the curated MCP tool set; run-template tools cover list."
+
+[[known_gap]]
+operation = "GET /runs/tags"
+reason = "Outside the curated MCP tool set; run tools cover list, get, and create."
+
+[[known_gap]]
+operation = "GET /tags"
+reason = "Outside the curated MCP tool set; no tag tools are exposed."
+
+[[known_gap]]
+operation = "GET /tags/{tag_id}"
+reason = "Outside the curated MCP tool set; no tag tools are exposed."
+
+[[known_gap]]
+operation = "GET /test-sets/{test_set_id}/agents"
+reason = "Outside the curated MCP tool set; test-set tools cover list, get, and create."
+
+[[known_gap]]
+operation = "GET /test-sets/{test_set_id}/records"
+reason = "Outside the curated MCP tool set; test-set tools cover list, get, and create."
+
+[[known_gap]]
+operation = "GET /test-sets/{test_set_id}/versions"
+reason = "Outside the curated MCP tool set; test-set tools cover list, get, and create."
+
+[[known_gap]]
+operation = "GET /traces/spans"
+reason = "Outside the curated MCP tool set; no trace tools are exposed."
+
+[[known_gap]]
+operation = "GET /traces/summary"
+reason = "Outside the curated MCP tool set; no trace tools are exposed."
+
+[[known_gap]]
+operation = "GET /webhooks"
+reason = "Outside the curated MCP tool set; no webhook tools are exposed."
+
+[[known_gap]]
+operation = "GET /workspaces"
+reason = "Outside the curated MCP tool set; no workspace tools are exposed."
+
+[[known_gap]]
+operation = "GET /workspaces/{workspace_id}"
+reason = "Outside the curated MCP tool set; no workspace tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /agents/{agent_id}/mutations/{mutation_id}"
+reason = "Outside the curated MCP tool set; agent tools cover list, get, create, and update."
+
+[[known_gap]]
+operation = "PATCH /alerts/{alert_id}"
+reason = "Outside the curated MCP tool set; no alert tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /api-keys/{api_key_id}"
+reason = "Outside the curated MCP tool set; no API key tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /conversations/simulated/{simulation_id}"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /conversations/uploaded/{conversation_id}"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /dashboards/{dashboard_id}"
+reason = "Outside the curated MCP tool set; no dashboard tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /dashboards/{dashboard_id}/widgets/{widget_id}"
+reason = "Outside the curated MCP tool set; no dashboard tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /metrics/flows/{flow_id}"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "PATCH /metrics/{metric_id}"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "PATCH /metrics/{metric_id}/baselines/{baseline_id}"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "PATCH /metrics/{metric_id}/threshold"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "PATCH /organization/conversation-metrics"
+reason = "Outside the curated MCP tool set; no organization configuration tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /organization/monitoring-metrics"
+reason = "Outside the curated MCP tool set; no organization configuration tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /personas/background-sounds/{background_sound_id}"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "PATCH /personas/{persona_id}"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "PATCH /reports/{report_id}"
+reason = "Outside the curated MCP tool set; report tools cover list, get with rows, and create."
+
+[[known_gap]]
+operation = "PATCH /review-annotations/{annotation_id}"
+reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /review-projects/{project_id}"
+reason = "Outside the curated MCP tool set; no review project tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /run-templates/{run_template_id}"
+reason = "Outside the curated MCP tool set; run-template tools cover list."
+
+[[known_gap]]
+operation = "PATCH /runs/{run_id}"
+reason = "Outside the curated MCP tool set; run tools cover list, get, and create."
+
+[[known_gap]]
+operation = "PATCH /tags/{tag_id}"
+reason = "Outside the curated MCP tool set; no tag tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /test-sets/{test_set_id}"
+reason = "Outside the curated MCP tool set; test-set tools cover list, get, and create."
+
+[[known_gap]]
+operation = "PATCH /webhooks/{webhook_id}"
+reason = "Outside the curated MCP tool set; no webhook tools are exposed."
+
+[[known_gap]]
+operation = "PATCH /workspaces/{workspace_id}"
+reason = "Outside the curated MCP tool set; no workspace tools are exposed."
+
+[[known_gap]]
+operation = "POST /agents/{agent_id}/duplicate"
+reason = "Outside the curated MCP tool set; agent tools cover list, get, create, and update."
+
+[[known_gap]]
+operation = "POST /agents/{agent_id}/mutations"
+reason = "Outside the curated MCP tool set; agent tools cover list, get, create, and update."
+
+[[known_gap]]
+operation = "POST /agents/{agent_id}/versions/{version_id}/revert"
+reason = "Outside the curated MCP tool set; agent tools cover list, get, create, and update."
+
+[[known_gap]]
+operation = "POST /alerts"
+reason = "Outside the curated MCP tool set; no alert tools are exposed."
+
+[[known_gap]]
+operation = "POST /alerts/{alert_id}/test-evaluate"
+reason = "Outside the curated MCP tool set; no alert tools are exposed."
+
+[[known_gap]]
+operation = "POST /api-keys"
+reason = "Outside the curated MCP tool set; no API key tools are exposed."
+
+[[known_gap]]
+operation = "POST /audio:upload"
+reason = "Outside the curated MCP tool set; no audio upload tools are exposed."
+
+[[known_gap]]
+operation = "POST /conversations/simulated/{simulation_id}/resimulate"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "POST /conversations/simulated:rerunMetrics"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "POST /conversations/uploaded:submit"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "POST /dashboards"
+reason = "Outside the curated MCP tool set; no dashboard tools are exposed."
+
+[[known_gap]]
+operation = "POST /dashboards/{dashboard_id}/widgets"
+reason = "Outside the curated MCP tool set; no dashboard tools are exposed."
+
+[[known_gap]]
+operation = "POST /integrations/slack/connect"
+reason = "Outside the curated MCP tool set; no integration tools are exposed."
+
+[[known_gap]]
+operation = "POST /metrics"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/flows"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/outputs:batchGet"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/sql:test"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/{metric_id}/baselines"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/{metric_id}/duplicate"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/{metric_id}/restore"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/{metric_id}/test"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/{metric_id}/thresholds"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/{metric_id}/versions/{version_id}/revert"
+reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /personas"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "POST /personas/background-sounds"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "POST /personas/background-sounds/{background_sound_id}/complete"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "POST /personas/{persona_id}/duplicate"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "POST /personas/{persona_id}/versions/{version_id}/revert"
+reason = "Outside the curated MCP tool set; persona tools cover list and get."
+
+[[known_gap]]
+operation = "POST /review-annotations"
+reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
+
+[[known_gap]]
+operation = "POST /review-annotations:withMetricOutputs"
+reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
+
+[[known_gap]]
+operation = "POST /review-projects"
+reason = "Outside the curated MCP tool set; no review project tools are exposed."
+
+[[known_gap]]
+operation = "POST /review-projects/disagreement-state"
+reason = "Outside the curated MCP tool set; no review project tools are exposed."
+
+[[known_gap]]
+operation = "POST /review-projects/{project_id}/complete-conversation"
+reason = "Outside the curated MCP tool set; no review project tools are exposed."
+
+[[known_gap]]
+operation = "POST /run-templates"
+reason = "Outside the curated MCP tool set; run-template tools cover list."
+
+[[known_gap]]
+operation = "POST /tags"
+reason = "Outside the curated MCP tool set; no tag tools are exposed."
+
+[[known_gap]]
+operation = "POST /test-sets/{test_set_id}/agents:add"
+reason = "Outside the curated MCP tool set; test-set tools cover list, get, and create."
+
+[[known_gap]]
+operation = "POST /test-sets/{test_set_id}/duplicate"
+reason = "Outside the curated MCP tool set; test-set tools cover list, get, and create."
+
+[[known_gap]]
+operation = "POST /test-sets/{test_set_id}/versions/{version_id}/revert"
+reason = "Outside the curated MCP tool set; test-set tools cover list, get, and create."
+
+[[known_gap]]
+operation = "POST /traces"
+reason = "Outside the curated MCP tool set; no trace tools are exposed."
+
+[[known_gap]]
+operation = "POST /traces/search"
+reason = "Outside the curated MCP tool set; no trace tools are exposed."
+
+[[known_gap]]
+operation = "POST /webhooks"
+reason = "Outside the curated MCP tool set; no webhook tools are exposed."
+
+[[known_gap]]
+operation = "POST /workspaces"
+reason = "Outside the curated MCP tool set; no workspace tools are exposed."
+
+[[known_gap]]
+operation = "POST /workspaces/{workspace_id}/archive"
+reason = "Outside the curated MCP tool set; no workspace tools are exposed."
+
+[[known_field_gap]]
+operation = "PATCH /agents/{agent_id}"
+field = "attributes"
+reason = "`update_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /agents/{agent_id}"
+field = "customer_agent_id"
+reason = "`update_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /agents/{agent_id}"
+field = "language"
+reason = "`update_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /agents/{agent_id}"
+field = "metric_ids"
+reason = "`update_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /agents/{agent_id}"
+field = "model_type"
+reason = "`update_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /agents/{agent_id}"
+field = "tags"
+reason = "`update_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /agents/{agent_id}"
+field = "test_set_ids"
+reason = "`update_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /agents/{agent_id}"
+field = "workflows"
+reason = "`update_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /test-cases/{test_case_id}"
+field = "expected_output_json"
+reason = "`update_test_case` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /test-cases/{test_case_id}"
+field = "expected_output_str"
+reason = "`update_test_case` does not accept this field."
+
+[[known_field_gap]]
+operation = "PATCH /test-cases/{test_case_id}"
+field = "test_set_id"
+reason = "`update_test_case` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /agents"
+field = "attributes"
+reason = "`create_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /agents"
+field = "customer_agent_id"
+reason = "`create_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /agents"
+field = "language"
+reason = "`create_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /agents"
+field = "metric_ids"
+reason = "`create_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /agents"
+field = "tags"
+reason = "`create_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /agents"
+field = "test_set_ids"
+reason = "`create_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /agents"
+field = "workflows"
+reason = "`create_agent` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /reports"
+field = "custom_dimension_id"
+reason = "`create_report` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /reports"
+field = "custom_dimensions"
+reason = "`create_report` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /reports"
+field = "simulation_output_ids"
+reason = "`create_report` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /reports"
+field = "source_human_review_project_id"
+reason = "`create_report` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /runs"
+field = "config_overrides"
+reason = "`create_run` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /runs"
+field = "mutation_id"
+reason = "`create_run` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /runs"
+field = "mutation_ids"
+reason = "`create_run` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /test-cases"
+field = "expected_output_json"
+reason = "`create_test_case` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /test-cases"
+field = "expected_output_str"
+reason = "`create_test_case` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /test-cases"
+field = "script_turns"
+reason = "`create_test_case` does not accept this field."
+
+[[known_field_gap]]
+operation = "POST /test-sets"
+field = "tags"
+reason = "`create_test_set` does not accept this field."

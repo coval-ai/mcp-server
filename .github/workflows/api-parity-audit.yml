@@ -1,0 +1,361 @@
+name: Weekly API parity PR
+
+# Repository-owned drift detection for the hand-written MCP tools, on the same
+# schedule and mechanism as the CLI's weekly parity PR (coval-ai/cli) and the
+# SDK regeneration (coval-ai/coval-examples). The workflow refreshes a
+# deterministic coverage report and opens or updates one rolling PR when the
+# public API or the operations MCP tools reach change. It does not generate
+# tools from OpenAPI.
+#
+# Unlike the CLI job, it never resets a rolling branch that carries commits
+# from anyone but the bot: reconciliation pushed onto the PR is left alone and
+# the run comments on the PR instead.
+#
+# Prerequisite:
+#   REGEN_PR_TOKEN: a token with Contents and Pull requests write access to this
+#   repository. The organization does not allow GITHUB_TOKEN to create PRs.
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Monday 10:00 UTC, after the SDK regeneration job (same slot as the CLI).
+    - cron: "0 10 * * 1"
+
+permissions:
+  contents: read
+  issues: write
+  # Lists the open rolling PR to comment on when hand commits are present.
+  pull-requests: read
+
+concurrency:
+  group: weekly-api-parity-pr
+  cancel-in-progress: false
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          persist-credentials: false
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: scripts/requirements-audit.txt
+
+      - name: Install pinned dependencies
+        run: python -m pip install --requirement scripts/requirements-audit.txt
+
+      - name: Test the audit
+        run: python -m unittest scripts/test_audit_api_coverage.py
+
+      - name: Verify rolling PR credential
+        env:
+          REGEN_PR_TOKEN: ${{ secrets.REGEN_PR_TOKEN }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$REGEN_PR_TOKEN" ]; then
+            echo "::error::REGEN_PR_TOKEN is missing or empty. Replace it with a token that has Contents and Pull requests read/write access to coval-ai/mcp-server, then rerun this workflow. A secret name in repository settings does not prove that Actions receives a value."
+            exit 1
+          fi
+
+          api_headers=(
+            --header "Authorization: Bearer $REGEN_PR_TOKEN"
+            --header "Accept: application/vnd.github+json"
+            --header "X-GitHub-Api-Version: 2022-11-28"
+          )
+          curl_options=(
+            --silent
+            --show-error
+            --connect-timeout 10
+            --max-time 30
+          )
+
+          github_api_status() {
+            local label="$1"
+            local response_headers="$2"
+            local response_body="$3"
+            local status
+            shift 3
+
+            if ! status="$(
+              curl "${curl_options[@]}" \
+                --dump-header "$response_headers" \
+                --output "$response_body" \
+                --write-out '%{http_code}' \
+                "${api_headers[@]}" \
+                "$@"
+            )"; then
+              echo "::error::$label could not reach GitHub within 30 seconds. Check GitHub availability and rerun the workflow." >&2
+              return 1
+            fi
+            printf '%s' "$status"
+          }
+
+          response_header() {
+            local response_headers="$1"
+            local header_name="$2"
+            awk -v header_name="$header_name" '
+              index(tolower($0), tolower(header_name) ":") == 1 {
+                sub(/^[^:]*:[[:space:]]*/, "")
+                sub(/\r$/, "")
+                value = $0
+              }
+              END { print value }
+            ' "$response_headers"
+          }
+
+          report_api_failure() {
+            local label="$1"
+            local required_access="$2"
+            local status="$3"
+            local response_headers="$4"
+            local response_body="$5"
+            local message remaining reset retry_after
+
+            message="$(
+              jq -r '(.message // "GitHub API request failed") | tostring | gsub("[\\r\\n]"; " ") | .[0:300]' \
+                "$response_body" 2>/dev/null || true
+            )"
+            message="${message:-GitHub API request failed}"
+            remaining="$(response_header "$response_headers" x-ratelimit-remaining)"
+            reset="$(response_header "$response_headers" x-ratelimit-reset)"
+            retry_after="$(response_header "$response_headers" retry-after)"
+
+            if [ "$status" = "429" ] || { [ "$status" = "403" ] && [ "$remaining" = "0" ]; }; then
+              echo "::error::$label was rate-limited by GitHub (HTTP $status; retry-after=${retry_after:-not supplied}; rate-limit-reset=${reset:-not supplied}). Rerun after the indicated limit resets. GitHub: $message"
+            elif [ "$status" = "401" ]; then
+              echo "::error::$label could not authenticate (HTTP 401). Replace the expired, revoked, or invalid REGEN_PR_TOKEN. GitHub: $message"
+            elif [ "$status" = "403" ]; then
+              echo "::error::$label was denied by repository or organization policy, or REGEN_PR_TOKEN lacks effective $required_access (HTTP 403). GitHub: $message"
+            elif [ "$status" = "404" ]; then
+              echo "::error::$label could not access coval-ai/mcp-server (HTTP 404). Confirm the token is scoped to this repository and its owner can access it. GitHub: $message"
+            else
+              echo "::error::$label received an unexpected GitHub response (HTTP $status). GitHub: $message"
+            fi
+          }
+
+          repo_response="$RUNNER_TEMP/regen-pr-repo.json"
+          repo_headers="$RUNNER_TEMP/regen-pr-repo.headers"
+          if ! repo_status="$(
+            github_api_status \
+              "REGEN_PR_TOKEN repository check" \
+              "$repo_headers" \
+              "$repo_response" \
+              https://api.github.com/repos/coval-ai/mcp-server
+          )"; then
+            exit 1
+          fi
+          if [ "$repo_status" != "200" ]; then
+            report_api_failure \
+              "REGEN_PR_TOKEN repository check" \
+              "repository read access" \
+              "$repo_status" \
+              "$repo_headers" \
+              "$repo_response"
+            exit 1
+          fi
+
+          # These deliberately invalid requests cannot create a ref or PR. GitHub
+          # returns 422 only after authorizing each write endpoint.
+          ref_response="$RUNNER_TEMP/regen-pr-ref-probe.json"
+          ref_headers="$RUNNER_TEMP/regen-pr-ref-probe.headers"
+          if ! ref_status="$(
+            github_api_status \
+              "REGEN_PR_TOKEN Contents permission check" \
+              "$ref_headers" \
+              "$ref_response" \
+              --request POST \
+              --data '{"ref":"refs/heads/__coval_mcp_permission_probe__","sha":"0000000000000000000000000000000000000000"}' \
+              https://api.github.com/repos/coval-ai/mcp-server/git/refs
+          )"; then
+            exit 1
+          fi
+          if [ "$ref_status" != "422" ]; then
+            report_api_failure \
+              "REGEN_PR_TOKEN Contents permission check" \
+              "Contents read/write access" \
+              "$ref_status" \
+              "$ref_headers" \
+              "$ref_response"
+            exit 1
+          fi
+
+          probe_suffix="${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          pr_response="$RUNNER_TEMP/regen-pr-pull-probe.json"
+          pr_headers="$RUNNER_TEMP/regen-pr-pull-probe.headers"
+          if ! pr_status="$(
+            github_api_status \
+              "REGEN_PR_TOKEN Pull requests permission check" \
+              "$pr_headers" \
+              "$pr_response" \
+              --request POST \
+              --data "{\"title\":\"permission probe\",\"head\":\"__permission_probe_head_${probe_suffix}__\",\"base\":\"__permission_probe_base_${probe_suffix}__\"}" \
+              https://api.github.com/repos/coval-ai/mcp-server/pulls
+          )"; then
+            exit 1
+          fi
+          if [ "$pr_status" != "422" ]; then
+            report_api_failure \
+              "REGEN_PR_TOKEN Pull requests permission check" \
+              "Pull requests read/write access" \
+              "$pr_status" \
+              "$pr_headers" \
+              "$pr_response"
+            exit 1
+          fi
+
+      - name: Refresh the deterministic parity report
+        run: >-
+          python scripts/audit_api_coverage.py
+          --write-markdown api-coverage-report.md
+          --allow-drift
+
+      - name: Check the rolling branch for hand commits
+        id: rolling_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+          BRANCH: chore/weekly-api-parity
+          BOT_COMMITTER: 41898282+github-actions[bot]@users.noreply.github.com
+        run: |
+          set -euo pipefail
+
+          # create-pull-request rebuilds the branch from main and force-pushes,
+          # which would discard reconciliation someone pushed onto the PR.
+          refs="$(
+            gh api "repos/${GITHUB_REPOSITORY}/git/matching-refs/heads/${BRANCH}" \
+              --jq "map(select(.ref == \"refs/heads/${BRANCH}\")) | length"
+          )"
+          if [ "$refs" = "0" ]; then
+            echo "hand_commits=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          hand_commits="$(
+            gh api "repos/${GITHUB_REPOSITORY}/compare/main...${BRANCH}" \
+              --jq "[.commits[] | select(.commit.committer.email != \"${BOT_COMMITTER}\")] | length"
+          )"
+          if [ "$hand_commits" = "0" ]; then
+            echo "hand_commits=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "::notice::${BRANCH} has ${hand_commits} commit(s) not made by the bot; leaving it unchanged."
+            echo "hand_commits=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Comment instead of resetting a hand-reconciled PR
+        if: steps.rolling_branch.outputs.hand_commits == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const { data: pulls } = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              head: `${context.repo.owner}:chore/weekly-api-parity`,
+              state: 'open',
+            });
+            const body = [
+              'The weekly refresh left this branch unchanged because it has commits not made by the bot.',
+              'Merge this PR, or rebase it onto `main` and regenerate `api-coverage-report.md`, so the next run can pick up new API changes.',
+              '',
+              `Run: ${runUrl}`,
+            ].join('\n');
+            for (const pull of pulls) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: pull.number,
+                body,
+              });
+            }
+
+      - name: Open or update the parity PR
+        if: steps.rolling_branch.outputs.hand_commits != 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.REGEN_PR_TOKEN }}
+          commit-message: "chore(mcp): refresh API parity report"
+          title: "chore(mcp): reconcile weekly API parity"
+          body: |
+            Automated comparison of the live public OpenAPI catalog with the operations MCP tools reach.
+
+            - `api-coverage-report.md` is deterministic and changes only when API or MCP coverage changes.
+            - This PR does not generate MCP tools. Expose new operations or fields as tools, or record them in `api-coverage.toml` with a reason.
+            - If the report says `ACTION REQUIRED`, implement the missing commands or explicitly review the manifest exception, regenerate the report, and get CI green before merging.
+
+            The branch is stable, so future weekly runs update this PR instead of opening duplicates.
+          branch: chore/weekly-api-parity
+          draft: true
+          delete-branch: false
+          add-paths: api-coverage-report.md
+
+      - name: Open or update the automation failure issue
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Weekly MCP API parity PR automation is failing';
+            const runUrl = `${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const body = [
+              'The scheduled MCP API parity workflow failed before it could produce or update its rolling PR.',
+              '',
+              `Run: ${runUrl}`,
+              '',
+              'This issue reports broken automation, not ordinary API drift. Ordinary drift is reported through the rolling PR.',
+            ].join('\n');
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = issues.find((issue) => !issue.pull_request && issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body,
+              });
+            } else {
+              await github.rest.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title,
+                body,
+              });
+            }
+
+      - name: Close a recovered automation failure issue
+        if: success()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const title = 'Weekly MCP API parity PR automation is failing';
+            const issues = await github.paginate(github.rest.issues.listForRepo, {
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100,
+            });
+            const existing = issues.find((issue) => !issue.pull_request && issue.title === title);
+            if (existing) {
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `Recovered in ${context.serverUrl}/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}.`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: 'closed',
+                state_reason: 'completed',
+              });
+            }

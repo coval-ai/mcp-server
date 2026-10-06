@@ -45,3 +45,7 @@ lambda-package/
 # Internal dev docs
 CLAUDE.md
 PROGRESS.md
+
+# Python (API coverage audit)
+.venv/
+__pycache__/
