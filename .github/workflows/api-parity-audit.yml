@@ -290,6 +290,7 @@ jobs:
 
             The branch is stable, so future weekly runs update this PR instead of opening duplicates.
           branch: chore/weekly-api-parity
+          draft: true
           delete-branch: false
           add-paths: api-coverage-report.md
 
