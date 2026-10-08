@@ -233,9 +233,12 @@ the report and opens or updates one rolling pull request from
 `chore/weekly-api-parity`. This is the same mechanism and schedule the Coval CLI
 uses. The live audit is strict on that pull request and advisory on others, so
 an API change never blocks unrelated work. Push reconciliation commits onto the
-rolling pull request. The next weekly run leaves a branch with non-bot commits
-unchanged and comments instead of resetting it. If the automation itself fails,
-the run opens an issue.
+rolling pull request. While that pull request is open, the next weekly run
+leaves a branch with commits not made by the bot unchanged and comments on the
+pull request instead of resetting it, so merge or rebase that pull request to
+let later runs pick up new API changes. Once the pull request is merged or
+closed, the next run rebuilds the branch from `main`. If the automation itself
+fails, the run opens an issue.
 
 ## Environment Variables
 

@@ -7,9 +7,10 @@ name: Weekly API parity PR
 # public API or the operations MCP tools reach change. It does not generate
 # tools from OpenAPI.
 #
-# Unlike the CLI job, it never resets a rolling branch that carries commits
-# from anyone but the bot: reconciliation pushed onto the PR is left alone and
-# the run comments on the PR instead.
+# It never resets the branch of an open rolling PR that carries commits from
+# anyone but the bot: reconciliation pushed onto the PR is left alone and the
+# run comments on the PR instead. Once that PR is merged or closed, the next run
+# rebuilds the branch from main.
 #
 # Prerequisite:
 #   REGEN_PR_TOKEN: a token with Contents and Pull requests write access to this
@@ -232,6 +233,18 @@ jobs:
               --jq "map(select(.ref == \"refs/heads/${BRANCH}\")) | length"
           )"
           if [ "$refs" = "0" ]; then
+            echo "hand_commits=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # A squash merge never makes the branch's commits ancestors of main,
+          # so a merged or closed rolling PR leaves "hand commits" behind
+          # forever. Only an open PR has reconciliation left to protect.
+          open_prs="$(
+            gh api "repos/${GITHUB_REPOSITORY}/pulls?head=${GITHUB_REPOSITORY_OWNER}:${BRANCH}&state=open" \
+              --jq "length"
+          )"
+          if [ "$open_prs" = "0" ]; then
             echo "hand_commits=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
