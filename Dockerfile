@@ -1,4 +1,22 @@
-FROM node:22-alpine AS build
+FROM alpine:3.24.2 AS node-base
+
+# The hosted image is linux/amd64. Use the upstream musl build until the official
+# Node Alpine image includes this runtime; do not silently run a foreign binary.
+ARG TARGETARCH
+RUN test "$TARGETARCH" = amd64
+ADD --checksum=sha256:8d31c2180212503799c3c93924db216e236de769b4ca1fdfe85a33ebacae510c \
+    https://nodejs.org/dist/v26.11.1/node-v26.11.1-linux-x64-musl.tar.xz /tmp/node.tar.xz
+RUN apk upgrade --no-cache \
+    && apk add --no-cache libstdc++ libatomic ca-certificates \
+    && apk add --no-cache --virtual .extract-deps xz \
+    && tar -xJf /tmp/node.tar.xz -C /usr/local --strip-components=1 \
+    && rm /tmp/node.tar.xz \
+    && apk del .extract-deps \
+    && addgroup -g 1000 node \
+    && adduser -u 1000 -G node -s /bin/sh -D node \
+    && node -e 'if (process.versions.openssl !== "3.5.9" || process.versions.undici !== "8.11.2") process.exit(1)'
+
+FROM node-base AS build
 
 WORKDIR /app
 COPY package.json package-lock.json ./
@@ -7,17 +25,7 @@ COPY tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM node:22-alpine AS runtime
-
-# Alpine ships OpenSSL as libcrypto3/libssl3, and the base image only picks up Alpine's
-# security updates when Docker Hub respins it -- node:22-alpine still carried 3.5.7-r0
-# weeks after 3.5.8-r0 landed in v3.24/main. Upgrading at build time patches them on every
-# build instead of waiting for that respin.
-# This does NOT move the OpenSSL that Node itself uses: the node binary statically bundles
-# its own copy (process.versions.openssl), so it stays on whatever the upstream Node release
-# shipped. No Node release bundles 3.5.8 yet, so those findings stay open by design rather
-# than being hidden -- deleting the bundled headers would clear the scanner without patching
-# the binary that actually terminates TLS.
+FROM node-base AS runtime
 RUN apk upgrade --no-cache
 
 ARG COVAL_MCP_SOURCE_SHA=unknown
@@ -37,7 +45,9 @@ RUN npm ci --omit=dev && npm cache clean --force \
        /usr/local/bin/npm /usr/local/bin/npx /usr/local/bin/corepack \
        /usr/local/bin/yarn /usr/local/bin/yarnpkg /opt/yarn-v*
 COPY --from=build /app/dist ./dist
+COPY --chmod=755 scripts/docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 
 USER node
+ENTRYPOINT ["docker-entrypoint.sh"]
 EXPOSE 8080
 CMD ["node", "dist/remote.js"]

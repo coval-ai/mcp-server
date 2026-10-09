@@ -240,6 +240,14 @@ let later runs pick up new API changes. Once the pull request is merged or
 closed, the next run rebuilds the branch from `main`. If the automation itself
 fails, the run opens an issue.
 
+## Container runtime
+
+The hosted container targets Linux x86-64. Build it with
+`docker build --platform linux/amd64 .`, including on Apple Silicon.
+It uses the checksum-pinned official Node.js 26.11.1 musl distribution with
+OpenSSL 3.5.9 and Undici 8.11.2; other container architectures fail explicitly.
+The local npm package still supports the Node versions declared in `package.json`.
+
 ## Environment Variables
 
 | Variable | Required | Default | Description |
