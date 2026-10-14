@@ -13,9 +13,9 @@ updates a PR only when coverage actually changes.
 | Metric | Value |
 | --- | ---: |
 | Reconciliation status | PASS |
-| Published operations | 183 |
+| Published operations | 186 |
 | Operations reached by MCP tools | 29 |
-| Reviewed gaps | 154 |
+| Reviewed gaps | 157 |
 | Client operations | 30 |
 | Published request fields on covered operations | 86 |
 | Request fields the MCP client sends | 57 |
@@ -119,6 +119,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /models/metric`
 - `GET /organization/conversation-metrics`
 - `GET /organization/monitoring-metrics`
+- `GET /organization/users`
 - `GET /personas/background-sounds`
 - `GET /personas/phone-numbers`
 - `GET /personas/tags`
@@ -134,6 +135,8 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /review-projects/{project_id}/progress`
 - `GET /run-templates/{run_template_id}`
 - `GET /runs/tags`
+- `GET /simulations/{simulation_id}/attributes/{attribute_name}`
+- `GET /simulations/{simulation_id}/connect`
 - `GET /tags`
 - `GET /tags/{tag_id}`
 - `GET /test-sets/{test_set_id}/agents`

@@ -8,8 +8,8 @@
 
 [snapshot]
 catalog_url = "https://api.coval.dev/v1/openapi"
-reviewed_at = "2026-10-05"
-published_operations = 183
+reviewed_at = "2026-10-14"
+published_operations = 186
 mcp_supported_operations = 29
 published_request_fields = 86
 mcp_modeled_request_fields = 57
@@ -263,6 +263,10 @@ operation = "GET /organization/monitoring-metrics"
 reason = "Outside the curated MCP tool set; no organization configuration tools are exposed."
 
 [[known_gap]]
+operation = "GET /organization/users"
+reason = "Outside the curated MCP tool set; no organization tools are exposed."
+
+[[known_gap]]
 operation = "GET /personas/background-sounds"
 reason = "Outside the curated MCP tool set; persona tools cover list and get."
 
@@ -321,6 +325,14 @@ reason = "Outside the curated MCP tool set; run-template tools cover list."
 [[known_gap]]
 operation = "GET /runs/tags"
 reason = "Outside the curated MCP tool set; run tools cover list, get, and create."
+
+[[known_gap]]
+operation = "GET /simulations/{simulation_id}/attributes/{attribute_name}"
+reason = "Outside the curated MCP tool set; no conversation tools are exposed."
+
+[[known_gap]]
+operation = "GET /simulations/{simulation_id}/connect"
+reason = "SDK WebSocket connection discovery is handled by the Coval Agent SDK, which consumes its one-use relay token."
 
 [[known_gap]]
 operation = "GET /tags"
