@@ -278,3 +278,9 @@ MIT
 
 - [GitHub Issues](https://github.com/coval-ai/mcp-server/issues)
 - [Coval Support](mailto:support@coval.dev)
+
+## Hosted release source
+
+The release dispatch workflow accepts only calls running on `main` and full source SHAs already merged into `main`, including older reviewed commits used for rollback. Its read-only validation job checks GitHub's comparison result before the deployment job can check out source or request deployment credentials. API failures and unmerged source stop the release. Correlation identifiers must occupy one line so they cannot alter validated job outputs.
+
+The `staging` and `production` GitHub Environments must allow only the `main` branch, without tag deployments. Production requires an independent reviewer with self-review and administrative bypass prevented. Cloud deployment trust must require the matching environment and a main caller; a workflow name alone is insufficient. These environment and cloud settings require separate verification from the workflow tests.

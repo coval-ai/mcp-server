@@ -7,7 +7,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   validate:
@@ -20,11 +19,16 @@ jobs:
       - name: Validate release dispatch
         id: release
         env:
+          GH_TOKEN: ${{ github.token }}
           DEPLOY_REF: ${{ github.event.client_payload.deploy_ref }}
           MCP_ENVIRONMENT: ${{ github.event.client_payload.environment }}
           RELEASE_CORRELATION_ID: ${{ github.event.client_payload.release_correlation_id }}
         run: |
           set -euo pipefail
+          if [ "$GITHUB_REPOSITORY" != "coval-ai/mcp-server" ] || [ "$GITHUB_REF" != "refs/heads/main" ]; then
+            echo "::error::Release dispatch requires an MCP main caller."
+            exit 1
+          fi
           case "$MCP_ENVIRONMENT" in
             staging|v1) ;;
             *)
@@ -40,8 +44,21 @@ jobs:
             echo "::error::Release correlation id is required."
             exit 1
           fi
+          if [[ "$RELEASE_CORRELATION_ID" == *$'\n'* || "$RELEASE_CORRELATION_ID" == *$'\r'* ]]; then
+            echo "::error::Release correlation id must occupy one line."
+            exit 1
+          fi
+          deploy_ref="$(printf '%s' "$DEPLOY_REF" | tr '[:upper:]' '[:lower:]')"
+          comparison="$(gh api --method GET "repos/coval-ai/mcp-server/compare/${deploy_ref}...main" --jq '.status')"
+          case "$comparison" in
+            ahead|identical) ;;
+            *)
+              echo "::error::Release source must be main or a previously merged main commit."
+              exit 1
+              ;;
+          esac
           {
-            echo "deploy_ref=${DEPLOY_REF}"
+            echo "deploy_ref=${deploy_ref}"
             echo "environment=${MCP_ENVIRONMENT}"
             echo "release_correlation_id=${RELEASE_CORRELATION_ID}"
           } >> "$GITHUB_OUTPUT"
@@ -49,6 +66,9 @@ jobs:
   deploy:
     needs: validate
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     environment: ${{ needs.validate.outputs.environment == 'v1' && 'production' || 'staging' }}
     concurrency:
       group: mcp-${{ needs.validate.outputs.environment }}-deploy
