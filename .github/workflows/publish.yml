@@ -1,0 +1,83 @@
+name: Publish npm package
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: npm-package-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - name: Require a version increase on validated main
+        id: version
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor HEAD origin/main
+          previous="$(git show HEAD^:package.json | node -p 'JSON.parse(require("fs").readFileSync(0, "utf8")).version')"
+          current="$(node -p 'JSON.parse(require("fs").readFileSync("package.json", "utf8")).version')"
+          node --test scripts/release-version.test.mjs
+          node scripts/release-version.mjs "$previous" "$current"
+      - name: Build and verify the package
+        if: steps.version.outputs.publish == 'true'
+        run: |
+          npm ci
+          npm run lint
+          npm run typecheck
+          npm run test:unit -- --runInBand
+          npm run build
+          node --test scripts/runtime-version.test.mjs
+          npm pack --json > package-artifact.json
+      - name: Publish the verified archive using npm trusted publishing
+        if: steps.version.outputs.publish == 'true'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          archive="$(node -p 'JSON.parse(require("fs").readFileSync("package-artifact.json", "utf8"))[0].filename')"
+          integrity="$(node -p 'JSON.parse(require("fs").readFileSync("package-artifact.json", "utf8"))[0].integrity')"
+          # Exact registry reads fail closed on network/authentication errors.
+          npm view @coval/mcp-server versions --json > registry-versions.json
+          exists="$(node -e 'const fs = require("fs"); const versions = JSON.parse(fs.readFileSync("registry-versions.json", "utf8")); console.log([versions].flat().includes(process.env.VERSION))')"
+          if [ "$exists" = true ]; then
+            published="$(npm view "@coval/mcp-server@${VERSION}" dist.integrity)"
+            test "$published" = "$integrity"
+          else
+            latest="$(npm view @coval/mcp-server dist-tags.latest)"
+            node --input-type=module -e 'import { shouldRelease } from "./scripts/release-version.mjs"; if (!shouldRelease(process.argv[1], process.argv[2])) process.exit(1)' "$latest" "$VERSION"
+            npm publish "$archive" --provenance --access public
+            published="$(npm view "@coval/mcp-server@${VERSION}" dist.integrity)"
+            test "$published" = "$integrity"
+          fi
+          if gh release view "v${VERSION}" >/dev/null 2>&1; then
+            test "$(git rev-list -n 1 "v${VERSION}")" = "$(git rev-parse HEAD)"
+          else
+            gh release create "v${VERSION}" "$archive" --target "$(git rev-parse HEAD)" --title "v${VERSION}" --generate-notes
+          fi
+          echo "Published @coval/mcp-server@${VERSION}: https://www.npmjs.com/package/@coval/mcp-server/v/${VERSION}" >> "$GITHUB_STEP_SUMMARY"

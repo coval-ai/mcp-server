@@ -278,3 +278,21 @@ MIT
 
 - [GitHub Issues](https://github.com/coval-ai/mcp-server/issues)
 - [Coval Support](mailto:support@coval.dev)
+
+## Package releases
+
+A reviewed PR that increases the stable version in `package.json` and
+`package-lock.json` triggers `.github/workflows/publish.yml` after CI passes
+on that exact `main` commit. The workflow builds and tests the package,
+publishes the verified archive with npm provenance, checks registry integrity,
+and creates a matching GitHub release. Commits without a version increase do
+not publish. Re-running the successful main CI run retries a failed release;
+an existing npm version is accepted only when its archive integrity matches.
+Hosted MCP deployment follows its separate release process.
+
+Before the first automated package release, a package maintainer must configure
+[npm trusted publishing](https://docs.npmjs.com/trusted-publishers/) for
+`@coval/mcp-server`: GitHub owner `coval-ai`, repository `mcp-server`, workflow
+filename `publish.yml`, no environment, and permission to publish. This uses
+GitHub OIDC with Node 24 and requires no npm token secret. Until that trust is
+configured, version-bump releases fail closed at npm authentication.
