@@ -25,6 +25,7 @@ jobs:
       - run: npm run typecheck
       - run: npm test -- --runInBand
       - run: npm run build
+      - run: node --test scripts/runtime-version.test.mjs
       - name: Build production image
         run: |
           docker build \

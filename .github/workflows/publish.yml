@@ -51,6 +51,7 @@ jobs:
           npm run typecheck
           npm run test:unit -- --runInBand
           npm run build
+          node --test scripts/runtime-version.test.mjs
           npm pack --json > package-artifact.json
       - name: Publish the verified archive using npm trusted publishing
         if: steps.version.outputs.publish == 'true'

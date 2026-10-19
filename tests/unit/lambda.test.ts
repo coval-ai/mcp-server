@@ -1,7 +1,11 @@
+import { readFileSync } from 'node:fs';
+
 import { handler } from "../../src/lambda.js";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { jest } from "@jest/globals";
+
+const packageVersion = JSON.parse(readFileSync(new URL('../../package.json', import.meta.url), 'utf8')).version;
 
 describe("remote MCP Lambda", () => {
   it("uses the package version in health and initialize responses", async () => {
@@ -10,7 +14,7 @@ describe("remote MCP Lambda", () => {
       requestContext: { http: { method: "GET" } },
       headers: {},
     } as Parameters<typeof handler>[0]);
-    expect(JSON.parse(health.body).version).toBe("0.4.0");
+    expect(JSON.parse(health.body).version).toBe(packageVersion);
 
     const initialize = await handler({
       rawPath: "/mcp",
@@ -19,7 +23,7 @@ describe("remote MCP Lambda", () => {
       body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} }),
       isBase64Encoded: false,
     } as Parameters<typeof handler>[0]);
-    expect(JSON.parse(initialize.body).result.serverInfo.version).toBe("0.4.0");
+    expect(JSON.parse(initialize.body).result.serverInfo.version).toBe(packageVersion);
   });
 
   it("does not advertise consult_sofia until it has a long-lived transport", async () => {
