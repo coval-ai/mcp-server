@@ -21,7 +21,7 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run lint
-      - run: node --test scripts/release-version.test.mjs
+      - run: node --test scripts/release-version.test.mjs scripts/verify-registry-integrity.test.mjs
       - run: npm run typecheck
       - run: npm test -- --runInBand
       - run: npm run build

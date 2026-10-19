@@ -66,14 +66,12 @@ jobs:
           npm view @coval/mcp-server versions --json > registry-versions.json
           exists="$(node -e 'const fs = require("fs"); const versions = JSON.parse(fs.readFileSync("registry-versions.json", "utf8")); console.log([versions].flat().includes(process.env.VERSION))')"
           if [ "$exists" = true ]; then
-            published="$(npm view "@coval/mcp-server@${VERSION}" dist.integrity)"
-            test "$published" = "$integrity"
+            node scripts/verify-registry-integrity.mjs "$VERSION" "$integrity"
           else
             latest="$(npm view @coval/mcp-server dist-tags.latest)"
             node --input-type=module -e 'import { shouldRelease } from "./scripts/release-version.mjs"; if (!shouldRelease(process.argv[1], process.argv[2])) process.exit(1)' "$latest" "$VERSION"
             npm publish "$archive" --provenance --access public
-            published="$(npm view "@coval/mcp-server@${VERSION}" dist.integrity)"
-            test "$published" = "$integrity"
+            node scripts/verify-registry-integrity.mjs "$VERSION" "$integrity"
           fi
           if gh release view "v${VERSION}" >/dev/null 2>&1; then
             test "$(git rev-list -n 1 "v${VERSION}")" = "$(git rev-parse HEAD)"
