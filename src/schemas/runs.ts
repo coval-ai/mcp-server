@@ -86,7 +86,7 @@ export const LegacyCreateRunInputSchema = z.object({
     .optional()
     .describe('Tags for categorizing and filtering the run (max 20 tags, 200 chars each).'),
   metadata: z
-    .record(z.unknown())
+    .record(z.string(), z.unknown())
     .optional()
     .describe('Custom metadata for tracking purposes'),
 });

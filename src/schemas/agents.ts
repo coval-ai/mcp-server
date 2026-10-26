@@ -226,7 +226,7 @@ export const LegacyCreateAgentInputSchema = z.object({
     .optional()
     .describe('System prompt or instructions for the agent'),
   metadata: z
-    .record(z.unknown())
+    .record(z.string(), z.unknown())
     .optional()
     .describe('Custom metadata for the agent'),
 });
@@ -237,7 +237,7 @@ export const LegacyUpdateAgentInputSchema = z.object({
   phone_number: z.string().optional().describe('New phone number'),
   endpoint: z.string().url().optional().describe('New endpoint URL'),
   prompt: z.string().optional().describe('New system prompt'),
-  metadata: z.record(z.unknown()).optional().describe('New metadata'),
+  metadata: z.record(z.string(), z.unknown()).optional().describe('New metadata'),
 });
 
 export type ListAgentsInput = z.infer<typeof ListAgentsInputSchema>;
