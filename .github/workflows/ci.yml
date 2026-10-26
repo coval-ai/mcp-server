@@ -2,6 +2,8 @@ name: CI
 
 on:
   pull_request:
+  merge_group:
+    types: [checks_requested]
   push:
     branches: [main]
 
@@ -68,3 +70,27 @@ jobs:
           python scripts/audit_api_coverage.py \
             --write-markdown api-coverage-report.md
           git diff --exit-code -- api-coverage-report.md
+
+  switchboard_gate:
+    name: Switchboard Gate
+    needs: [verify, api-parity]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Require successful full-CI results
+        env:
+          VERIFY_RESULT: ${{ needs.verify.result }}
+          API_PARITY_RESULT: ${{ needs.api-parity.result }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Conservative full-CI gate"
+            echo "All existing repository CI jobs run; no planner selection is applied."
+            echo "- Verify: ${VERIFY_RESULT:-missing}"
+            echo "- API parity: ${API_PARITY_RESULT:-missing}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${VERIFY_RESULT:-}" != "success" ] || [ "${API_PARITY_RESULT:-}" != "success" ]; then
+            echo "::error::Both required CI jobs must succeed."
+            exit 1
+          fi
