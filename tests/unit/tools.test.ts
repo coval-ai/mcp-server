@@ -334,7 +334,7 @@ describe('registerAllTools', () => {
         ['create_python_metric_preview', additiveWriteAnnotations],
         ['get_python_metric_preview', readOnlyAnnotations],
         ['cancel_python_metric_preview', destructiveWriteAnnotations],
-        ['publish_python_metric_draft', additiveWriteAnnotations],
+        ['publish_python_metric_draft', destructiveWriteAnnotations],
         ['list_personas', readOnlyAnnotations],
         ['get_persona', readOnlyAnnotations],
         ['list_reports', readOnlyAnnotations],

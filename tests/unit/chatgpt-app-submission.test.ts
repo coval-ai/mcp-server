@@ -91,6 +91,14 @@ describe('ChatGPT app submission artifact', () => {
     ]);
   });
 
+  it('marks metric publication as destructive because it can revise an existing metric', () => {
+    expect(submission.tools.publish_python_metric_draft.annotations).toEqual({
+      readOnlyHint: false,
+      openWorldHint: false,
+      destructiveHint: true,
+    });
+  });
+
   it('preserves the risk annotations for report and scheduling writes', () => {
     expect(submission.tools.create_report.annotations).toEqual({
       readOnlyHint: false,

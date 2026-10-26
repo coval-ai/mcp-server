@@ -31,10 +31,10 @@ authenticated tools.
   `update_scheduled_run`, `create_python_metric_draft`, `create_python_metric_preview`,
   `cancel_python_metric_preview`, and `publish_python_metric_draft`) must advertise
   `readOnlyHint: false`. On `/mcp`, the additive create tools (`create_agent`, `create_test_set`,
-  `create_test_case`, `create_report`, `create_python_metric_draft`,
-  `create_python_metric_preview`, and `publish_python_metric_draft`) advertise
-  `destructiveHint: false`; the other six write tools advertise `destructiveHint: true`. On
-  `/claude/mcp`, all thirteen write tools advertise `destructiveHint: true`. On both paths,
+  `create_test_case`, `create_report`, `create_python_metric_draft`, and
+  `create_python_metric_preview`) advertise `destructiveHint: false`; the other seven write
+  tools advertise `destructiveHint: true`, including publication that can revise an existing
+  metric. On `/claude/mcp`, all thirteen write tools advertise `destructiveHint: true`. On both paths,
   `create_run`, `create_scheduled_run`, and `update_scheduled_run` advertise
   `openWorldHint: true`; all other tools advertise `openWorldHint: false`.
 - Inspect every input schema discovered from the OpenAI `/mcp` endpoint. No tool may request

@@ -116,9 +116,9 @@ export function registerPythonMetricTools(
   server.registerTool(
     'publish_python_metric_draft',
     {
-      ...createTool('Publish Python metric draft', { annotationProfile }),
+      ...createTool('Publish Python metric draft', { annotationProfile, irreversible: true }),
       description:
-        'Publish the exact immutable Python metric draft identified by its fingerprint. Supply only successful preview IDs for this draft.',
+        'Publish the exact immutable Python metric draft identified by its fingerprint. This can revise an existing metric when the draft targets one. Supply only successful preview IDs for this draft.',
       inputSchema: PublishPythonMetricDraftInputSchema,
     },
     async (params) => {

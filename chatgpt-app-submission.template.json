@@ -264,12 +264,12 @@
       "annotations": {
         "readOnlyHint": false,
         "openWorldHint": false,
-        "destructiveHint": false
+        "destructiveHint": true
       },
       "justifications": {
         "read_only_justification": "Publishes the exact approved Python metric draft using successful preview IDs.",
         "open_world_justification": "Publishes only the requested metric in the authenticated Coval organization.",
-        "destructive_justification": "Creates a new published metric version without deleting an existing metric."
+        "destructive_justification": "Can revise an existing metric when publishing a targeted draft."
       }
     },
     "list_personas": {
