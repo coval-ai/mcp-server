@@ -60,7 +60,7 @@ export function registerPythonMetricTools(
     {
       ...createTool('Create Python metric preview', { annotationProfile }),
       description:
-        'Start an asynchronous preview of an immutable Python metric draft. Preview execution is asynchronous; poll get_python_metric_preview until it reaches a terminal state. Publish only after successful previews.',
+        'Start an asynchronous preview of an immutable Python metric draft. Preview execution is asynchronous; poll the preview until it reaches a terminal state. Publish only after successful previews.',
       inputSchema: CreatePythonMetricPreviewInputSchema,
     },
     async (params) => {

@@ -10,8 +10,11 @@ const image = process.env.COVAL_MCP_IMAGE;
 const sourceSha = process.env.COVAL_MCP_SOURCE_SHA;
 const expectedEnvironment = process.env.COVAL_MCP_ENV;
 const expectedToolNames = [
+  'cancel_python_metric_preview',
   'consult_sofia',
   'create_agent',
+  'create_python_metric_draft',
+  'create_python_metric_preview',
   'create_report',
   'create_run',
   'create_scheduled_run',
@@ -20,6 +23,8 @@ const expectedToolNames = [
   'get_agent',
   'get_metric',
   'get_persona',
+  'get_python_metric_draft',
+  'get_python_metric_preview',
   'get_report',
   'get_run',
   'get_scheduled_run',
@@ -34,6 +39,7 @@ const expectedToolNames = [
   'list_scheduled_runs',
   'list_test_cases',
   'list_test_sets',
+  'publish_python_metric_draft',
   'update_agent',
   'update_scheduled_run',
   'update_test_case',

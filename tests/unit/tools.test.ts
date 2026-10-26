@@ -271,9 +271,7 @@ describe('registerAllTools', () => {
       for (const registration of registrations.values()) {
         expect(registration.description).toEqual(expect.any(String));
         expect(registration.description).not.toMatch(externalSource);
-        const description =
-          registration.description?.replace('get_python_metric_preview', 'preview lookup');
-        expect(description).not.toMatch(otherToolName);
+        expect(registration.description).not.toMatch(otherToolName);
       }
     }
   );
