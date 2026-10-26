@@ -123,7 +123,7 @@ export const LegacyCreateTestCaseInputSchema = z.object({
       'Additional context passed to the simulation environment. For scripted (input_type SCRIPT) cases, set {"script_turns": [...]} here: entries are plain strings the persona speaks verbatim, or typed keypad presses {"type": "dtmf", "digits": "1"} (digits allow 0-9, *, # plus phone punctuation for full numbers). Never write DTMF as spoken text like "dtmf:1" — it would be read aloud. For SCENARIO cases against IVRs, instead instruct the persona in input_str to use its dtmf_tool for each keypress.',
     ),
   metric_input: z
-    .record(z.unknown())
+    .record(z.string(), z.unknown())
     .optional()
     .describe('Custom inputs for metric evaluation.'),
   user_notes: z.string().optional().describe('Internal notes about this test case.'),
@@ -157,7 +157,7 @@ export const LegacyUpdateTestCaseInputSchema = z.object({
     .describe(
       'Updated simulation context. Replaces the stored object wholesale — include every key you want to keep. Prefer the top-level script_turns field for turn edits; if both are sent, this object is replaced first and script_turns is merged into the result. For scripted (input_type SCRIPT) cases you may set {"script_turns": [...]} here instead: entries are plain strings the persona speaks verbatim, or typed keypad presses {"type": "dtmf", "digits": "1"} (digits allow 0-9, *, # plus phone punctuation for full numbers). Never write DTMF as spoken text like "dtmf:1" — it would be read aloud. For SCENARIO cases against IVRs, instead instruct the persona in input_str to use its dtmf_tool for each keypress.',
     ),
-  metric_input: z.record(z.unknown()).optional().describe('Updated metric inputs.'),
+  metric_input: z.record(z.string(), z.unknown()).optional().describe('Updated metric inputs.'),
   user_notes: z.string().optional().describe('Updated internal notes.'),
 });
 

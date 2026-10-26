@@ -4,8 +4,8 @@ FROM alpine:3.24.2 AS node-base
 # Node Alpine image includes this runtime; do not silently run a foreign binary.
 ARG TARGETARCH
 RUN test "$TARGETARCH" = amd64
-ADD --checksum=sha256:8d31c2180212503799c3c93924db216e236de769b4ca1fdfe85a33ebacae510c \
-    https://nodejs.org/dist/v26.11.1/node-v26.11.1-linux-x64-musl.tar.xz /tmp/node.tar.xz
+ADD --checksum=sha256:4fd7c15fdc930ea48cf144bb302ce30a76c81920e36473d087720d0810efe1cd \
+    https://nodejs.org/dist/v26.12.1/node-v26.12.1-linux-x64-musl.tar.xz /tmp/node.tar.xz
 RUN apk upgrade --no-cache \
     && apk add --no-cache libstdc++ libatomic ca-certificates \
     && apk add --no-cache --virtual .extract-deps xz \
@@ -14,7 +14,7 @@ RUN apk upgrade --no-cache \
     && apk del .extract-deps \
     && addgroup -g 1000 node \
     && adduser -u 1000 -G node -s /bin/sh -D node \
-    && node -e 'if (process.versions.openssl !== "3.5.9" || process.versions.undici !== "8.11.2") process.exit(1)'
+    && node -e 'if (process.versions.openssl !== "3.5.9" || process.versions.undici !== "8.12.2") process.exit(1)'
 
 FROM node-base AS build
 
