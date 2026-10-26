@@ -62,6 +62,30 @@ describe('Python metric draft schemas', () => {
   it('validates identifiers, exactly one preview output, and publish evidence', () => {
     expect(GetPythonMetricDraftInputSchema.safeParse({ draft_id: 'draft-1' }).success).toBe(true);
     expect(GetPythonMetricDraftInputSchema.safeParse({ draft_id: '' }).success).toBe(false);
+    for (const id of ['../metrics', 'a/b']) {
+      expect(GetPythonMetricDraftInputSchema.safeParse({ draft_id: id }).success).toBe(false);
+      expect(
+        GetPythonMetricPreviewInputSchema.safeParse({ draft_id: id, preview_id: 'preview-1' })
+          .success,
+      ).toBe(false);
+      expect(
+        GetPythonMetricPreviewInputSchema.safeParse({ draft_id: 'draft-1', preview_id: id })
+          .success,
+      ).toBe(false);
+      expect(
+        CancelPythonMetricPreviewInputSchema.safeParse({ draft_id: 'draft-1', preview_id: id })
+          .success,
+      ).toBe(false);
+    }
+    expect(GetPythonMetricDraftInputSchema.parse({ draft_id: 'draft_1' })).toEqual({
+      draft_id: 'draft_1',
+    });
+    expect(
+      GetPythonMetricPreviewInputSchema.parse({
+        draft_id: 'draft_1',
+        preview_id: 'preview_1',
+      }),
+    ).toEqual({ draft_id: 'draft_1', preview_id: 'preview_1' });
     expect(
       CreatePythonMetricPreviewInputSchema.safeParse({
         draft_id: 'draft-1',
@@ -74,6 +98,21 @@ describe('Python metric draft schemas', () => {
         simulation_output_ids: [],
       }).success,
     ).toBe(false);
+    for (const id of ['../metrics', 'a/b']) {
+      expect(
+        CreatePythonMetricPreviewInputSchema.safeParse({
+          draft_id: 'draft-1',
+          simulation_output_ids: [id],
+        }).success,
+      ).toBe(false);
+      expect(
+        PublishPythonMetricDraftInputSchema.safeParse({
+          draft_id: 'draft-1',
+          preview_ids: [id],
+          fingerprint: 'a'.repeat(64),
+        }).success,
+      ).toBe(false);
+    }
     expect(
       CreatePythonMetricPreviewInputSchema.safeParse({
         draft_id: 'draft-1',
@@ -171,6 +210,11 @@ describe('Python metric draft client methods', () => {
         call: () => client.getPythonMetricPreview('draft-1', 'preview-1'),
         method: 'GET',
         path: '/v1/python-metric-drafts/draft-1/previews/preview-1',
+      },
+      {
+        call: () => client.getPythonMetricPreview('a/../b', 'a/b'),
+        method: 'GET',
+        path: '/v1/python-metric-drafts/a%2F..%2Fb/previews/a%2Fb',
       },
       {
         call: () => client.cancelPythonMetricPreview('draft-1', 'preview-1'),

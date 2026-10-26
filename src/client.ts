@@ -270,7 +270,10 @@ export class CovalApiClient {
   }
 
   async getPythonMetricDraft(draftId: string) {
-    return this.request<{ draft: unknown }>('GET', `/python-metric-drafts/${draftId}`);
+    return this.request<{ draft: unknown }>(
+      'GET',
+      `/python-metric-drafts/${encodeURIComponent(draftId)}`,
+    );
   }
 
   async createPythonMetricPreview(
@@ -279,7 +282,7 @@ export class CovalApiClient {
   ) {
     return this.request<{ previews: unknown[] }>(
       'POST',
-      `/python-metric-drafts/${draftId}/previews`,
+      `/python-metric-drafts/${encodeURIComponent(draftId)}/previews`,
       data,
     );
   }
@@ -287,14 +290,14 @@ export class CovalApiClient {
   async getPythonMetricPreview(draftId: string, previewId: string) {
     return this.request<{ previews: unknown[] }>(
       'GET',
-      `/python-metric-drafts/${draftId}/previews/${previewId}`,
+      `/python-metric-drafts/${encodeURIComponent(draftId)}/previews/${encodeURIComponent(previewId)}`,
     );
   }
 
   async cancelPythonMetricPreview(draftId: string, previewId: string) {
     return this.request<{ previews: unknown[] }>(
       'POST',
-      `/python-metric-drafts/${draftId}/previews/${previewId}/cancel`,
+      `/python-metric-drafts/${encodeURIComponent(draftId)}/previews/${encodeURIComponent(previewId)}/cancel`,
     );
   }
 
@@ -304,7 +307,7 @@ export class CovalApiClient {
   ) {
     return this.request<{ metric_id: string; version_id: string }>(
       'POST',
-      `/python-metric-drafts/${draftId}/publish`,
+      `/python-metric-drafts/${encodeURIComponent(draftId)}/publish`,
       data,
     );
   }

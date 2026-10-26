@@ -1,11 +1,12 @@
 import { z } from 'zod';
+import { ResourceIdSchema } from './common.js';
 
-const DraftIdSchema = z.string().min(1).describe('The immutable Python metric draft ID.');
-const PreviewIdSchema = z.string().min(1).describe('The asynchronous preview ID.');
+const DraftIdSchema = ResourceIdSchema.describe('The immutable Python metric draft ID.');
+const PreviewIdSchema = ResourceIdSchema.describe('The asynchronous preview ID.');
 
 export const CreatePythonMetricDraftInputSchema = z.object({
-  target_metric_id: z.string().nullable().optional(),
-  target_version_id: z.string().nullable().optional(),
+  target_metric_id: ResourceIdSchema.nullable().optional(),
+  target_version_id: ResourceIdSchema.nullable().optional(),
   display_name: z.string().min(1).max(200),
   description: z.string().max(4000).optional(),
   source: z.string().min(1).max(65536),
@@ -27,7 +28,7 @@ export const GetPythonMetricDraftInputSchema = z.object({
 
 export const CreatePythonMetricPreviewInputSchema = z.object({
   draft_id: DraftIdSchema,
-  simulation_output_ids: z.array(z.string()).length(1),
+  simulation_output_ids: z.array(ResourceIdSchema).length(1),
 }).strict();
 
 export const GetPythonMetricPreviewInputSchema = z.object({
@@ -42,7 +43,7 @@ export const CancelPythonMetricPreviewInputSchema = z.object({
 
 export const PublishPythonMetricDraftInputSchema = z.object({
   draft_id: DraftIdSchema,
-  preview_ids: z.array(z.string()).min(1).max(10),
+  preview_ids: z.array(ResourceIdSchema).min(1).max(10),
   fingerprint: z.string().regex(/^[a-f0-9]{64}$/),
 }).strict();
 
