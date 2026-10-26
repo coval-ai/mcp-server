@@ -61,11 +61,11 @@ export const LegacyCreateTestSetInputSchema = z.object({
     .optional()
     .describe('Type of test set: DEFAULT, SCENARIO, TRANSCRIPT, WORKFLOW'),
   test_set_metadata: z
-    .record(z.unknown())
+    .record(z.string(), z.unknown())
     .optional()
     .describe('Additional configuration metadata'),
   parameters: z
-    .record(z.unknown())
+    .record(z.string(), z.unknown())
     .optional()
     .describe('Test case parameterization (e.g., {"name": ["Alice", "Bob"]})'),
 });

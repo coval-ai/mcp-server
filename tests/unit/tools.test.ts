@@ -1,6 +1,5 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z, type ZodTypeAny } from 'zod';
-import { zodToJsonSchema } from 'zod-to-json-schema';
 import { CovalApiClient } from '../../src/client.js';
 import type {
   ToolAnnotationProfile,
@@ -167,8 +166,8 @@ describe('registerAllTools', () => {
       expect(registration.inputSchema).toBeDefined();
       const inputSchema = registration.inputSchema as ZodTypeAny;
       expect(inputSchema).toBeInstanceOf(z.ZodType);
-      const jsonSchema = zodToJsonSchema(inputSchema, {
-        target: 'jsonSchema7',
+      const jsonSchema = z.toJSONSchema(inputSchema, {
+        target: 'draft-7',
       }) as Record<string, unknown>;
       const properties = collectTopLevelJsonSchemaProperties(jsonSchema);
       const allProperties = collectJsonSchemaProperties(jsonSchema);
@@ -188,7 +187,7 @@ describe('registerAllTools', () => {
     const fieldsFor = (toolName: string) => {
       const inputSchema = registrations.get(toolName)?.inputSchema as ZodTypeAny;
       return collectTopLevelJsonSchemaProperties(
-        zodToJsonSchema(inputSchema, { target: 'jsonSchema7' }),
+        z.toJSONSchema(inputSchema, { target: 'draft-7' }),
       );
     };
 

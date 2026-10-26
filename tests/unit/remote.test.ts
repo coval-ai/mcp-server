@@ -3,7 +3,7 @@ import { jest } from '@jest/globals';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import { allowedOrigins, createRemoteApp, organizationIdFromVerifiedToken } from '../../src/remote.js';
-import { findOpenAdditionalProperties } from './helpers/json-schema.js';
+import { collectJsonSchemaProperties, findOpenAdditionalProperties } from './helpers/json-schema.js';
 
 const REMOTE_ENDPOINTS = [
   { path: '/mcp', annotationProfile: 'standard' },
@@ -338,9 +338,9 @@ describe('remote OAuth organization binding', () => {
         'user_notes',
       ];
       for (const tool of standardTools) {
-        const serializedSchema = JSON.stringify(tool.inputSchema);
+        const properties = collectJsonSchemaProperties(tool.inputSchema);
         for (const field of forbiddenOpenAiFields) {
-          expect(serializedSchema).not.toContain(`"${field}"`);
+          expect(properties.has(field)).toBe(false);
         }
         expect(findOpenAdditionalProperties(tool.inputSchema)).toEqual([]);
       }
