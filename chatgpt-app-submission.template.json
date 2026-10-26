@@ -200,6 +200,78 @@
         "destructive_justification": "Does not delete, overwrite, or remove the selected metric."
       }
     },
+    "create_python_metric_draft": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Creates an immutable Python metric draft in the authenticated Coval organization.",
+        "open_world_justification": "Creates only an unpublished draft in the authenticated Coval organization.",
+        "destructive_justification": "Adds a new draft without deleting or overwriting an existing metric."
+      }
+    },
+    "get_python_metric_draft": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves the selected immutable Python metric draft and fingerprint.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove the selected draft."
+      }
+    },
+    "create_python_metric_preview": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Starts an asynchronous preview of a Python metric draft.",
+        "open_world_justification": "Evaluates only the requested historical conversation in the authenticated Coval organization.",
+        "destructive_justification": "Adds preview evidence without deleting or overwriting an existing resource."
+      }
+    },
+    "get_python_metric_preview": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Retrieves the selected Python metric preview state and result.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite, or remove the selected preview."
+      }
+    },
+    "cancel_python_metric_preview": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Cancels the selected in-progress Python metric preview.",
+        "open_world_justification": "Changes only the requested preview in the authenticated Coval organization.",
+        "destructive_justification": "Cancellation stops the selected preview from completing."
+      }
+    },
+    "publish_python_metric_draft": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Publishes the exact approved Python metric draft using successful preview IDs.",
+        "open_world_justification": "Publishes only the requested metric in the authenticated Coval organization.",
+        "destructive_justification": "Creates a new published metric version without deleting an existing metric."
+      }
+    },
     "list_personas": {
       "annotations": {
         "readOnlyHint": true,

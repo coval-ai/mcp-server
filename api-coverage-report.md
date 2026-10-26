@@ -12,25 +12,20 @@ updates a PR only when coverage actually changes.
 
 | Metric | Value |
 | --- | ---: |
-| Reconciliation status | ACTION REQUIRED |
+| Reconciliation status | PASS |
 | Published operations | 192 |
-| Operations reached by MCP tools | 29 |
+| Operations reached by MCP tools | 35 |
 | Reviewed gaps | 157 |
-| Client operations | 30 |
-| Published request fields on covered operations | 86 |
-| Request fields the MCP client sends | 57 |
+| Client operations | 36 |
+| Published request fields on covered operations | 97 |
+| Request fields the MCP client sends | 68 |
 | Reviewed request-field gaps | 29 |
 
 Catalog: https://api.coval.dev/v1/openapi
 
 ## New published operations without MCP tools
 
-- `GET /python-metric-drafts/{draft_id}`
-- `GET /python-metric-drafts/{draft_id}/previews/{preview_id}`
-- `POST /python-metric-drafts`
-- `POST /python-metric-drafts/{draft_id}/previews`
-- `POST /python-metric-drafts/{draft_id}/previews/{preview_id}/cancel`
-- `POST /python-metric-drafts/{draft_id}/publish`
+- None.
 
 ## Reviewed gaps no longer present
 
@@ -54,7 +49,7 @@ Catalog: https://api.coval.dev/v1/openapi
 
 ## Coverage snapshot mismatches
 
-- `published_operations: recorded 186, current 192`
+- None.
 
 ## Client-only operations
 
@@ -130,8 +125,6 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /personas/tags`
 - `GET /personas/voices`
 - `GET /personas/{persona_id}/versions`
-- `GET /python-metric-drafts/{draft_id}`
-- `GET /python-metric-drafts/{draft_id}/previews/{preview_id}`
 - `GET /review-annotations`
 - `GET /review-annotations/metric-health-stats`
 - `GET /review-annotations/{annotation_id}`
@@ -206,10 +199,6 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /personas/background-sounds/{background_sound_id}/complete`
 - `POST /personas/{persona_id}/duplicate`
 - `POST /personas/{persona_id}/versions/{version_id}/revert`
-- `POST /python-metric-drafts`
-- `POST /python-metric-drafts/{draft_id}/previews`
-- `POST /python-metric-drafts/{draft_id}/previews/{preview_id}/cancel`
-- `POST /python-metric-drafts/{draft_id}/publish`
 - `POST /review-annotations`
 - `POST /review-annotations:withMetricOutputs`
 - `POST /review-projects`

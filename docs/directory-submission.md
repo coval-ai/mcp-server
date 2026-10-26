@@ -25,13 +25,16 @@ authenticated tools.
 - Connect `https://mcp.coval.dev/mcp` for OpenAI and generic MCP review, and
   `https://mcp.coval.dev/claude/mcp` for Claude review, using OAuth.
 - Select a populated Coval test organization during consent.
-- Confirm tool discovery returns exactly 27 tools with a title and correct read/write annotations
-  for every tool. The nine write tools (`create_agent`, `create_run`, `create_test_set`,
+- Confirm tool discovery returns exactly 33 tools with a title and correct read/write annotations
+  for every tool. The thirteen write tools (`create_agent`, `create_run`, `create_test_set`,
   `create_test_case`, `create_report`, `create_scheduled_run`, `update_agent`, `update_test_case`,
-  and `update_scheduled_run`) must advertise `readOnlyHint: false`. On `/mcp`, the additive create
-  tools (`create_agent`, `create_test_set`, `create_test_case`, and `create_report`) advertise
-  `destructiveHint: false`; the other five write tools advertise `destructiveHint: true`. On
-  `/claude/mcp`, all nine write tools advertise `destructiveHint: true`. On both paths,
+  `update_scheduled_run`, `create_python_metric_draft`, `create_python_metric_preview`,
+  `cancel_python_metric_preview`, and `publish_python_metric_draft`) must advertise
+  `readOnlyHint: false`. On `/mcp`, the additive create tools (`create_agent`, `create_test_set`,
+  `create_test_case`, `create_report`, `create_python_metric_draft`,
+  `create_python_metric_preview`, and `publish_python_metric_draft`) advertise
+  `destructiveHint: false`; the other six write tools advertise `destructiveHint: true`. On
+  `/claude/mcp`, all thirteen write tools advertise `destructiveHint: true`. On both paths,
   `create_run`, `create_scheduled_run`, and `update_scheduled_run` advertise
   `openWorldHint: true`; all other tools advertise `openWorldHint: false`.
 - Inspect every input schema discovered from the OpenAI `/mcp` endpoint. No tool may request
@@ -78,8 +81,8 @@ this public repository.
 **Tagline:** Evaluate and improve voice and chat agents
 
 **Description:** Connect ChatGPT, Claude, or another MCP client to your Coval workspace to inspect
-agents, test sets, personas, metrics, evaluation runs, saved reports, run templates, and recurring
-schedules. Launch evaluations and update supported resources through explicit write tools, or
+agents, test sets, personas, metrics, Python metric drafts, evaluation runs, saved reports, run
+templates, and recurring schedules. Launch evaluations and update supported resources through explicit write tools, or
 consult Sofia for read-only analysis grounded in your organization's evaluation data and Coval's
 evaluation workflows.
 
@@ -192,10 +195,11 @@ disposable resources after review.
 - Select the verified Coval developer or business identity; do not submit while the portal shows
   `No Identity Selected`.
 - After deploying the exact reviewed server head, run **Scan Tools** again on the submitted app
-  version and confirm the frozen snapshot contains exactly 27 tools with the current schemas and
+  version and confirm the frozen snapshot contains exactly 33 tools with the current schemas and
   annotations.
 - Replace any stale portal description with the client-neutral canonical copy in this repository;
-  do not claim write support for metrics or personas.
+  distinguish Python metric draft workflows from general metric management, and do not claim
+  write support for personas.
 - Run all five positive and three negative cases in fresh conversations with the clean reviewer
   account on ChatGPT web and mobile. Record the exact tool sequence and result, reset disposable
   resources, and repeat the fixture-dependent positive cases once before submitting.
