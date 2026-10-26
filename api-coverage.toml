@@ -9,10 +9,10 @@
 [snapshot]
 catalog_url = "https://api.coval.dev/v1/openapi"
 reviewed_at = "2026-10-14"
-published_operations = 186
-mcp_supported_operations = 29
-published_request_fields = 86
-mcp_modeled_request_fields = 57
+published_operations = 192
+mcp_supported_operations = 35
+published_request_fields = 97
+mcp_modeled_request_fields = 68
 
 [[known_gap]]
 operation = "DELETE /agents/{agent_id}"

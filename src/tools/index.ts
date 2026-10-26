@@ -9,6 +9,7 @@ import { registerPersonaTools } from './personas.js';
 import { registerSofiaTools } from './sofia.js';
 import { registerReportTools } from './reports.js';
 import { registerSchedulingTools } from './scheduling.js';
+import { registerPythonMetricTools } from './python-metrics.js';
 import type {
   ToolAnnotationProfile,
   ToolInputProfile,
@@ -33,6 +34,9 @@ export function registerAllTools(
   registerTestCaseTools(server, client, createToolOptions);
   registerMetricTools(server, client, {
     inputProfile: options.inputProfile,
+  });
+  registerPythonMetricTools(server, client, {
+    annotationProfile: options.annotationProfile,
   });
   registerPersonaTools(server, client, {
     inputProfile: options.inputProfile,

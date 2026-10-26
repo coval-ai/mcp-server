@@ -251,6 +251,67 @@ export class CovalApiClient {
     return this.request<{ metric: unknown }>('GET', `/metrics/${metricId}`);
   }
 
+  // Python metric drafts
+  async createPythonMetricDraft(data: {
+    target_metric_id?: string | null;
+    target_version_id?: string | null;
+    display_name: string;
+    description?: string;
+    source: string;
+    output_type: 'number' | 'boolean';
+    unit?: string | null;
+    requirements?: {
+      audio?: boolean;
+      traces?: boolean;
+      frame_tables?: string[];
+    };
+  }) {
+    return this.request<{ draft: unknown }>('POST', '/python-metric-drafts', data);
+  }
+
+  async getPythonMetricDraft(draftId: string) {
+    return this.request<{ draft: unknown }>(
+      'GET',
+      `/python-metric-drafts/${encodeURIComponent(draftId)}`,
+    );
+  }
+
+  async createPythonMetricPreview(
+    draftId: string,
+    data: { simulation_output_ids: string[] },
+  ) {
+    return this.request<{ previews: unknown[] }>(
+      'POST',
+      `/python-metric-drafts/${encodeURIComponent(draftId)}/previews`,
+      data,
+    );
+  }
+
+  async getPythonMetricPreview(draftId: string, previewId: string) {
+    return this.request<{ previews: unknown[] }>(
+      'GET',
+      `/python-metric-drafts/${encodeURIComponent(draftId)}/previews/${encodeURIComponent(previewId)}`,
+    );
+  }
+
+  async cancelPythonMetricPreview(draftId: string, previewId: string) {
+    return this.request<{ previews: unknown[] }>(
+      'POST',
+      `/python-metric-drafts/${encodeURIComponent(draftId)}/previews/${encodeURIComponent(previewId)}/cancel`,
+    );
+  }
+
+  async publishPythonMetricDraft(
+    draftId: string,
+    data: { preview_ids: string[]; fingerprint: string },
+  ) {
+    return this.request<{ metric_id: string; version_id: string }>(
+      'POST',
+      `/python-metric-drafts/${encodeURIComponent(draftId)}/publish`,
+      data,
+    );
+  }
+
   // Personas
   async listPersonas(params?: PaginationParams) {
     return this.request<{ personas: unknown[]; next_page_token?: string }>(

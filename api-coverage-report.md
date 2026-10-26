@@ -13,12 +13,12 @@ updates a PR only when coverage actually changes.
 | Metric | Value |
 | --- | ---: |
 | Reconciliation status | PASS |
-| Published operations | 186 |
-| Operations reached by MCP tools | 29 |
+| Published operations | 192 |
+| Operations reached by MCP tools | 35 |
 | Reviewed gaps | 157 |
-| Client operations | 30 |
-| Published request fields on covered operations | 86 |
-| Request fields the MCP client sends | 57 |
+| Client operations | 36 |
+| Published request fields on covered operations | 97 |
+| Request fields the MCP client sends | 68 |
 | Reviewed request-field gaps | 29 |
 
 Catalog: https://api.coval.dev/v1/openapi

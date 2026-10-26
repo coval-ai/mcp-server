@@ -105,6 +105,24 @@ describe('registerAllTools', () => {
         ['filter', 'include_builtin', 'order_by', 'page_size', 'page_token'],
       ],
       ['get_metric', ['metric_id']],
+      [
+        'create_python_metric_draft',
+        [
+          'description',
+          'display_name',
+          'output_type',
+          'requirements',
+          'source',
+          'target_metric_id',
+          'target_version_id',
+          'unit',
+        ],
+      ],
+      ['get_python_metric_draft', ['draft_id']],
+      ['create_python_metric_preview', ['draft_id', 'simulation_output_ids']],
+      ['get_python_metric_preview', ['draft_id', 'preview_id']],
+      ['cancel_python_metric_preview', ['draft_id', 'preview_id']],
+      ['publish_python_metric_draft', ['draft_id', 'fingerprint', 'preview_ids']],
       ['list_personas', ['filter', 'order_by', 'page_size', 'page_token']],
       ['get_persona', ['persona_id']],
       ['list_reports', ['page_size', 'page_token']],
@@ -310,6 +328,12 @@ describe('registerAllTools', () => {
         ['update_test_case', destructiveWriteAnnotations],
         ['list_metrics', readOnlyAnnotations],
         ['get_metric', readOnlyAnnotations],
+        ['create_python_metric_draft', additiveWriteAnnotations],
+        ['get_python_metric_draft', readOnlyAnnotations],
+        ['create_python_metric_preview', additiveWriteAnnotations],
+        ['get_python_metric_preview', readOnlyAnnotations],
+        ['cancel_python_metric_preview', destructiveWriteAnnotations],
+        ['publish_python_metric_draft', destructiveWriteAnnotations],
         ['list_personas', readOnlyAnnotations],
         ['get_persona', readOnlyAnnotations],
         ['list_reports', readOnlyAnnotations],
@@ -330,7 +354,7 @@ describe('registerAllTools', () => {
       ]);
 
       expect([...toolNames].sort()).toEqual([...expectedAnnotations.keys()].sort());
-      expect(toolNames).toHaveLength(27);
+      expect(toolNames).toHaveLength(33);
 
       for (const [name, expected] of expectedAnnotations) {
         const registration = registrations.get(name);

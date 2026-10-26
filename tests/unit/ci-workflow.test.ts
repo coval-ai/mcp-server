@@ -19,17 +19,23 @@ describe('MCP production image qualification', () => {
     expect(packageJson.scripts['qualify:image']).toBe('node scripts/qualify-image.mjs');
   });
 
-  it('pins the expanded report and scheduling catalog in image qualification', () => {
+  it('pins the expanded report, scheduling, and Python metric catalogs in image qualification', () => {
     const qualifier = fs.readFileSync('scripts/qualify-image.mjs', 'utf8');
     for (const toolName of [
+      'cancel_python_metric_preview',
       'create_report',
+      'create_python_metric_draft',
+      'create_python_metric_preview',
       'get_report',
+      'get_python_metric_draft',
+      'get_python_metric_preview',
       'list_reports',
       'list_run_templates',
       'create_scheduled_run',
       'get_scheduled_run',
       'list_scheduled_runs',
       'update_scheduled_run',
+      'publish_python_metric_draft',
     ]) {
       expect(qualifier).toContain(`'${toolName}'`);
     }

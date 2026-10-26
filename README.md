@@ -140,6 +140,12 @@ Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
 | `update_test_case` | Update a test case |
 | `list_metrics` | List evaluation metrics |
 | `get_metric` | Get metric details |
+| `create_python_metric_draft` | Create an immutable Python metric draft |
+| `get_python_metric_draft` | Get a Python metric draft and fingerprint |
+| `create_python_metric_preview` | Start an asynchronous Python metric preview |
+| `get_python_metric_preview` | Poll a Python metric preview for its result |
+| `cancel_python_metric_preview` | Cancel an in-progress Python metric preview |
+| `publish_python_metric_draft` | Publish a draft with successful preview IDs |
 | `list_personas` | List available personas |
 | `get_persona` | Get persona details |
 | `list_reports` | List saved evaluation reports |
@@ -160,6 +166,7 @@ Once connected, you can ask Claude things like:
 > "List all my agents"
 > "Run an evaluation of my customer-support-agent against the billing-inquiries test set"
 > "What are the metrics for run abc123?"
+> "Create an immutable Python metric draft, preview it on a conversation, and publish it after the preview succeeds."
 > "Show the first 20 rows of my regression report for the task-success metric"
 > "Create a private report comparing these completed runs by agent"
 > "Show my enabled evaluation schedules and the latest runs from the nightly regression"

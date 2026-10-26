@@ -4,6 +4,7 @@ export * from './agents.js';
 export * from './test-sets.js';
 export * from './test-cases.js';
 export * from './metrics.js';
+export * from './python-metrics.js';
 export * from './personas.js';
 export * from './reports.js';
 export * from './scheduling.js';
