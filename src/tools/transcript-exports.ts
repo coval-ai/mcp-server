@@ -24,17 +24,20 @@ export function registerTranscriptExports(server: McpServer, client: CovalApiCli
       }
     },
   );
+}
+
+export function registerTranscriptExportTool(server: McpServer, client: CovalApiClient): void {
   server.registerTool(
     'read_transcript_export',
     {
       ...readOnlyTool('Read a transcript export'),
       description: 'Read an authenticated transcript export when resource links are unavailable. Concatenate text fragments exactly, then JSON-decode the completed document. Continue with next_offset and the returned version until complete=true. A changed version refuses continuation rather than mixing transcripts. URI manifests are not authorization; each read uses current Coval access.',
-      inputSchema: {
+      inputSchema: z.object({
         uri: z.string().max(60_000),
         offset: z.number().int().min(0).max(2 ** 31 - 1).optional(),
         max_chars: z.number().int().min(1).max(65_536).optional(),
         expected_version: z.string().regex(/^[A-Za-z0-9_-]{43}$/).optional(),
-      },
+      }).strict(),
     },
     async ({ uri, offset = 0, max_chars = 4000, expected_version }) => {
       try {

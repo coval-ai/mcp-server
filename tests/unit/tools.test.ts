@@ -122,6 +122,7 @@ describe('registerAllTools', () => {
       ['create_python_metric_preview', ['draft_id', 'simulation_output_ids']],
       ['get_python_metric_preview', ['draft_id', 'preview_id']],
       ['cancel_python_metric_preview', ['draft_id', 'preview_id']],
+      ['read_transcript_export', ['uri', 'offset', 'max_chars', 'expected_version']],
       ['publish_python_metric_draft', ['draft_id', 'fingerprint', 'preview_ids']],
       ['list_personas', ['filter', 'order_by', 'page_size', 'page_token']],
       ['get_persona', ['persona_id']],
@@ -334,6 +335,7 @@ describe('registerAllTools', () => {
         ['get_python_metric_preview', readOnlyAnnotations],
         ['cancel_python_metric_preview', destructiveWriteAnnotations],
         ['publish_python_metric_draft', destructiveWriteAnnotations],
+        ['read_transcript_export', readOnlyAnnotations],
         ['list_personas', readOnlyAnnotations],
         ['get_persona', readOnlyAnnotations],
         ['list_reports', readOnlyAnnotations],
@@ -354,7 +356,7 @@ describe('registerAllTools', () => {
       ]);
 
       expect([...toolNames].sort()).toEqual([...expectedAnnotations.keys()].sort());
-      expect(toolNames).toHaveLength(33);
+      expect(toolNames).toHaveLength(34);
 
       for (const [name, expected] of expectedAnnotations) {
         const registration = registrations.get(name);
