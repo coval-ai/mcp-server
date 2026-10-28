@@ -205,6 +205,31 @@ npm test
 npm run check:remote
 ```
 
+## Complete transcript exports
+
+For a complete run transcript request, `consult_sofia` can return a native MCP
+`resource_link` after collecting every call. Read that URI with `resources/read`.
+Clients without resource-link support can use `read_transcript_export`: concatenate
+its `text` fragments exactly, carrying `next_offset` and `version` as
+`expected_version` until `complete=true`, then JSON-decode the document. Offsets
+count UTF-16 code units; preserve whitespace and partial Unicode sequences while
+concatenating. The document includes a final completion marker, per-call unavailable
+reasons, source order, original transcript fields, timing and tool ownership.
+
+Exports use the currently authenticated API client's Default workspace. Every
+read checks current authorization; the URI contains identifiers and fingerprints,
+not credentials or a public download token. The export is reconstructed from
+current API reads, not stored as a historical snapshot. Source changes are reported
+explicitly, and continuation refuses to mix versions. A new authenticated server
+can read the same URI if it still has access to the run.
+
+Collection supports up to 100 calls, 2 MiB of serialized content and a 30-second
+deadline. Exceeding a limit fails explicitly instead of returning a sample. A
+missing transcript is listed with a reason. Authentication, incomplete inventory
+and mismatched run membership fail the export. Readiness comes from the collector;
+Sofia's export request or prose alone does not prove delivery. Unsupported older
+Sofia servers continue returning their existing consultation response.
+
 ## API Coverage Audit
 
 `scripts/audit_api_coverage.py` compares the live public OpenAPI catalog

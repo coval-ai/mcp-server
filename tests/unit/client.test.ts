@@ -57,7 +57,7 @@ describe("CovalApiClient.consultSofia", () => {
       "https://api.example.com/v1/sofia/delegation-token",
     );
     expect(fetchMock.mock.calls[0][1]).toMatchObject({
-      headers: expect.objectContaining({ "X-API-Key": "customer-api-key" }),
+      headers: expect.objectContaining({ "x-api-key": "customer-api-key" }),
     });
     expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({
       client_id: 'coval-mcp',
@@ -75,6 +75,7 @@ describe("CovalApiClient.consultSofia", () => {
     expect(fetchMock.mock.calls[1][1]?.headers?.Authorization).not.toContain("customer-api-key");
     expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
       prompt: 'What should I inspect?',
+      transcript_exports: 'mcp-resource-v1',
     });
     expect(String(fetchMock.mock.calls[0][1]?.body)).not.toContain('session_id');
     expect(String(fetchMock.mock.calls[1][1]?.body)).not.toContain('conversation');
@@ -103,6 +104,7 @@ describe("CovalApiClient.consultSofia", () => {
     expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body))).toEqual({
       prompt: 'Continue the prior analysis.',
       conversation: [{ role: 'assistant', content: 'Prior answer.' }],
+      transcript_exports: 'mcp-resource-v1',
     });
   });
 

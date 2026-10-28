@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { CovalApiClient } from './client.js';
 import { registerAllTools } from './tools/index.js';
+import { registerTranscriptExports } from './tools/transcript-exports.js';
 import {
   readOnlyTool,
   type ToolAnnotationProfile,
@@ -48,7 +49,9 @@ export function createMcpServer(options: CovalMcpServerOptions = {}): McpServer 
   }));
 
   if (options.apiKey) {
-    registerAllTools(server, new CovalApiClient(options.apiKey), {
+    const client = new CovalApiClient(options.apiKey);
+    registerTranscriptExports(server, client);
+    registerAllTools(server, client, {
       annotationProfile: options.annotationProfile,
       inputProfile: options.inputProfile,
       includeSofia: options.includeSofia,

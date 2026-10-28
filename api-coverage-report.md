@@ -13,10 +13,10 @@ updates a PR only when coverage actually changes.
 | Metric | Value |
 | --- | ---: |
 | Reconciliation status | PASS |
-| Published operations | 192 |
-| Operations reached by MCP tools | 35 |
-| Reviewed gaps | 157 |
-| Client operations | 36 |
+| Published operations | 198 |
+| Operations reached by MCP tools | 37 |
+| Reviewed gaps | 161 |
+| Client operations | 38 |
 | Published request fields on covered operations | 97 |
 | Request fields the MCP client sends | 68 |
 | Reviewed request-field gaps | 29 |
@@ -90,14 +90,17 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /alerts/{alert_id}`
 - `GET /alerts/{alert_id}/events`
 - `GET /api-keys`
-- `GET /conversations/simulated`
-- `GET /conversations/simulated/{simulation_id}`
+- `GET /conversation-python-analyses/{analysis_id}`
 - `GET /conversations/simulated/{simulation_id}/audio`
+- `GET /conversations/simulated/{conversation_id}/comments`
+- `GET /conversations/simulated/{conversation_id}/comments/{comment_id}`
 - `GET /conversations/simulated/{simulation_id}/metrics`
 - `GET /conversations/simulated/{simulation_id}/metrics/{metric_output_id}`
 - `GET /conversations/uploaded`
 - `GET /conversations/uploaded/{conversation_id}`
 - `GET /conversations/uploaded/{conversation_id}/audio`
+- `GET /conversations/uploaded/{conversation_id}/comments`
+- `GET /conversations/uploaded/{conversation_id}/comments/{comment_id}`
 - `GET /conversations/uploaded/{conversation_id}/metrics`
 - `GET /conversations/uploaded/{conversation_id}/metrics/{metric_output_id}`
 - `GET /dashboards`
@@ -178,6 +181,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /alerts/{alert_id}/test-evaluate`
 - `POST /api-keys`
 - `POST /audio:upload`
+- `POST /conversation-python-analyses`
 - `POST /conversations/simulated/{simulation_id}/resimulate`
 - `POST /conversations/simulated:rerunMetrics`
 - `POST /conversations/uploaded:submit`
