@@ -1,3 +1,8 @@
+import {
+  prepareTranscriptExport,
+  readTranscriptExport,
+  type TranscriptApi,
+} from './transcript-exports.js';
 const DEFAULT_BASE_URL = 'https://api.coval.dev/v1';
 const DEFAULT_API_TIMEOUT_MS = 30_000;
 const SOFIA_DELEGATION_TIMEOUT_MS = 240_000;
@@ -43,6 +48,14 @@ export interface SofiaConsultation {
   summary: string;
   evidence: Array<{ name: string; status: string }>;
   proposedActions: never[];
+  exportRequests?: TranscriptExportRequest[];
+}
+
+export interface TranscriptExportRequest {
+  kind: 'run_transcripts';
+  run_id: string;
+  scope: 'default_workspace';
+  state: 'requested';
 }
 
 interface SofiaConsultationResponse {
@@ -52,6 +65,7 @@ interface SofiaConsultationResponse {
   summary: string;
   evidence: Array<{ name: string; status: string }>;
   proposed_actions: never[];
+  exports?: TranscriptExportRequest[];
 }
 
 interface SofiaDelegationTokenResponse {
@@ -82,6 +96,24 @@ export class CovalApiClient {
     this.baseUrl = baseUrl || process.env.COVAL_API_BASE_URL || DEFAULT_BASE_URL;
   }
 
+  private transcriptApi(): TranscriptApi {
+    return {
+      getRun: (runId, signal) => this.request('GET', `/runs/${encodeURIComponent(runId)}`, undefined, undefined, signal),
+      list: (runId, pageToken, signal) => this.request('GET', '/conversations/simulated', undefined, {
+        filter: `run_id=${JSON.stringify(runId)}`, page_size: 50, page_token: pageToken || undefined,
+      }, signal),
+      get: (callId, signal) => this.request('GET', `/conversations/simulated/${encodeURIComponent(callId)}`, undefined, undefined, signal),
+    };
+  }
+
+  async prepareRunTranscriptExport(runId: string) {
+    return prepareTranscriptExport(this.transcriptApi(), runId);
+  }
+
+  async readRunTranscriptExport(uri: string) {
+    return readTranscriptExport(this.transcriptApi(), uri);
+  }
+
   private async request<T>(
     method: string,
     path: string,
@@ -105,7 +137,7 @@ export class CovalApiClient {
       response = await fetch(url.toString(), {
         method,
         headers: {
-          'X-API-Key': this.apiKey,
+          'x-api-key': this.apiKey,
           'Content-Type': 'application/json',
         },
         body: body ? JSON.stringify(body) : undefined,
@@ -537,6 +569,7 @@ export class CovalApiClient {
         },
         body: JSON.stringify({
           prompt: input.prompt,
+          transcript_exports: 'mcp-resource-v1',
           ...(input.conversation ? { conversation: input.conversation } : {}),
         }),
         signal: AbortSignal.timeout(SOFIA_DELEGATION_TIMEOUT_MS)
@@ -564,7 +597,8 @@ export class CovalApiClient {
       mode: consultation.mode,
       summary: consultation.summary,
       evidence: consultation.evidence,
-      proposedActions: consultation.proposed_actions
+      proposedActions: consultation.proposed_actions,
+      ...(consultation.exports?.length ? { exportRequests: consultation.exports } : {}),
     };
   }
 
@@ -650,6 +684,15 @@ function parseSofiaConsultation(payload: unknown): SofiaConsultationResponse {
       typeof item.name === 'string' &&
       typeof item.status === 'string'
   );
+  if (candidate.exports !== undefined && (
+    !Array.isArray(candidate.exports) || candidate.exports.length > 1 || candidate.exports.some((item) =>
+      typeof item !== 'object' || item === null || item.kind !== 'run_transcripts' ||
+      item.state !== 'requested' || item.scope !== 'default_workspace' ||
+      typeof item.run_id !== 'string' || !item.run_id || item.run_id.length > 128 ||
+      Object.keys(item).some((key) => !['kind', 'run_id', 'scope', 'state'].includes(key)))
+  )) {
+    throw new CovalApiError('INVALID_COVI_RESPONSE', 'Sofia returned an invalid transcript export request');
+  }
   if (evidence.length !== candidate.evidence.length) {
     throw new CovalApiError('INVALID_COVI_RESPONSE', 'Sofia returned invalid evidence');
   }

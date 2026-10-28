@@ -10,6 +10,7 @@ import { registerSofiaTools } from './sofia.js';
 import { registerReportTools } from './reports.js';
 import { registerSchedulingTools } from './scheduling.js';
 import { registerPythonMetricTools } from './python-metrics.js';
+import { registerTranscriptExportTool } from './transcript-exports.js';
 import type {
   ToolAnnotationProfile,
   ToolInputProfile,
@@ -28,6 +29,7 @@ export function registerAllTools(
     annotationProfile: options.annotationProfile,
     inputProfile: options.inputProfile,
   };
+  registerTranscriptExportTool(server, client);
   registerRunTools(server, client, createToolOptions);
   registerAgentTools(server, client, createToolOptions);
   registerTestSetTools(server, client, createToolOptions);

@@ -403,6 +403,18 @@
         "open_world_justification": "Enabling or changing the timing of a schedule can trigger evaluations that contact configured external endpoints.",
         "destructive_justification": "Overwrites selected schedule fields and can change future evaluation activity and costs."
       }
+    },
+    "read_transcript_export": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Only reads bounded fragments of an authenticated transcript export without changing evaluation data.",
+        "open_world_justification": "Does not publish content or change state outside the authenticated Coval organization.",
+        "destructive_justification": "Does not delete, overwrite or cancel any resource."
+      }
     }
   },
   "test_cases": [

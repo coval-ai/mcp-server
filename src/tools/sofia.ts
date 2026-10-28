@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { CovalApiClient } from '../client.js';
 import { createSuccessResponse } from '../utils/response.js';
 import { handleApiError } from '../utils/errors.js';
+import { TranscriptExportError, type TranscriptExport } from '../transcript-exports.js';
 import {
   readOnlyTool,
   type ToolInputProfile,
@@ -88,13 +89,37 @@ export function registerSofiaTools(
               }
             : {}),
         });
-        return createSuccessResponse({
+        let summary = result.summary;
+        const exports: TranscriptExport[] = [];
+        const exportErrors: Array<{ status: 'failed'; run_id: string; message: string }> = [];
+        for (const request of result.exportRequests ?? []) {
+          try {
+            exports.push(await client.prepareRunTranscriptExport(request.run_id));
+          } catch (error) {
+            exportErrors.push({ status: 'failed', run_id: request.run_id, message: error instanceof TranscriptExportError ? error.message : 'Complete transcript collection or authorization failed; no incomplete export was attached.' });
+          }
+        }
+        if (exportErrors.length) {
+          summary = `Transcript export delivery failed. No complete export is attached. ${exportErrors.map((error) => error.message).join(' ')}`;
+        } else if (exports.length) {
+          const artifact = exports[0];
+          summary = `Complete transcript export prepared: ${artifact.call_count} calls (${artifact.available_count} available, ${artifact.unavailable_count} explicitly unavailable). Read the attached authenticated resource, or use read_transcript_export until complete=true.`;
+        }
+        const response = createSuccessResponse({
           contract_version: result.contractVersion,
           mode: result.mode,
-          summary: result.summary,
+          summary,
           evidence: result.evidence,
           proposed_actions: result.proposedActions,
+          ...(exports.length ? { exports } : {}),
+          ...(exportErrors.length ? { export_errors: exportErrors } : {}),
         });
+        response.content.push(...exports.map((artifact) => ({
+          type: 'resource_link' as const, uri: artifact.uri, name: artifact.name,
+          mimeType: artifact.mimeType, size: artifact.size,
+          description: 'Complete current-read transcript export. Default workspace; reauthorized on every read. Source changes are reported explicitly.',
+        })));
+        return response;
       } catch (err) {
         return handleApiError(err);
       }

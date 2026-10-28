@@ -96,7 +96,7 @@ describe('ChatGPT submission scripts', () => {
         sourceToolCatalog: matchingSourceToolCatalog(),
         submissionPath: outputPath,
       }),
-    ).resolves.toEqual({ negativeCaseCount: 3, positiveCaseCount: 5, toolCount: 33 });
+    ).resolves.toEqual({ negativeCaseCount: 3, positiveCaseCount: 5, toolCount: 34 });
   });
 
   it('rejects missing or malformed fixture values', async () => {

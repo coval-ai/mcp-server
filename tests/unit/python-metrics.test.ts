@@ -239,7 +239,7 @@ describe('Python metric draft client methods', () => {
       const [url, init] = fetchMock.mock.calls.at(-1)!;
       expect(new URL(String(url)).pathname).toBe(testCase.path);
       expect(init?.method).toBe(testCase.method);
-      expect(init?.headers).toMatchObject({ 'X-API-Key': 'test-key' });
+      expect(init?.headers).toMatchObject({ 'x-api-key': 'test-key' });
       expect(init?.body).toBe(
         testCase.body === undefined ? undefined : JSON.stringify(testCase.body),
       );

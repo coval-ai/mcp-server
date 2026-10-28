@@ -85,6 +85,7 @@ describe('ChatGPT app submission artifact', () => {
       'list_test_cases',
       'list_test_sets',
       'publish_python_metric_draft',
+      'read_transcript_export',
       'update_agent',
       'update_scheduled_run',
       'update_test_case',

@@ -8,9 +8,9 @@
 
 [snapshot]
 catalog_url = "https://api.coval.dev/v1/openapi"
-reviewed_at = "2026-10-14"
-published_operations = 192
-mcp_supported_operations = 35
+reviewed_at = "2026-10-28"
+published_operations = 198
+mcp_supported_operations = 37
 published_request_fields = 97
 mcp_modeled_request_fields = 68
 
@@ -145,14 +145,6 @@ reason = "Outside the curated MCP tool set; no alert tools are exposed."
 [[known_gap]]
 operation = "GET /api-keys"
 reason = "Outside the curated MCP tool set; no API key tools are exposed."
-
-[[known_gap]]
-operation = "GET /conversations/simulated"
-reason = "Outside the curated MCP tool set; no conversation tools are exposed."
-
-[[known_gap]]
-operation = "GET /conversations/simulated/{simulation_id}"
-reason = "Outside the curated MCP tool set; no conversation tools are exposed."
 
 [[known_gap]]
 operation = "GET /conversations/simulated/{simulation_id}/audio"
@@ -786,3 +778,27 @@ reason = "`create_test_case` does not accept this field."
 operation = "POST /test-sets"
 field = "tags"
 reason = "`create_test_set` does not accept this field."
+
+[[known_gap]]
+operation = "GET /conversation-python-analyses/{analysis_id}"
+reason = "Python conversation analysis is not exposed through an MCP tool."
+
+[[known_gap]]
+operation = "POST /conversation-python-analyses"
+reason = "MCP does not initiate Python conversation analyses."
+
+[[known_gap]]
+operation = "GET /conversations/simulated/{conversation_id}/comments"
+reason = "Conversation comments are outside the MCP transcript export contract."
+
+[[known_gap]]
+operation = "GET /conversations/simulated/{conversation_id}/comments/{comment_id}"
+reason = "Conversation comments are outside the MCP transcript export contract."
+
+[[known_gap]]
+operation = "GET /conversations/uploaded/{conversation_id}/comments"
+reason = "Uploaded conversation comments are not exposed through an MCP tool."
+
+[[known_gap]]
+operation = "GET /conversations/uploaded/{conversation_id}/comments/{comment_id}"
+reason = "Uploaded conversation comments are not exposed through an MCP tool."

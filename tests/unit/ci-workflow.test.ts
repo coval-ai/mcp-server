@@ -36,6 +36,7 @@ describe('MCP production image qualification', () => {
       'list_scheduled_runs',
       'update_scheduled_run',
       'publish_python_metric_draft',
+      'read_transcript_export',
     ]) {
       expect(qualifier).toContain(`'${toolName}'`);
     }
