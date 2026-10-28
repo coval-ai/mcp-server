@@ -3,6 +3,7 @@ import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { InMemoryTransport } from '@modelcontextprotocol/sdk/inMemory.js';
 import type { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { createMcpServer } from '../../src/server.js';
+import { CovalApiClient } from '../../src/client.js';
 import { prepareTranscriptExport, type TranscriptApi } from '../../src/transcript-exports.js';
 
 const originalBase = process.env.COVAL_API_BASE_URL;
@@ -187,5 +188,25 @@ it('reports inventory order changes even when every transcript is unchanged', as
     const resource = (await client.readResource({ uri: artifact.uri })).contents[0];
     if (!('text' in resource)) throw new Error('Missing text');
     expect(JSON.parse(resource.text)).toMatchObject({ status: 'source_changed', source_order_changed: true, changed_call_ids: [], removed_call_ids: [] });
+  });
+});
+
+it('keeps UTF-8 fragments lossless when max_chars=1 crosses an emoji', async () => {
+  const text = 'A👍éZ';
+  jest.spyOn(CovalApiClient.prototype, 'readRunTranscriptExport').mockResolvedValue({ text, version: 'a'.repeat(43) });
+  await withClient(async (client) => {
+    const pages: Buffer[] = [];
+    for (let offset = 0; offset < 4; offset += 1) {
+      const page = visible(await client.callTool({ name: 'read_transcript_export', arguments: {
+        uri: 'coval://run-transcripts/example/manifest', offset, max_chars: 1,
+        ...(offset ? { expected_version: 'a'.repeat(43) } : {}),
+      } }) as CallToolResult);
+      expect(page.offset_unit).toBe('unicode_code_points');
+      expect(page.next_offset).toBe(offset < 3 ? offset + 1 : null);
+      expect(page.complete).toBe(offset === 3);
+      pages.push(Buffer.from(page.text as string, 'utf8'));
+    }
+    expect(pages[1]).toEqual(Buffer.from('👍', 'utf8'));
+    expect(Buffer.concat(pages)).toEqual(Buffer.from(text, 'utf8'));
   });
 });

@@ -212,8 +212,8 @@ For a complete run transcript request, `consult_sofia` can return a native MCP
 Clients without resource-link support can use `read_transcript_export`: concatenate
 its `text` fragments exactly, carrying `next_offset` and `version` as
 `expected_version` until `complete=true`, then JSON-decode the document. Offsets
-count UTF-16 code units; preserve whitespace and partial Unicode sequences while
-concatenating. The document includes a final completion marker, per-call unavailable
+count Unicode code points; preserve whitespace while concatenating. Each fragment
+contains complete code points and can be appended as UTF-8 bytes. The document includes a final completion marker, per-call unavailable
 reasons, source order, original transcript fields, timing and tool ownership.
 
 Exports use the currently authenticated API client's Default workspace. Every

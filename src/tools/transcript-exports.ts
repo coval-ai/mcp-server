@@ -43,12 +43,13 @@ export function registerTranscriptExports(server: McpServer, client: CovalApiCli
         if (expected_version !== undefined && expected_version !== result.version) {
           throw new TranscriptExportError('Transcript export source changed; restart the export instead of combining versions');
         }
-        if (offset > result.text.length) throw new TranscriptExportError('Transcript export offset is out of range');
-        const end = Math.min(offset + max_chars, result.text.length);
+        const characters = Array.from(result.text);
+        if (offset > characters.length) throw new TranscriptExportError('Transcript export offset is out of range');
+        const end = Math.min(offset + max_chars, characters.length);
         return createSuccessResponse({
-          uri, version: result.version, offset, next_offset: end < result.text.length ? end : null,
-          offset_unit: 'utf16_code_units', text: result.text.slice(offset, end),
-          complete: end === result.text.length, total_chars: result.text.length,
+          uri, version: result.version, offset, next_offset: end < characters.length ? end : null,
+          offset_unit: 'unicode_code_points', text: characters.slice(offset, end).join(''),
+          complete: end === characters.length, total_chars: characters.length,
         });
       } catch (error) {
         return error instanceof TranscriptExportError
