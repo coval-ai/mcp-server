@@ -8,10 +8,10 @@
 
 [snapshot]
 catalog_url = "https://api.coval.dev/v1/openapi"
-reviewed_at = "2026-10-28"
-published_operations = 198
+reviewed_at = "2026-11-02"
+published_operations = 199
 mcp_supported_operations = 37
-published_request_fields = 97
+published_request_fields = 98
 mcp_modeled_request_fields = 68
 
 [[known_gap]]
@@ -802,3 +802,12 @@ reason = "Uploaded conversation comments are not exposed through an MCP tool."
 [[known_gap]]
 operation = "GET /conversations/uploaded/{conversation_id}/comments/{comment_id}"
 reason = "Uploaded conversation comments are not exposed through an MCP tool."
+
+[[known_gap]]
+operation = "POST /python-metrics:fromAnalysis"
+reason = "Saving an analyzed audio computation requires successful, unexpired workspace-bound analysis evidence. MCP does not expose the Python audio analysis workflow; metric authoring uses the existing draft, preview, and publication tools."
+
+[[known_field_gap]]
+operation = "POST /test-sets"
+field = "test_cases"
+reason = "Nested bulk test-case import is outside the strict create_test_set input contract. MCP creates individual cases with create_test_case after creating the test set."
