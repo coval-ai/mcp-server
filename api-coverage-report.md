@@ -12,12 +12,12 @@ updates a PR only when coverage actually changes.
 
 | Metric | Value |
 | --- | ---: |
-| Reconciliation status | PASS |
-| Published operations | 198 |
+| Reconciliation status | ACTION REQUIRED |
+| Published operations | 199 |
 | Operations reached by MCP tools | 37 |
 | Reviewed gaps | 161 |
 | Client operations | 38 |
-| Published request fields on covered operations | 97 |
+| Published request fields on covered operations | 98 |
 | Request fields the MCP client sends | 68 |
 | Reviewed request-field gaps | 29 |
 
@@ -25,7 +25,7 @@ Catalog: https://api.coval.dev/v1/openapi
 
 ## New published operations without MCP tools
 
-- None.
+- `POST /python-metrics:fromAnalysis`
 
 ## Reviewed gaps no longer present
 
@@ -49,7 +49,8 @@ Catalog: https://api.coval.dev/v1/openapi
 
 ## Coverage snapshot mismatches
 
-- None.
+- `published_operations: recorded 198, current 199`
+- `published_request_fields: recorded 97, current 98`
 
 ## Client-only operations
 
@@ -203,6 +204,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /personas/background-sounds/{background_sound_id}/complete`
 - `POST /personas/{persona_id}/duplicate`
 - `POST /personas/{persona_id}/versions/{version_id}/revert`
+- `POST /python-metrics:fromAnalysis`
 - `POST /review-annotations`
 - `POST /review-annotations:withMetricOutputs`
 - `POST /review-projects`
@@ -221,7 +223,7 @@ Catalog: https://api.coval.dev/v1/openapi
 
 ## New published request fields the MCP client drops
 
-- None.
+- `POST /test-sets test_cases`
 
 ## Reviewed request-field gaps no longer present
 
@@ -266,3 +268,4 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /test-cases expected_output_str`
 - `POST /test-cases script_turns`
 - `POST /test-sets tags`
+- `POST /test-sets test_cases`
