@@ -12,20 +12,20 @@ updates a PR only when coverage actually changes.
 
 | Metric | Value |
 | --- | ---: |
-| Reconciliation status | ACTION REQUIRED |
+| Reconciliation status | PASS |
 | Published operations | 199 |
 | Operations reached by MCP tools | 37 |
-| Reviewed gaps | 161 |
+| Reviewed gaps | 162 |
 | Client operations | 38 |
 | Published request fields on covered operations | 98 |
 | Request fields the MCP client sends | 68 |
-| Reviewed request-field gaps | 29 |
+| Reviewed request-field gaps | 30 |
 
 Catalog: https://api.coval.dev/v1/openapi
 
 ## New published operations without MCP tools
 
-- `POST /python-metrics:fromAnalysis`
+- None.
 
 ## Reviewed gaps no longer present
 
@@ -49,8 +49,7 @@ Catalog: https://api.coval.dev/v1/openapi
 
 ## Coverage snapshot mismatches
 
-- `published_operations: recorded 198, current 199`
-- `published_request_fields: recorded 97, current 98`
+- None.
 
 ## Client-only operations
 
@@ -223,7 +222,7 @@ Catalog: https://api.coval.dev/v1/openapi
 
 ## New published request fields the MCP client drops
 
-- `POST /test-sets test_cases`
+- None.
 
 ## Reviewed request-field gaps no longer present
 
