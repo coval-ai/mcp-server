@@ -13,13 +13,13 @@ updates a PR only when coverage actually changes.
 | Metric | Value |
 | --- | ---: |
 | Reconciliation status | PASS |
-| Published operations | 198 |
+| Published operations | 199 |
 | Operations reached by MCP tools | 37 |
-| Reviewed gaps | 161 |
+| Reviewed gaps | 162 |
 | Client operations | 38 |
-| Published request fields on covered operations | 97 |
+| Published request fields on covered operations | 98 |
 | Request fields the MCP client sends | 68 |
-| Reviewed request-field gaps | 29 |
+| Reviewed request-field gaps | 30 |
 
 Catalog: https://api.coval.dev/v1/openapi
 
@@ -203,6 +203,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /personas/background-sounds/{background_sound_id}/complete`
 - `POST /personas/{persona_id}/duplicate`
 - `POST /personas/{persona_id}/versions/{version_id}/revert`
+- `POST /python-metrics:fromAnalysis`
 - `POST /review-annotations`
 - `POST /review-annotations:withMetricOutputs`
 - `POST /review-projects`
@@ -266,3 +267,4 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /test-cases expected_output_str`
 - `POST /test-cases script_turns`
 - `POST /test-sets tags`
+- `POST /test-sets test_cases`
