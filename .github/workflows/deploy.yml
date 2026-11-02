@@ -78,6 +78,8 @@ jobs:
           account_id="$(aws sts get-caller-identity --query Account --output text)"
           image="${account_id}.dkr.ecr.${AWS_REGION}.amazonaws.com/${REPOSITORY}"
           docker build \
+            --provenance=false \
+            --sbom=false \
             --build-arg "COVAL_MCP_SOURCE_SHA=${IMAGE_TAG}" \
             --build-arg "COVAL_MCP_ENV=${MCP_ENVIRONMENT}" \
             -t "${image}:${IMAGE_TAG}" \
