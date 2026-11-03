@@ -78,7 +78,7 @@
     "handlebars": "4.7.10",
     "shell-quote": "1.11.0",
     "fast-uri": "^4.2.3",
-    "qs": "^6.16.0",
+    "qs": "^6.17.1",
     "body-parser": "^2.4.0",
     "ip-address": "^10.7.4"
   },
