@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "repository": "mcp_server",
+  "inputs": {
+    "repository": {
+      "include": [
+        "**"
+      ]
+    }
+  },
+  "selectionContracts": ".switchboard/service-selection-contracts.json",
+  "surfaces": {
+    "mcp_server.remote": {
+      "inputs": [
+        "repository"
+      ]
+    }
+  }
+}
