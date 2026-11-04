@@ -1,0 +1,89 @@
+{
+  "version": 1,
+  "repository": "mcp_server",
+  "contracts": [
+    {
+      "id": "local-entrypoint",
+      "changedFiles": [
+        "src/index.ts"
+      ],
+      "surfaces": [
+        "mcp_server.remote"
+      ]
+    },
+    {
+      "id": "remote-entrypoint",
+      "changedFiles": [
+        "src/remote.ts"
+      ],
+      "surfaces": [
+        "mcp_server.remote"
+      ]
+    },
+    {
+      "id": "lambda-entrypoint",
+      "changedFiles": [
+        "src/lambda.ts"
+      ],
+      "surfaces": [
+        "mcp_server.remote"
+      ]
+    },
+    {
+      "id": "native-test",
+      "changedFiles": [
+        "tests/unit/client.test.ts"
+      ],
+      "surfaces": [
+        "mcp_server.remote"
+      ]
+    },
+    {
+      "id": "package-harness",
+      "changedFiles": [
+        "package.json"
+      ],
+      "surfaces": [
+        "mcp_server.remote"
+      ]
+    },
+    {
+      "id": "workflow",
+      "changedFiles": [
+        ".github/workflows/ci.yml"
+      ],
+      "surfaces": [
+        "mcp_server.remote"
+      ]
+    },
+    {
+      "id": "metadata",
+      "changedFiles": [
+        ".switchboard/impact.json",
+        ".switchboard/service-selection-contracts.json"
+      ],
+      "surfaces": [
+        "mcp_server.remote"
+      ]
+    },
+    {
+      "id": "documentation",
+      "changedFiles": [
+        "README.md"
+      ],
+      "surfaces": [
+        "mcp_server.remote"
+      ]
+    },
+    {
+      "id": "mixed-source-and-harness",
+      "changedFiles": [
+        "src/remote.ts",
+        "package.json"
+      ],
+      "surfaces": [
+        "mcp_server.remote"
+      ]
+    }
+  ]
+}
