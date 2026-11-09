@@ -5,7 +5,7 @@ describe('ManagedApiKeyProvider', () => {
   afterEach(() => jest.restoreAllMocks());
 
   it('exchanges verified Clerk identity without forwarding an OAuth token', async () => {
-    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
+    const fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () =>
       new Response(JSON.stringify({ api_key: 'managed-user-key', organization_id: 'org_123' }), {
         status: 200,
       }),
@@ -32,8 +32,8 @@ describe('ManagedApiKeyProvider', () => {
     expect(JSON.stringify(fetchMock.mock.calls)).not.toContain('oauth');
   });
 
-  it('reuses a bounded short-lived managed key cache', async () => {
-    const fetchMock = jest.spyOn(global, 'fetch').mockResolvedValue(
+  it('rechecks the backend on every request', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () =>
       new Response(JSON.stringify({ api_key: 'managed-user-key', organization_id: 'org_123' }), {
         status: 200,
       }),
@@ -43,10 +43,10 @@ describe('ManagedApiKeyProvider', () => {
     await provider.getApiKey('clerk_org_123', 'clerk_user_123');
     await provider.getApiKey('clerk_org_123', 'clerk_user_123');
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 
-  it('isolates cached managed keys across different organization and user identities', async () => {
+  it('keeps each exchange bound to its organization and user', async () => {
     const fetchMock = jest
       .spyOn(global, 'fetch')
       .mockImplementation(async (_url, init): Promise<Response> => {
@@ -73,30 +73,23 @@ describe('ManagedApiKeyProvider', () => {
     await expect(provider.getApiKey('clerk_org_a', 'clerk_user_2')).resolves.toBe(
       'key:clerk_org_a:clerk_user_2',
     );
-    // Cached lookups stay bound to their own (organization, user) pair.
     await expect(provider.getApiKey('clerk_org_a', 'clerk_user_1')).resolves.toBe(
       'key:clerk_org_a:clerk_user_1',
     );
-    expect(fetchMock).toHaveBeenCalledTimes(3);
+    expect(fetchMock).toHaveBeenCalledTimes(4);
   });
 
-  it('coalesces concurrent identity exchanges for the same user and organization', async () => {
-    let resolveFetch!: (response: Response) => void;
-    const response = new Promise<Response>((resolve) => {
-      resolveFetch = resolve;
-    });
-    const fetchMock = jest.spyOn(global, 'fetch').mockReturnValue(response);
-    const provider = new ManagedApiKeyProvider('internal-service-key', 'https://api.example.com/v1');
-
-    const first = provider.getApiKey('clerk_org_123', 'clerk_user_123');
-    const second = provider.getApiKey('clerk_org_123', 'clerk_user_123');
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-
-    resolveFetch(
+  it('does not share an authorization result between concurrent requests', async () => {
+    const fetchMock = jest.spyOn(global, 'fetch').mockImplementation(async () =>
       new Response(JSON.stringify({ api_key: 'managed-user-key', organization_id: 'org_123' }), {
         status: 200,
       }),
     );
+    const provider = new ManagedApiKeyProvider('internal-service-key', 'https://api.example.com/v1');
+
+    const first = provider.getApiKey('clerk_org_123', 'clerk_user_123');
+    const second = provider.getApiKey('clerk_org_123', 'clerk_user_123');
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     await expect(Promise.all([first, second])).resolves.toEqual([
       'managed-user-key',
       'managed-user-key',
