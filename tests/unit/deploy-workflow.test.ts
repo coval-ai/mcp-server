@@ -37,4 +37,11 @@ describe("remote MCP deployment workflow", () => {
       "MCP_ENVIRONMENT: ${{ needs.validate.outputs.environment }}",
     );
   });
+
+  it("publishes an image without rolling a service at zero capacity", () => {
+    expect(workflow).toContain('desired_count="$(aws ecs describe-services');
+    expect(workflow).toContain('if [ "$desired_count" = "0" ]; then');
+    expect(workflow).toContain('if ! [[ "$desired_count" =~ ^[0-9]+$ ]]; then');
+    expect(workflow).toContain('aws ecs update-service');
+  });
 });
