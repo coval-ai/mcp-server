@@ -88,10 +88,24 @@ jobs:
       - name: Roll MCP service
         run: |
           set -euo pipefail
+          cluster="sofia-${MCP_ENVIRONMENT}-cluster"
+          service="sofia-${MCP_ENVIRONMENT}-mcp"
+          desired_count="$(aws ecs describe-services \
+            --cluster "$cluster" \
+            --services "$service" \
+            --query 'services[0].desiredCount' --output text)"
+          if [ "$desired_count" = "0" ]; then
+            echo "MCP service has zero desired tasks; image published without rolling the service."
+            exit 0
+          fi
+          if ! [[ "$desired_count" =~ ^[0-9]+$ ]]; then
+            echo "::error::Unable to read MCP service desired count."
+            exit 1
+          fi
           aws ecs update-service \
-            --cluster "sofia-${MCP_ENVIRONMENT}-cluster" \
-            --service "sofia-${MCP_ENVIRONMENT}-mcp" \
+            --cluster "$cluster" \
+            --service "$service" \
             --force-new-deployment >/dev/null
           aws ecs wait services-stable \
-            --cluster "sofia-${MCP_ENVIRONMENT}-cluster" \
-            --services "sofia-${MCP_ENVIRONMENT}-mcp"
+            --cluster "$cluster" \
+            --services "$service"
