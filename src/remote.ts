@@ -15,6 +15,7 @@ import {
   rewriteLegacyToolCalls,
   rewriteOpenAiToolCalls,
 } from './compatibility.js';
+import { hasCurrentAuthority } from './current-authority.js';
 import { ManagedApiKeyError, ManagedApiKeyProvider } from './managed-api-key.js';
 import { logServiceStarted, requestCompletionLogger } from './observability.js';
 import { COVAL_MCP_SERVER_VERSION, createMcpServer } from './server.js';
@@ -161,6 +162,13 @@ export async function createRemoteApp(): Promise<express.Express> {
     if (!verified) return undefined;
     const clerkOrganizationId = organizationIdFromVerifiedToken(token);
     if (!clerkOrganizationId) return undefined;
+    const clerkUserId = verified.extra?.userId;
+    if (
+      typeof clerkUserId !== 'string' ||
+      !(await hasCurrentAuthority(clerkUserId, clerkOrganizationId))
+    ) {
+      return undefined;
+    }
     return {
       ...verified,
       extra: {

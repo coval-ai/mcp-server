@@ -1,15 +1,8 @@
 const DEFAULT_API_BASE_URL = 'https://api.coval.dev/v1';
-const CACHE_TTL_MS = 5 * 60 * 1000;
-const CACHE_MAX_ENTRIES = 500;
 
 interface ManagedKeyResponse {
   api_key: string;
   organization_id: string;
-}
-
-interface CacheEntry {
-  apiKey: string;
-  expiresAt: number;
 }
 
 export class ManagedApiKeyError extends Error {
@@ -23,9 +16,6 @@ export class ManagedApiKeyError extends Error {
 }
 
 export class ManagedApiKeyProvider {
-  private readonly cache = new Map<string, CacheEntry>();
-  private readonly inFlight = new Map<string, Promise<string>>();
-
   constructor(
     private readonly internalApiKey: string,
     private readonly apiBaseUrl = process.env.COVAL_API_BASE_URL || DEFAULT_API_BASE_URL,
@@ -36,27 +26,10 @@ export class ManagedApiKeyProvider {
   }
 
   async getApiKey(clerkOrganizationId: string, clerkUserId: string): Promise<string> {
-    const cacheKey = `${clerkOrganizationId}:${clerkUserId}`;
-    const cached = this.cache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      this.cache.delete(cacheKey);
-      this.cache.set(cacheKey, cached);
-      return cached.apiKey;
-    }
-    this.cache.delete(cacheKey);
-
-    const existingRequest = this.inFlight.get(cacheKey);
-    if (existingRequest) return existingRequest;
-
-    const request = this.fetchApiKey(cacheKey, clerkOrganizationId, clerkUserId).finally(() => {
-      this.inFlight.delete(cacheKey);
-    });
-    this.inFlight.set(cacheKey, request);
-    return request;
+    return this.fetchApiKey(clerkOrganizationId, clerkUserId);
   }
 
   private async fetchApiKey(
-    cacheKey: string,
     clerkOrganizationId: string,
     clerkUserId: string,
   ): Promise<string> {
@@ -84,13 +57,6 @@ export class ManagedApiKeyProvider {
       );
     }
 
-    this.cache.delete(cacheKey);
-    this.cache.set(cacheKey, { apiKey: payload.api_key, expiresAt: Date.now() + CACHE_TTL_MS });
-    while (this.cache.size > CACHE_MAX_ENTRIES) {
-      const oldest = this.cache.keys().next().value as string | undefined;
-      if (!oldest) break;
-      this.cache.delete(oldest);
-    }
     return payload.api_key;
   }
 }
