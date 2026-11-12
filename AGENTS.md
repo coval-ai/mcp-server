@@ -1,7 +1,6 @@
 # AGENTS.md
 
-Working conventions for agents editing this repository. This file applies to the entire repository
-unless a deeper `AGENTS.md` provides more specific guidance for its subtree.
+Repository layout, commands, and MCP transport contracts.
 
 ## Public Repository
 
@@ -18,7 +17,6 @@ comment, CI log, and release artifact as public communication.
   not quote, link to, summarize, or attribute the private source.
 - Before posting or pushing, review the entire public artifact for accidental disclosure, including
   test fixtures, screenshots, command output, branch names, and generated files.
-- If it is unclear whether information is public, leave it out and ask for confirmation.
 
 ## Repository Overview
 
@@ -36,12 +34,7 @@ This package provides Coval tools through the Model Context Protocol (MCP):
 Keep behavior shared across transports in the common server, client, and tool modules. Keep
 transport-specific authentication and lifecycle behavior in the relevant entrypoint.
 
-## First Steps
-
-1. Read `README.md` for setup, supported transports, authentication, and environment variables.
-2. Read `package.json` and the nearby source and tests before changing behavior.
-3. Check the current branch and worktree status. Preserve unrelated user changes.
-4. Inspect public API and MCP SDK contracts before adding custom protocol behavior.
+Setup, supported transports, authentication, and environment variables are documented in `README.md`.
 
 ## Development
 
@@ -55,24 +48,13 @@ npm run test:unit
 npm run build
 ```
 
-Run the smallest useful checks while iterating, then run lint, typecheck, unit tests, and the
-production build before marking a behavior change ready for review.
-
 When a change touches `src/client.ts` or `src/tools/`, also run the API coverage audit described in
 `README.md` and update `api-coverage.toml` and `api-coverage-report.md` in the same change.
 
-## TypeScript Conventions
+## MCP contracts
 
-- Keep strict TypeScript checks passing. Do not use `any` to bypass a contract.
-- Prefer small, typed functions and existing module boundaries over new abstractions.
-- Validate untrusted inputs at HTTP, OAuth, MCP, and Coval API boundaries.
-- Preserve MCP tool names and response contracts unless the task explicitly requires a breaking
-  change.
-- Keep tool annotations accurate, especially read-only, destructive, idempotent, and open-world
-  hints.
-- Use bounded timeouts for network calls and avoid logging tokens, API keys, authorization headers,
-  customer payloads, or other sensitive values.
-- Add comments only when the code cannot clearly express an important constraint.
+- Tool names and response contracts are shared across the stdio, HTTP, and Lambda transports.
+- MCP tool annotations describe read-only, destructive, idempotent, and open-world behavior.
 
 ## Authentication And Security
 
@@ -85,14 +67,3 @@ When a change touches `src/client.ts` or `src/tools/`, also run the API coverage
   is incomplete.
 - Never commit `.env` files, API keys, Clerk keys, signing secrets, tokens, certificates, or local
   credentials. Use documented environment variables and deployment secret stores.
-
-## Tests And Review
-
-- Add focused regression coverage for behavior changes, including failure paths at trust boundaries.
-- Keep tests deterministic. Mock external services rather than using customer accounts or live
-  credentials.
-- Review changes for cross-transport regressions when shared server, client, schema, or tool code is
-  modified.
-- Address actionable automated-review findings and explain any intentionally rejected finding using
-  only public-safe context.
-- Keep commits narrowly scoped and use concise, imperative messages without AI attribution.
