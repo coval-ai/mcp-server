@@ -27,11 +27,17 @@ await expectJson(`${origin}${protectedResourcePath}`, (body) => {
 });
 
 await expectJson(`${authorizationServer}/.well-known/oauth-authorization-server`, (body) => {
-  for (const field of ['authorization_endpoint', 'token_endpoint', 'registration_endpoint']) {
+  for (const field of ['authorization_endpoint', 'token_endpoint']) {
     if (!body[field]) throw new Error(`OAuth metadata is missing ${field}`);
   }
   if (!body.code_challenge_methods_supported?.includes('S256')) {
     throw new Error('OAuth metadata does not advertise PKCE S256');
+  }
+  const supportsCimd = body.client_id_metadata_document_supported === true
+    && Array.isArray(body.token_endpoint_auth_methods_supported)
+    && body.token_endpoint_auth_methods_supported.includes('none');
+  if (!body.registration_endpoint && !supportsCimd) {
+    throw new Error('OAuth metadata advertises neither DCR nor public CIMD support');
   }
 });
 

@@ -205,6 +205,9 @@ npm test
 npm run check:remote
 ```
 
+The remote check accepts OAuth discovery with either DCR or CIMD with public token authentication.
+It does not verify that a particular client is admitted or that an authenticated tool call succeeds.
+
 ## Complete transcript exports
 
 For a complete run transcript request, `consult_sofia` can return a native MCP
