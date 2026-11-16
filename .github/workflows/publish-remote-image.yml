@@ -1,0 +1,164 @@
+name: Publish remote MCP image
+run-name: Publish remote MCP image - ${{ github.event.client_payload.environment }} - ${{ github.event.client_payload.release_correlation_id }}
+
+on:
+  repository_dispatch:
+    types: [coval_mcp_image]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    outputs:
+      source: ${{ steps.request.outputs.source }}
+      environment: ${{ steps.request.outputs.environment }}
+      correlation: ${{ steps.request.outputs.correlation }}
+      publisher_role: ${{ steps.request.outputs.publisher_role }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Validate publication request
+        id: request
+        env:
+          SOURCE: ${{ github.event.client_payload.deploy_ref }}
+          ENVIRONMENT: ${{ github.event.client_payload.environment }}
+          CORRELATION: ${{ github.event.client_payload.release_correlation_id }}
+          STAGING_PUBLISHER_ROLE: ${{ vars.MCP_STAGING_IMAGE_PUBLISHER_ROLE_ARN }}
+          PRODUCTION_PUBLISHER_ROLE: ${{ vars.MCP_PRODUCTION_IMAGE_PUBLISHER_ROLE_ARN }}
+        run: node scripts/image-publication.mjs validate-request
+
+  qualify:
+    needs: validate
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      archive_sha256: ${{ steps.evidence.outputs.archive_sha256 }}
+      image_id: ${{ steps.evidence.outputs.image_id }}
+      manifest_digest: ${{ steps.evidence.outputs.manifest_digest }}
+    env:
+      MCP_SOURCE_SHA: ${{ needs.validate.outputs.source }}
+      MCP_ENVIRONMENT: ${{ needs.validate.outputs.environment }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.validate.outputs.source }}
+          path: image-source
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Validate and reconstruct the complete build profile
+        run: |
+          set -euo pipefail
+          test "$(git -C image-source rev-parse HEAD)" = "$MCP_SOURCE_SHA"
+          node scripts/image-publication.mjs validate-source
+      - run: npm ci
+      - name: Build source image without cloud or OIDC credentials
+        run: |
+          set -euo pipefail
+          docker build \
+            --build-arg "COVAL_MCP_SOURCE_SHA=$MCP_SOURCE_SHA" \
+            --build-arg "COVAL_MCP_ENV=$MCP_ENVIRONMENT" \
+            -t "mcp-publication:$MCP_SOURCE_SHA" verified-build-context
+      - name: Qualify image with trusted workflow code
+        env:
+          COVAL_MCP_IMAGE: mcp-publication:${{ needs.validate.outputs.source }}
+          COVAL_MCP_SOURCE_SHA: ${{ needs.validate.outputs.source }}
+          COVAL_MCP_ENV: ${{ needs.validate.outputs.environment }}
+        run: npm run qualify:image
+      - uses: ./.github/actions/install-crane
+      - name: Archive the exact qualified image
+        id: evidence
+        run: |
+          set -euo pipefail
+          docker save --output mcp-qualified-image.tar "mcp-publication:$MCP_SOURCE_SHA"
+          archive_sha256="$(sha256sum mcp-qualified-image.tar | cut -d ' ' -f 1)"
+          image_id="$(docker image inspect --format '{{.Id}}' "mcp-publication:$MCP_SOURCE_SHA")"
+          manifest_digest="$(crane digest --tarball mcp-qualified-image.tar)"
+          [[ "$archive_sha256" =~ ^[a-f0-9]{64}$ ]]
+          [[ "$image_id" =~ ^sha256:[a-f0-9]{64}$ ]]
+          [[ "$manifest_digest" =~ ^sha256:[a-f0-9]{64}$ ]]
+          {
+            echo "archive_sha256=$archive_sha256"
+            echo "image_id=$image_id"
+            echo "manifest_digest=$manifest_digest"
+          } >> "$GITHUB_OUTPUT"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcp-qualified-image
+          path: mcp-qualified-image.tar
+          if-no-files-found: error
+          retention-days: 7
+          compression-level: 0
+
+  publish:
+    needs: [validate, qualify]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment: ${{ needs.validate.outputs.environment == 'v1' && 'production' || 'staging' }}
+    concurrency:
+      # Serialize publication with the existing remote workflow in this repository.
+      group: mcp-${{ needs.validate.outputs.environment }}-deploy
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+    env:
+      AWS_REGION: us-east-2
+      MCP_SOURCE_SHA: ${{ needs.validate.outputs.source }}
+      MCP_ENVIRONMENT: ${{ needs.validate.outputs.environment }}
+      MCP_CORRELATION: ${{ needs.validate.outputs.correlation }}
+      MCP_ARCHIVE_SHA256: ${{ needs.qualify.outputs.archive_sha256 }}
+      MCP_QUALIFIED_IMAGE_ID: ${{ needs.qualify.outputs.image_id }}
+      MCP_EXPECTED_MANIFEST: ${{ needs.qualify.outputs.manifest_digest }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: ./.github/actions/install-crane
+      - uses: actions/download-artifact@v4
+        with:
+          name: mcp-qualified-image
+      - name: Verify the qualified artifact before publication
+        run: |
+          set -euo pipefail
+          [[ "$MCP_ARCHIVE_SHA256" =~ ^[a-f0-9]{64}$ ]]
+          echo "$MCP_ARCHIVE_SHA256  mcp-qualified-image.tar" | sha256sum --check
+          test "$(crane digest --tarball mcp-qualified-image.tar)" = "$MCP_EXPECTED_MANIFEST"
+          docker load --input mcp-qualified-image.tar
+          test "$(docker image inspect --format '{{.Id}}' "mcp-publication:$MCP_SOURCE_SHA")" = "$MCP_QUALIFIED_IMAGE_ID"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ needs.validate.outputs.publisher_role }}
+          aws-region: ${{ env.AWS_REGION }}
+      - uses: aws-actions/amazon-ecr-login@v2
+      - name: Publish and verify image evidence
+        run: |
+          set -euo pipefail
+          MCP_ACCOUNT_ID="$(aws sts get-caller-identity --query Account --output text)"
+          export MCP_ACCOUNT_ID
+          node scripts/image-publication.mjs publish
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcp-image-publication
+          path: mcp-image-publication.json
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,17 @@
+name: Install pinned crane
+description: Verify the exact upstream crane archive before installing its single executable.
+runs:
+  using: composite
+  steps:
+    - shell: bash
+      run: |
+        set -euo pipefail
+        archive="$RUNNER_TEMP/crane-v0.20.6-linux-amd64.tar.gz"
+        directory="$RUNNER_TEMP/crane-v0.20.6-bin"
+        curl --fail --location --retry 3 \
+          https://github.com/google/go-containerregistry/releases/download/v0.20.6/go-containerregistry_Linux_x86_64.tar.gz \
+          --output "$archive"
+        echo "c1d593d01551f2c9a3df5ca0a0be4385a839bd9b86d4a76e18d7b17d16559127  $archive" | sha256sum --check
+        mkdir -p "$directory"
+        tar -xzf "$archive" -C "$directory" crane
+        echo "$directory" >> "$GITHUB_PATH"
