@@ -114,6 +114,27 @@ test('retry with the same digest is read-only and does not republish', async () 
   assert.ok(!state.commands.some(args => args[0] === 'push'));
 });
 
+test('matching ECR tag aliases reconcile without republishing; mixed or excessive rows fail closed', async () => {
+  const state = publicationFixture(); state.present = true;
+  const original = state.aws;
+  let mode = 'matching';
+  state.aws = async (...args) => {
+    const result = await original(...args);
+    if (args[1] !== 'batch-get-image') return result;
+    const image = result.images[0];
+    if (mode === 'excessive') return { images: Array.from({ length: 101 }, () => image) };
+    return { images: [image, mode === 'digest'
+      ? { ...image, imageId: { imageDigest: `sha256:${'f'.repeat(64)}` } }
+      : mode === 'manifest' ? { ...image, imageManifest: '{}' } : image] };
+  };
+  await state.run();
+  assert.ok(!state.commands.some(args => args[0] === 'push'));
+  for (mode of ['digest', 'manifest', 'excessive']) {
+    await assert.rejects(state.run(), /Registry manifest|Unable to establish/);
+  }
+  assert.ok(!state.commands.some(args => args[0] === 'push'));
+});
+
 test('a lost push reply is accepted only after independent exact manifest readback', async () => {
   const state = publicationFixture(); const original = state.crane;
   state.crane = async args => {

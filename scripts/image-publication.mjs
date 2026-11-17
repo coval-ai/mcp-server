@@ -83,12 +83,16 @@ export async function publishQualifiedImage(input, aws, crane) {
   async function exists() {
     const result = await aws('ecr', 'batch-get-image', { repositoryName: repository,
       imageIds: [{ imageDigest: input.digest }] });
-    if (result.images?.length === 1 && !result.failures?.length) {
-      const image = result.images[0];
-      requireValue(image.imageId?.imageDigest === input.digest
-        && `sha256:${createHash('sha256').update(image.imageManifest).digest('hex')}` === input.digest
-        && JSON.parse(image.imageManifest).config?.digest === input.qualifiedImageId,
-      'Registry manifest or configuration differs from the qualified artifact.');
+    if (Array.isArray(result.images) && result.images.length > 0
+      && result.images.length <= 100 && !result.failures?.length) {
+      const manifest = result.images[0].imageManifest;
+      for (const image of result.images) {
+        requireValue(image.imageId?.imageDigest === input.digest
+          && typeof image.imageManifest === 'string' && image.imageManifest === manifest
+          && `sha256:${createHash('sha256').update(image.imageManifest).digest('hex')}` === input.digest
+          && JSON.parse(image.imageManifest).config?.digest === input.qualifiedImageId,
+        'Registry manifest or configuration differs from the qualified artifact.');
+      }
       return true;
     }
     requireValue(!result.images?.length && result.failures?.length === 1
