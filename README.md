@@ -331,3 +331,39 @@ Before the first automated package release, a package maintainer must configure
 filename `publish.yml`, no environment, and permission to publish. This uses
 GitHub OIDC with Node 24 and requires no npm token secret. Until that trust is
 configured, version-bump releases fail closed at npm authentication.
+
+### Image publication evidence
+
+The separate `coval_mcp_image` dispatch publishes a qualified container image without selecting a
+service revision or changing capacity. Existing remote deployment dispatch behavior is unchanged.
+Publication success is not deployment or live application verification.
+
+The build and protocol-qualification job has no OIDC permission. It compares the requested source's
+runtime, package manifest, lockfile, Dockerfile, ignore rules, compiler configuration and entrypoint
+against the trusted workflow revision. It reconstructs a context containing only those verified
+build inputs. Other source profiles require a reviewed qualification-contract update; requested-source
+scripts are never executed on the host. Base-image and package downloads can still change between
+builds, so this proves the captured image rather than reproducible builds.
+
+A separate publisher verifies the transferred archive's SHA-256, manifest digest and qualified image
+ID before cloud authentication. Checksum-pinned crane uploads by digest, without creating or replacing
+registry tags. The publisher independently reads back the exact manifest and configuration identity
+and emits `mcp-image-publication.json`, binding the source, environment, correlation, workflow revision,
+run/attempt and qualified archive. Consumers must verify that receipt against its actual successful
+producer run and select the recorded digest; the receipt explicitly does not claim deployment.
+
+The route is inert by default. Its no-OIDC validation job requires the repository variable
+`MCP_STAGING_IMAGE_PUBLISHER_ROLE_ARN` or `MCP_PRODUCTION_IMAGE_PUBLISHER_ROLE_ARN` to name only the
+exact dedicated environment publisher role. Missing, deploy-role, cross-account and cross-environment
+values fail before qualification or the OIDC publisher job. Dispatch payloads cannot choose a role,
+and there is no deployment-role fallback. Configure these variables only after independent review and
+provider readback of the dedicated role's repository-scoped permissions and protected OIDC trust.
+The role must bind the exact repository identity, main workflow origin and environment; an unrestricted
+repository wildcard is insufficient. This code neither provisions roles nor configures the variables.
+
+Before using this new route, qualify digest-only publication with the target registry and confirm
+image retention. The publisher refuses any configured lifecycle policy until that policy is reviewed
+for this path. It needs repository-scoped push, manifest-read and lifecycle-policy-read permissions;
+no task registration, service selection, scaling or secret-value access is used. Local OCI registry
+proof does not establish ECR acceptance, permissions or retained availability. Image retention and
+normal staging/production release gates remain required before deployment.
