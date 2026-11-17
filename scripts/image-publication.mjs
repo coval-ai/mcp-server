@@ -73,9 +73,16 @@ export async function validateSourceProfile(adapterDirectory, sourceDirectory, o
 
 export async function publishQualifiedImage(input, aws, crane) {
   publicationReceipt(input);
+  requireValue(typeof input.qualifiedManifest === 'string'
+    && `sha256:${createHash('sha256').update(input.qualifiedManifest).digest('hex')}` === input.digest,
+  'The publication manifest differs from the qualified artifact.');
+  const expected = JSON.parse(input.qualifiedManifest);
+  requireValue(expected.schemaVersion === 2 && expected.mediaType === 'application/vnd.docker.distribution.manifest.v2+json'
+    && expected.config?.digest === input.qualifiedImageId && Array.isArray(expected.layers),
+  'The publication manifest has an unqualified configuration.');
   const repository = `sofia-${input.environment}-mcp`;
   const uri = `${input.account}.dkr.ecr.${input.region}.amazonaws.com/${repository}@${input.digest}`;
-  requireValue((await crane(['digest', '--tarball', 'mcp-qualified-image.tar'])).trim() === input.digest,
+  requireValue((await crane(['digest', '--tarball', 'publication/mcp-publication-image.tar'])).trim() === input.digest,
     'The transferred archive differs from the qualified manifest.');
   const policy = await aws('ecr', 'get-lifecycle-policy', { repositoryName: repository });
   requireValue(policy.lifecyclePolicyText === null,
@@ -89,6 +96,7 @@ export async function publishQualifiedImage(input, aws, crane) {
       for (const image of result.images) {
         requireValue(image.imageId?.imageDigest === input.digest
           && typeof image.imageManifest === 'string' && image.imageManifest === manifest
+          && image.imageManifest === input.qualifiedManifest
           && `sha256:${createHash('sha256').update(image.imageManifest).digest('hex')}` === input.digest
           && JSON.parse(image.imageManifest).config?.digest === input.qualifiedImageId,
         'Registry manifest or configuration differs from the qualified artifact.');
@@ -100,7 +108,7 @@ export async function publishQualifiedImage(input, aws, crane) {
     return false;
   }
   if (!await exists()) {
-    try { requireValue((await crane(['push', 'mcp-qualified-image.tar', uri])).trim() === uri,
+    try { requireValue((await crane(['push', 'publication/mcp-publication-image.tar', uri])).trim() === uri,
       'The publisher returned an unexpected image identity.'); }
     catch { /* An uncertain response is accepted only after exact independent registry readback. */ }
     requireValue(await exists(), 'Image publication did not establish the qualified manifest.');
@@ -157,6 +165,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1]
         environment: env.MCP_ENVIRONMENT, correlation: env.MCP_CORRELATION,
         account: env.MCP_ACCOUNT_ID, region: env.AWS_REGION, digest: env.MCP_EXPECTED_MANIFEST,
         archiveSha256: env.MCP_ARCHIVE_SHA256, qualifiedImageId: env.MCP_QUALIFIED_IMAGE_ID,
+        qualifiedManifest: await readFile('publication/mcp-publication-manifest.json', 'utf8'),
         packageVersion: manifest.version, runId: env.GITHUB_RUN_ID,
         runAttempt: env.GITHUB_RUN_ATTEMPT, workflowSha: env.GITHUB_SHA };
       const execute = promisify(execFile);

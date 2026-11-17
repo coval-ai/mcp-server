@@ -1,6 +1,6 @@
 import { execFile } from 'node:child_process';
 import { createServer } from 'node:http';
-import { readFile } from 'node:fs/promises';
+import { readFile, writeFile } from 'node:fs/promises';
 import { promisify } from 'node:util';
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
@@ -9,6 +9,9 @@ const execFileAsync = promisify(execFile);
 const image = process.env.COVAL_MCP_IMAGE;
 const sourceSha = process.env.COVAL_MCP_SOURCE_SHA;
 const expectedEnvironment = process.env.COVAL_MCP_ENV;
+const expectedDockerId = process.env.COVAL_MCP_EXPECTED_DOCKER_ID;
+const identityOutput = process.env.COVAL_MCP_IDENTITY_OUTPUT;
+const qualifiedContainers = {};
 const expectedToolNames = [
   'cancel_python_metric_preview',
   'consult_sofia',
@@ -55,6 +58,7 @@ function invariant(condition, message) {
 }
 
 async function docker(...args) {
+  if (expectedDockerId && args[0] === 'run') args.splice(1, 0, '--platform', 'linux/amd64');
   return execFileAsync('docker', args, { encoding: 'utf8' });
 }
 
@@ -245,6 +249,17 @@ async function qualifyProfile({ imageId, packageVersion, profile, upstreamPort }
       `COVAL_API_BASE_URL=http://host.docker.internal:${upstreamPort}/v1`,
       imageId,
     );
+    if (expectedDockerId) {
+      const { stdout } = await docker('inspect', '--format', '{{json .}}', containerName);
+      const actual = JSON.parse(stdout);
+      invariant(actual.Image === expectedDockerId, 'Qualified container ran a different Docker image');
+      const descriptor = actual.ImageManifestDescriptor;
+      if (descriptor) {
+        invariant(descriptor.platform?.os === 'linux' && descriptor.platform?.architecture === 'amd64',
+          'Qualified container selected a different platform');
+      }
+      qualifiedContainers[profile.name] = { image: actual.Image, manifest: descriptor ?? null };
+    }
     const { stdout: portOutput } = await docker('port', containerName, '8080/tcp');
     const portMatch = portOutput
       .split('\n')
@@ -298,6 +313,10 @@ const packageJson = JSON.parse(
 );
 const { stdout: imageIdOutput } = await docker('image', 'inspect', '--format', '{{.Id}}', image);
 const imageId = imageIdOutput.trim();
+if (expectedDockerId) {
+  invariant(imageId === expectedDockerId, 'Image changed before protocol qualification');
+  invariant(identityOutput, 'Publication qualification requires an identity output');
+}
 invariant(/^sha256:[0-9a-f]{64}$/.test(imageId), `Docker returned an invalid image id: ${imageId}`);
 const { stdout: revisionOutput } = await docker(
   'image',
@@ -424,6 +443,12 @@ invariant(
   fakeApi.requests.length === remoteProfiles.length,
   `Expected ${remoteProfiles.length} API calls, received ${fakeApi.requests.length}`,
 );
+
+if (expectedDockerId) {
+  await writeFile(identityOutput, JSON.stringify({ schema: 'coval-mcp-image-qualification-v1',
+    dockerId: imageId, platform: 'linux/amd64', source: sourceSha, environment: expectedEnvironment,
+    profiles: qualifiedContainers }));
+}
 
 console.log(
   `Qualified ${imageId} from ${sourceSha}: ${remoteProfiles.length} fresh starts, ` +

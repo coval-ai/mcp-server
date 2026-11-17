@@ -24,6 +24,14 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: node --test scripts/release-version.test.mjs scripts/verify-registry-integrity.test.mjs scripts/image-publication.test.mjs
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - uses: ./.github/actions/install-crane
+      - name: Verify qualified archive identity and publication encoding
+        env:
+          MCP_TEST_CRANE: crane
+        run: python3 -m unittest discover -s scripts -p test_image_archive.py -v
       - run: npm run typecheck
       - run: npm test -- --runInBand
       - run: npm run build

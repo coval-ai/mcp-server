@@ -43,6 +43,8 @@ jobs:
     outputs:
       archive_sha256: ${{ steps.evidence.outputs.archive_sha256 }}
       image_id: ${{ steps.evidence.outputs.image_id }}
+      docker_id: ${{ steps.image.outputs.docker_id }}
+      publication_archive_sha256: ${{ steps.evidence.outputs.publication_archive_sha256 }}
       manifest_digest: ${{ steps.evidence.outputs.manifest_digest }}
     env:
       MCP_SOURCE_SHA: ${{ needs.validate.outputs.source }}
@@ -68,39 +70,60 @@ jobs:
           node scripts/image-publication.mjs validate-source
       - run: npm ci
       - name: Build source image without cloud or OIDC credentials
+        id: image
         run: |
           set -euo pipefail
-          docker build \
+          docker build --platform linux/amd64 \
             --build-arg "COVAL_MCP_SOURCE_SHA=$MCP_SOURCE_SHA" \
             --build-arg "COVAL_MCP_ENV=$MCP_ENVIRONMENT" \
             -t "mcp-publication:$MCP_SOURCE_SHA" verified-build-context
+          docker image inspect --format '{{json .}}' "mcp-publication:$MCP_SOURCE_SHA" > qualified-image-inspect.json
+          docker_id="$(jq -er .Id qualified-image-inspect.json)"
+          [[ "$docker_id" =~ ^sha256:[a-f0-9]{64}$ ]]
+          echo "docker_id=$docker_id" >> "$GITHUB_OUTPUT"
       - name: Qualify image with trusted workflow code
         env:
-          COVAL_MCP_IMAGE: mcp-publication:${{ needs.validate.outputs.source }}
+          COVAL_MCP_IMAGE: ${{ steps.image.outputs.docker_id }}
+          COVAL_MCP_EXPECTED_DOCKER_ID: ${{ steps.image.outputs.docker_id }}
+          COVAL_MCP_IDENTITY_OUTPUT: qualified-run-identity.json
           COVAL_MCP_SOURCE_SHA: ${{ needs.validate.outputs.source }}
           COVAL_MCP_ENV: ${{ needs.validate.outputs.environment }}
         run: npm run qualify:image
       - uses: ./.github/actions/install-crane
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       - name: Archive the exact qualified image
         id: evidence
+        env:
+          QUALIFIED_DOCKER_ID: ${{ steps.image.outputs.docker_id }}
         run: |
           set -euo pipefail
-          docker save --output mcp-qualified-image.tar "mcp-publication:$MCP_SOURCE_SHA"
-          archive_sha256="$(sha256sum mcp-qualified-image.tar | cut -d ' ' -f 1)"
-          image_id="$(docker image inspect --format '{{.Id}}' "mcp-publication:$MCP_SOURCE_SHA")"
-          manifest_digest="$(crane digest --tarball mcp-qualified-image.tar)"
+          # Preserve the exact runnable root; filtering at save time can drop its index blob.
+          # The verified graph below emits only the uniquely selected linux/amd64 image.
+          docker save --output mcp-qualified-image.tar "$QUALIFIED_DOCKER_ID"
+          python3 scripts/image-archive.py mcp-qualified-image.tar qualified-image-inspect.json qualified-run-identity.json publication
+          archive_sha256="$(jq -er .archiveSha256 publication/archive-identity.json)"
+          image_id="$(jq -er .configDigest publication/archive-identity.json)"
+          publication_archive_sha256="$(jq -er .publicationArchiveSha256 publication/archive-identity.json)"
+          manifest_digest="$(jq -er .manifestDigest publication/archive-identity.json)"
+          test "$(crane digest --tarball publication/mcp-publication-image.tar)" = "$manifest_digest"
           [[ "$archive_sha256" =~ ^[a-f0-9]{64}$ ]]
           [[ "$image_id" =~ ^sha256:[a-f0-9]{64}$ ]]
           [[ "$manifest_digest" =~ ^sha256:[a-f0-9]{64}$ ]]
           {
             echo "archive_sha256=$archive_sha256"
+            echo "publication_archive_sha256=$publication_archive_sha256"
             echo "image_id=$image_id"
             echo "manifest_digest=$manifest_digest"
           } >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@v4
         with:
           name: mcp-qualified-image
-          path: mcp-qualified-image.tar
+          path: |
+            mcp-qualified-image.tar
+            qualified-image-inspect.json
+            qualified-run-identity.json
           if-no-files-found: error
           retention-days: 7
           compression-level: 0
@@ -124,6 +147,8 @@ jobs:
       MCP_CORRELATION: ${{ needs.validate.outputs.correlation }}
       MCP_ARCHIVE_SHA256: ${{ needs.qualify.outputs.archive_sha256 }}
       MCP_QUALIFIED_IMAGE_ID: ${{ needs.qualify.outputs.image_id }}
+      MCP_QUALIFIED_DOCKER_ID: ${{ needs.qualify.outputs.docker_id }}
+      MCP_PUBLICATION_ARCHIVE_SHA256: ${{ needs.qualify.outputs.publication_archive_sha256 }}
       MCP_EXPECTED_MANIFEST: ${{ needs.qualify.outputs.manifest_digest }}
     steps:
       - uses: actions/checkout@v4
@@ -137,14 +162,19 @@ jobs:
       - uses: actions/download-artifact@v4
         with:
           name: mcp-qualified-image
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
       - name: Verify the qualified artifact before publication
         run: |
           set -euo pipefail
           [[ "$MCP_ARCHIVE_SHA256" =~ ^[a-f0-9]{64}$ ]]
           echo "$MCP_ARCHIVE_SHA256  mcp-qualified-image.tar" | sha256sum --check
-          test "$(crane digest --tarball mcp-qualified-image.tar)" = "$MCP_EXPECTED_MANIFEST"
-          docker load --input mcp-qualified-image.tar
-          test "$(docker image inspect --format '{{.Id}}' "mcp-publication:$MCP_SOURCE_SHA")" = "$MCP_QUALIFIED_IMAGE_ID"
+          python3 scripts/image-archive.py mcp-qualified-image.tar qualified-image-inspect.json qualified-run-identity.json publication
+          test "$(jq -er .qualifiedDockerId publication/archive-identity.json)" = "$MCP_QUALIFIED_DOCKER_ID"
+          test "$(jq -er .configDigest publication/archive-identity.json)" = "$MCP_QUALIFIED_IMAGE_ID"
+          test "$(jq -er .publicationArchiveSha256 publication/archive-identity.json)" = "$MCP_PUBLICATION_ARCHIVE_SHA256"
+          test "$(crane digest --tarball publication/mcp-publication-image.tar)" = "$MCP_EXPECTED_MANIFEST"
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ needs.validate.outputs.publisher_role }}
