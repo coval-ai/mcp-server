@@ -79,9 +79,9 @@ test('new producer route cannot select services or move latest; legacy route rem
 });
 
 function publicationFixture() {
-  const manifest = JSON.stringify({ schemaVersion: 2, config: { digest: valid.qualifiedImageId }, layers: [] });
+  const manifest = JSON.stringify({ schemaVersion: 2, mediaType: 'application/vnd.docker.distribution.manifest.v2+json', config: { digest: valid.qualifiedImageId }, layers: [] });
   const digest = `sha256:${createHash('sha256').update(manifest).digest('hex')}`;
-  const state = { input: { ...valid, digest }, present: false, policy: null, commands: [], awsCalls: [] };
+  const state = { input: { ...valid, digest, qualifiedManifest: manifest }, present: false, policy: null, commands: [], awsCalls: [] };
   state.aws = async (_service, operation, parameters) => {
     state.awsCalls.push({ operation, parameters });
     if (operation === 'get-lifecycle-policy') return { lifecyclePolicyText: state.policy };
@@ -143,6 +143,31 @@ test('a lost push reply is accepted only after independent exact manifest readba
     return result;
   };
   await state.run();
+});
+
+test('registry configuration or layer substitution cannot match the full qualified manifest', async () => {
+  for (const kind of ['config', 'layers']) {
+    const state = publicationFixture(); state.present = true;
+    const original = state.aws;
+    state.aws = async (...args) => {
+      const result = await original(...args);
+      if (args[1] !== 'batch-get-image') return result;
+      const changed = JSON.parse(result.images[0].imageManifest);
+      if (kind === 'config') changed.config.digest = `sha256:${'f'.repeat(64)}`;
+      else changed.layers = [{ mediaType: 'application/vnd.docker.image.rootfs.diff.tar.gzip', size: 1, digest: `sha256:${'f'.repeat(64)}` }];
+      result.images[0].imageManifest = JSON.stringify(changed);
+      return result;
+    };
+    await assert.rejects(state.run(), /Registry manifest/);
+    assert.ok(!state.commands.some(args => args[0] === 'push'));
+  }
+});
+
+test('a substituted local publication manifest fails before registry access', async () => {
+  const state = publicationFixture();
+  state.input.qualifiedManifest = '{}';
+  await assert.rejects(state.run(), /publication manifest differs/);
+  assert.equal(state.awsCalls.length, 0);
 });
 
 test('failed upload with no manifest fails closed', async () => {

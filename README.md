@@ -345,8 +345,24 @@ build inputs. Other source profiles require a reviewed qualification-contract up
 scripts are never executed on the host. Base-image and package downloads can still change between
 builds, so this proves the captured image rather than reproducible builds.
 
-A separate publisher verifies the transferred archive's SHA-256, manifest digest and qualified image
-ID before cloud authentication. Checksum-pinned crane uploads by digest, without creating or replacing
+Publication qualification captures an immutable Docker root before running the two protocol profiles,
+forces linux/amd64, and records each container's actual image/root and selected platform descriptor.
+The saved archive is addressed by that exact root, never a later tag lookup. A strict Python 3.12
+standard-library verifier binds the root, unique platform, config, ordered compressed layers and
+all decompressed filesystem diff IDs across the OCI graph and Docker-save compatibility manifest.
+Classic config-ID stores require the same filesystem/config proof. Duplicate paths, links, ambiguous
+platforms, mismatched metadata and bounded per-layer/aggregate expansion failures are refused.
+
+The original root archive retains its descriptor graph: Docker's platform-filtered export can omit
+the root index. The verifier emits a deterministic gzip Docker archive containing only the selected
+linux/amd64 image, preserving config and filesystem bytes. Checksum-pinned crane must independently
+agree with its exact computed publication manifest, including every config/layer digest and size.
+Docker root/index IDs, platform manifest IDs and config IDs are distinct identities.
+
+A separate publisher re-verifies the original archive and qualification report, reconstructs the exact
+publication archive/manifest and checks the job-pinned hashes before cloud authentication. It never
+loads or executes the transferred image. ECR readback must match the complete qualified manifest bytes;
+the receipt's qualifiedImageId is the graph-proven config digest, not Docker inspection's root/index ID. Checksum-pinned crane uploads by digest, without creating or replacing
 registry tags. The publisher independently reads back the exact manifest and configuration identity
 and emits `mcp-image-publication.json`, binding the source, environment, correlation, workflow revision,
 run/attempt and qualified archive. Consumers must verify that receipt against its actual successful
