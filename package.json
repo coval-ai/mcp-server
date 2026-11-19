@@ -80,7 +80,8 @@
     "fast-uri": "^4.2.3",
     "qs": "^6.17.1",
     "body-parser": "^2.4.0",
-    "ip-address": "^10.7.4"
+    "ip-address": "^10.7.4",
+    "minimatch@7 - 10": "11.0.1"
   },
   "engines": {
     "node": ">=20.0.0"
