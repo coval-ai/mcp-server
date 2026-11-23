@@ -12,8 +12,8 @@ updates a PR only when coverage actually changes.
 
 | Metric | Value |
 | --- | ---: |
-| Reconciliation status | PASS |
-| Published operations | 199 |
+| Reconciliation status | ACTION REQUIRED |
+| Published operations | 201 |
 | Operations reached by MCP tools | 37 |
 | Reviewed gaps | 162 |
 | Client operations | 38 |
@@ -25,7 +25,8 @@ Catalog: https://api.coval.dev/v1/openapi
 
 ## New published operations without MCP tools
 
-- None.
+- `GET /organization/caller-id`
+- `PATCH /organization/caller-id`
 
 ## Reviewed gaps no longer present
 
@@ -49,7 +50,7 @@ Catalog: https://api.coval.dev/v1/openapi
 
 ## Coverage snapshot mismatches
 
-- None.
+- `published_operations: recorded 199, current 201`
 
 ## Client-only operations
 
@@ -120,6 +121,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /metrics/{metric_id}/thresholds`
 - `GET /metrics/{metric_id}/versions`
 - `GET /models/metric`
+- `GET /organization/caller-id`
 - `GET /organization/conversation-metrics`
 - `GET /organization/monitoring-metrics`
 - `GET /organization/users`
@@ -161,6 +163,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `PATCH /metrics/{metric_id}`
 - `PATCH /metrics/{metric_id}/baselines/{baseline_id}`
 - `PATCH /metrics/{metric_id}/threshold`
+- `PATCH /organization/caller-id`
 - `PATCH /organization/conversation-metrics`
 - `PATCH /organization/monitoring-metrics`
 - `PATCH /personas/background-sounds/{background_sound_id}`
