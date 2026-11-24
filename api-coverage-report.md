@@ -13,9 +13,9 @@ updates a PR only when coverage actually changes.
 | Metric | Value |
 | --- | ---: |
 | Reconciliation status | PASS |
-| Published operations | 199 |
+| Published operations | 208 |
 | Operations reached by MCP tools | 37 |
-| Reviewed gaps | 162 |
+| Reviewed gaps | 171 |
 | Client operations | 38 |
 | Published request fields on covered operations | 98 |
 | Request fields the MCP client sends | 68 |
@@ -90,6 +90,10 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /alerts/{alert_id}`
 - `GET /alerts/{alert_id}/events`
 - `GET /api-keys`
+- `GET /clustering-assignments`
+- `GET /clustering-runs`
+- `GET /clustering-runs/latest`
+- `GET /clustering-runs/{run_id}`
 - `GET /conversation-python-analyses/{analysis_id}`
 - `GET /conversations/simulated/{simulation_id}/audio`
 - `GET /conversations/simulated/{conversation_id}/comments`
@@ -108,6 +112,8 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /dashboards/{dashboard_id}/widgets`
 - `GET /dashboards/{dashboard_id}/widgets/{widget_id}`
 - `GET /integrations/slack`
+- `GET /metrics/catalog`
+- `GET /metrics/catalog/{entry_id}`
 - `GET /metrics/flows`
 - `GET /metrics/recently-deleted`
 - `GET /metrics/sql-schema`
@@ -120,6 +126,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /metrics/{metric_id}/thresholds`
 - `GET /metrics/{metric_id}/versions`
 - `GET /models/metric`
+- `GET /organization/caller-id`
 - `GET /organization/conversation-metrics`
 - `GET /organization/monitoring-metrics`
 - `GET /organization/users`
@@ -161,6 +168,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `PATCH /metrics/{metric_id}`
 - `PATCH /metrics/{metric_id}/baselines/{baseline_id}`
 - `PATCH /metrics/{metric_id}/threshold`
+- `PATCH /organization/caller-id`
 - `PATCH /organization/conversation-metrics`
 - `PATCH /organization/monitoring-metrics`
 - `PATCH /personas/background-sounds/{background_sound_id}`
@@ -189,6 +197,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /dashboards/{dashboard_id}/widgets`
 - `POST /integrations/slack/connect`
 - `POST /metrics`
+- `POST /metrics/catalog/{entry_id}/copy`
 - `POST /metrics/flows`
 - `POST /metrics/outputs:batchGet`
 - `POST /metrics/sql:test`

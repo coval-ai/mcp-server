@@ -8,8 +8,8 @@
 
 [snapshot]
 catalog_url = "https://api.coval.dev/v1/openapi"
-reviewed_at = "2026-11-02"
-published_operations = 199
+reviewed_at = "2026-11-24"
+published_operations = 208
 mcp_supported_operations = 37
 published_request_fields = 98
 mcp_modeled_request_fields = 68
@@ -147,6 +147,22 @@ operation = "GET /api-keys"
 reason = "Outside the curated MCP tool set; no API key tools are exposed."
 
 [[known_gap]]
+operation = "GET /clustering-assignments"
+reason = "Outside the curated MCP tool set; no saved-clustering tools model run-pinned, workspace-bound assignment pagination and lens filters."
+
+[[known_gap]]
+operation = "GET /clustering-runs"
+reason = "Outside the curated MCP tool set; no clustering-history tool models workspace scope, the retained creation-time window and keyset pagination."
+
+[[known_gap]]
+operation = "GET /clustering-runs/latest"
+reason = "Outside the curated MCP tool set; no tool reads retained schema-3 clustering results with their integrity, missing-result and expiry semantics."
+
+[[known_gap]]
+operation = "GET /clustering-runs/{run_id}"
+reason = "Outside the curated MCP tool set; no tool reads retained schema-3 clustering results with their integrity, missing-result and expiry semantics."
+
+[[known_gap]]
 operation = "GET /conversations/simulated/{simulation_id}/audio"
 reason = "Outside the curated MCP tool set; no conversation tools are exposed."
 
@@ -199,6 +215,14 @@ operation = "GET /integrations/slack"
 reason = "Outside the curated MCP tool set; no integration tools are exposed."
 
 [[known_gap]]
+operation = "GET /metrics/catalog"
+reason = "Existing MCP metric tools list organization metrics, not copyable Catalog entries; Catalog pagination and preset discovery require a dedicated tool contract."
+
+[[known_gap]]
+operation = "GET /metrics/catalog/{entry_id}"
+reason = "Existing MCP metric tools read organization metrics, not Catalog entry revisions and presets; no Catalog entry tool is exposed."
+
+[[known_gap]]
 operation = "GET /metrics/flows"
 reason = "Outside the curated MCP tool set; metric tools cover list and get."
 
@@ -245,6 +269,10 @@ reason = "Outside the curated MCP tool set; metric tools cover list and get."
 [[known_gap]]
 operation = "GET /models/metric"
 reason = "Outside the curated MCP tool set; no model catalog tools are exposed."
+
+[[known_gap]]
+operation = "GET /organization/caller-id"
+reason = "Outside the curated MCP tool set; organization caller-ID pool and authorized ANI configuration is not exposed by MCP tools."
 
 [[known_gap]]
 operation = "GET /organization/conversation-metrics"
@@ -411,6 +439,10 @@ operation = "PATCH /metrics/{metric_id}/threshold"
 reason = "Outside the curated MCP tool set; metric tools cover list and get."
 
 [[known_gap]]
+operation = "PATCH /organization/caller-id"
+reason = "Outside the curated MCP tool set; replacing the organization-wide, carrier-verified ANI allowlist requires an explicit organization configuration tool contract."
+
+[[known_gap]]
 operation = "PATCH /organization/conversation-metrics"
 reason = "Outside the curated MCP tool set; no organization configuration tools are exposed."
 
@@ -517,6 +549,10 @@ reason = "Outside the curated MCP tool set; no integration tools are exposed."
 [[known_gap]]
 operation = "POST /metrics"
 reason = "Outside the curated MCP tool set; metric tools cover list and get."
+
+[[known_gap]]
+operation = "POST /metrics/catalog/{entry_id}/copy"
+reason = "No MCP tool copies Catalog entries into a workspace; a dedicated mutation contract must preserve preset selection, expected revision and ordinary metric validation."
 
 [[known_gap]]
 operation = "POST /metrics/flows"
