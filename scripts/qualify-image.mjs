@@ -14,11 +14,13 @@ const identityOutput = process.env.COVAL_MCP_IDENTITY_OUTPUT;
 const qualifiedContainers = {};
 const expectedToolNames = [
   'cancel_python_metric_preview',
+  'complete_review_conversation',
   'consult_sofia',
   'create_agent',
   'create_python_metric_draft',
   'create_python_metric_preview',
   'create_report',
+  'create_review_annotation',
   'create_run',
   'create_scheduled_run',
   'create_test_case',
@@ -29,6 +31,8 @@ const expectedToolNames = [
   'get_python_metric_draft',
   'get_python_metric_preview',
   'get_report',
+  'get_review_conversation',
+  'get_review_project',
   'get_run',
   'get_scheduled_run',
   'get_test_case',
@@ -37,6 +41,7 @@ const expectedToolNames = [
   'list_metrics',
   'list_personas',
   'list_reports',
+  'list_review_projects',
   'list_run_templates',
   'list_runs',
   'list_scheduled_runs',
@@ -45,6 +50,7 @@ const expectedToolNames = [
   'publish_python_metric_draft',
   'read_transcript_export',
   'update_agent',
+  'update_review_annotation',
   'update_scheduled_run',
   'update_test_case',
 ].sort();
@@ -195,6 +201,14 @@ function assertToolCatalog(tools, profileName) {
     invariant(
       byName.get(toolName)?.annotations?.openWorldHint === true,
       `${profileName} did not preserve ${toolName} as open-world`,
+    );
+  }
+  for (const toolName of ['create_review_annotation', 'update_review_annotation', 'complete_review_conversation']) {
+    const annotations = byName.get(toolName)?.annotations;
+    invariant(
+      annotations?.readOnlyHint === false && annotations.destructiveHint === true &&
+        annotations.openWorldHint === false,
+      `${profileName} exposed an incorrect risk profile for ${toolName}`,
     );
   }
   for (const toolName of [

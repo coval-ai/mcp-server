@@ -8,6 +8,7 @@ import { registerMetricTools } from './metrics.js';
 import { registerPersonaTools } from './personas.js';
 import { registerSofiaTools } from './sofia.js';
 import { registerReportTools } from './reports.js';
+import { registerReviewTools } from './human-review.js';
 import { registerSchedulingTools } from './scheduling.js';
 import { registerPythonMetricTools } from './python-metrics.js';
 import { registerTranscriptExportTool } from './transcript-exports.js';
@@ -44,6 +45,7 @@ export function registerAllTools(
     inputProfile: options.inputProfile,
   });
   registerReportTools(server, client, createToolOptions);
+  registerReviewTools(server, client);
   registerSchedulingTools(server, client, createToolOptions);
   if (options.includeSofia ?? true) {
     registerSofiaTools(server, client, {

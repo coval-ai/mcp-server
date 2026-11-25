@@ -120,6 +120,7 @@ export class CovalApiClient {
     body?: unknown,
     params?: Record<string, string | number | boolean | undefined>,
     signal?: AbortSignal,
+    workspaceId?: string,
   ): Promise<T> {
     const url = new URL(this.baseUrl + path);
 
@@ -139,6 +140,7 @@ export class CovalApiClient {
         headers: {
           'x-api-key': this.apiKey,
           'Content-Type': 'application/json',
+          ...(workspaceId === undefined ? {} : { 'x-coval-workspace-id': workspaceId }),
         },
         body: body ? JSON.stringify(body) : undefined,
         signal: requestSignal,
@@ -399,6 +401,82 @@ export class CovalApiClient {
     }
   ) {
     return this.request<{ test_case: unknown }>('PATCH', `/test-cases/${testCaseId}`, data);
+  }
+
+  // Human Review
+  async listReviewProjects(params: ReportPaginationParams, workspaceId?: string) {
+    return this.request<unknown>('GET', '/review-projects', undefined, {
+      page_size: params.page_size,
+      page_token: params.page_token,
+    }, undefined, workspaceId);
+  }
+
+  async getReviewProject(projectId: string, workspaceId?: string, signal?: AbortSignal) {
+    return this.request<unknown>(
+      'GET', `/review-projects/${encodeURIComponent(projectId)}`, undefined, undefined, signal, workspaceId,
+    );
+  }
+
+  async getSimulatedReviewConversation(conversationId: string, workspaceId: string | undefined, signal: AbortSignal) {
+    return this.request<unknown>(
+      'GET', `/conversations/simulated/${encodeURIComponent(conversationId)}`, undefined, undefined, signal, workspaceId,
+    );
+  }
+
+  async getUploadedReviewConversation(conversationId: string, workspaceId: string | undefined, signal: AbortSignal) {
+    return this.request<unknown>(
+      'GET', `/conversations/uploaded/${encodeURIComponent(conversationId)}`, undefined,
+      { include_progress: false }, signal, workspaceId,
+    );
+  }
+
+  async createReviewAnnotation(
+    projectId: string,
+    data: {
+      simulation_output_id: string;
+      metric_id: string;
+      ground_truth_float_value?: number | null;
+      ground_truth_string_value?: string | null;
+      ground_truth_set_value?: string[] | null;
+      ground_truth_json?: unknown;
+      ground_truth_subvalues_by_timestamp?: unknown[] | null;
+      reviewer_notes?: string;
+    },
+    workspaceId?: string,
+  ) {
+    return this.request<unknown>(
+      'POST', '/review-annotations', data, { project_id: projectId }, undefined, workspaceId,
+    );
+  }
+
+  async updateReviewAnnotation(
+    projectId: string,
+    annotationId: string,
+    data: {
+      ground_truth_float_value?: number | null;
+      ground_truth_string_value?: string | null;
+      ground_truth_set_value?: string[] | null;
+      ground_truth_json?: unknown;
+      ground_truth_subvalues_by_timestamp?: unknown[] | null;
+      reviewer_notes?: string;
+    },
+    workspaceId?: string,
+  ) {
+    return this.request<unknown>(
+      'PATCH', `/review-annotations/${encodeURIComponent(annotationId)}`, data,
+      { project_id: projectId }, undefined, workspaceId,
+    );
+  }
+
+  async completeReviewConversation(
+    projectId: string,
+    data: { simulation_output_id: string },
+    workspaceId?: string,
+  ) {
+    return this.request<unknown>(
+      'POST', `/review-projects/${encodeURIComponent(projectId)}/complete-conversation`, data,
+      undefined, undefined, workspaceId,
+    );
   }
 
   // Reports

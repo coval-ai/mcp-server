@@ -8,11 +8,11 @@
 
 [snapshot]
 catalog_url = "https://api.coval.dev/v1/openapi"
-reviewed_at = "2026-11-02"
-published_operations = 199
-mcp_supported_operations = 37
-published_request_fields = 98
-mcp_modeled_request_fields = 68
+reviewed_at = "2026-11-25"
+published_operations = 208
+mcp_supported_operations = 43
+published_request_fields = 121
+mcp_modeled_request_fields = 83
 
 [[known_gap]]
 operation = "DELETE /agents/{agent_id}"
@@ -163,10 +163,6 @@ operation = "GET /conversations/uploaded"
 reason = "Outside the curated MCP tool set; no conversation tools are exposed."
 
 [[known_gap]]
-operation = "GET /conversations/uploaded/{conversation_id}"
-reason = "Outside the curated MCP tool set; no conversation tools are exposed."
-
-[[known_gap]]
 operation = "GET /conversations/uploaded/{conversation_id}/audio"
 reason = "Outside the curated MCP tool set; no conversation tools are exposed."
 
@@ -280,35 +276,27 @@ reason = "Outside the curated MCP tool set; persona tools cover list and get."
 
 [[known_gap]]
 operation = "GET /review-annotations"
-reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
+reason = "The Human Review tools record answers and return write receipts. Organization-wide annotation reads and deletion are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "GET /review-annotations/metric-health-stats"
-reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
+reason = "The Human Review tools record answers and return write receipts. Organization-wide annotation reads and deletion are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "GET /review-annotations/{annotation_id}"
-reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
-
-[[known_gap]]
-operation = "GET /review-projects"
-reason = "Outside the curated MCP tool set; no review project tools are exposed."
-
-[[known_gap]]
-operation = "GET /review-projects/{project_id}"
-reason = "Outside the curated MCP tool set; no review project tools are exposed."
+reason = "The Human Review tools record answers and return write receipts. Organization-wide annotation reads and deletion are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "GET /review-projects/{project_id}/insights"
-reason = "Outside the curated MCP tool set; no review project tools are exposed."
+reason = "The Human Review tools support project discovery and conversation submission. Project management and aggregate analysis are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "GET /review-projects/{project_id}/metric-agreement"
-reason = "Outside the curated MCP tool set; no review project tools are exposed."
+reason = "The Human Review tools support project discovery and conversation submission. Project management and aggregate analysis are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "GET /review-projects/{project_id}/progress"
-reason = "Outside the curated MCP tool set; no review project tools are exposed."
+reason = "The Human Review tools support project discovery and conversation submission. Project management and aggregate analysis are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "GET /run-templates/{run_template_id}"
@@ -431,12 +419,8 @@ operation = "PATCH /reports/{report_id}"
 reason = "Outside the curated MCP tool set; report tools cover list, get with rows, and create."
 
 [[known_gap]]
-operation = "PATCH /review-annotations/{annotation_id}"
-reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
-
-[[known_gap]]
 operation = "PATCH /review-projects/{project_id}"
-reason = "Outside the curated MCP tool set; no review project tools are exposed."
+reason = "The Human Review tools support project discovery and conversation submission. Project management and aggregate analysis are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "PATCH /run-templates/{run_template_id}"
@@ -575,24 +559,16 @@ operation = "POST /personas/{persona_id}/versions/{version_id}/revert"
 reason = "Outside the curated MCP tool set; persona tools cover list and get."
 
 [[known_gap]]
-operation = "POST /review-annotations"
-reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
-
-[[known_gap]]
 operation = "POST /review-annotations:withMetricOutputs"
-reason = "Outside the curated MCP tool set; no review annotation tools are exposed."
+reason = "The Human Review tools record answers and return write receipts. Organization-wide annotation reads and deletion are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "POST /review-projects"
-reason = "Outside the curated MCP tool set; no review project tools are exposed."
+reason = "The Human Review tools support project discovery and conversation submission. Project management and aggregate analysis are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "POST /review-projects/disagreement-state"
-reason = "Outside the curated MCP tool set; no review project tools are exposed."
-
-[[known_gap]]
-operation = "POST /review-projects/{project_id}/complete-conversation"
-reason = "Outside the curated MCP tool set; no review project tools are exposed."
+reason = "The Human Review tools support project discovery and conversation submission. Project management and aggregate analysis are outside the reviewer workflow."
 
 [[known_gap]]
 operation = "POST /run-templates"
@@ -811,3 +787,79 @@ reason = "Saving an analyzed audio computation requires successful, unexpired wo
 operation = "POST /test-sets"
 field = "test_cases"
 reason = "Nested bulk test-case import is outside the strict create_test_set input contract. MCP creates individual cases with create_test_case after creating the test set."
+
+[[known_gap]]
+operation = "GET /clustering-assignments"
+reason = "Outside the curated MCP tool set; no saved-clustering tools model run-pinned, workspace-bound assignment pagination and lens filters."
+
+[[known_gap]]
+operation = "GET /clustering-runs"
+reason = "Outside the curated MCP tool set; no clustering-history tool models workspace scope, the retained creation-time window and keyset pagination."
+
+[[known_gap]]
+operation = "GET /clustering-runs/latest"
+reason = "Outside the curated MCP tool set; no tool reads retained schema-3 clustering results with their integrity, missing-result and expiry semantics."
+
+[[known_gap]]
+operation = "GET /clustering-runs/{run_id}"
+reason = "Outside the curated MCP tool set; no tool reads retained schema-3 clustering results with their integrity, missing-result and expiry semantics."
+
+[[known_gap]]
+operation = "GET /metrics/catalog"
+reason = "Existing MCP metric tools list organization metrics, not copyable Catalog entries; Catalog pagination and preset discovery require a dedicated tool contract."
+
+[[known_gap]]
+operation = "GET /metrics/catalog/{entry_id}"
+reason = "Existing MCP metric tools read organization metrics, not Catalog entry revisions and presets; no Catalog entry tool is exposed."
+
+[[known_gap]]
+operation = "GET /organization/caller-id"
+reason = "Outside the curated MCP tool set; organization caller-ID pool and authorized ANI configuration is not exposed by MCP tools."
+
+[[known_gap]]
+operation = "PATCH /organization/caller-id"
+reason = "Outside the curated MCP tool set; replacing the organization-wide, carrier-verified ANI allowlist requires an explicit organization configuration tool contract."
+
+[[known_gap]]
+operation = "POST /metrics/catalog/{entry_id}/copy"
+reason = "No MCP tool copies Catalog entries into a workspace; a dedicated mutation contract must preserve preset selection, expected revision and ordinary metric validation."
+
+[[known_field_gap]]
+operation = "PATCH /review-annotations/{id}"
+field = "annotations"
+reason = "Reviewers can correct answers and notes. The tool does not modify the annotation metadata object."
+
+[[known_field_gap]]
+operation = "PATCH /review-annotations/{id}"
+field = "assignee"
+reason = "The reviewer is fixed on an existing answer."
+
+[[known_field_gap]]
+operation = "PATCH /review-annotations/{id}"
+field = "priority"
+reason = "Changing priority is outside the reviewer answer workflow."
+
+[[known_field_gap]]
+operation = "POST /review-annotations"
+field = "annotations"
+reason = "The review tool records the human answer and notes through typed fields."
+
+[[known_field_gap]]
+operation = "POST /review-annotations"
+field = "assignee"
+reason = "The Reviews API uses the authenticated reviewer."
+
+[[known_field_gap]]
+operation = "POST /review-annotations"
+field = "assignee_user_id"
+reason = "The Reviews API uses the authenticated reviewer."
+
+[[known_field_gap]]
+operation = "POST /review-projects/{id}/complete-conversation"
+field = "assignee"
+reason = "The Reviews API submits the authenticated reviewer's work."
+
+[[known_field_gap]]
+operation = "POST /review-projects/{id}/complete-conversation"
+field = "assignee_user_id"
+reason = "The Reviews API submits the authenticated reviewer's work."

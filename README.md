@@ -151,6 +151,12 @@ Get your API key from [app.coval.dev/settings](https://app.coval.dev/settings)
 | `list_reports` | List saved evaluation reports |
 | `get_report` | Get report details and a bounded page of result rows |
 | `create_report` | Create an organization-private saved report |
+| `list_review_projects` | List Human Review project summaries |
+| `get_review_project` | Read project rules and linked metric and conversation IDs |
+| `get_review_conversation` | Read the dialogue for a linked conversation |
+| `create_review_annotation` | Record a reviewer-provided answer or notes |
+| `update_review_annotation` | Apply a partial correction to a saved review answer |
+| `complete_review_conversation` | Submit the conversation review and report outstanding requirements |
 | `list_run_templates` | List reusable evaluation configurations |
 | `list_scheduled_runs` | List recurring evaluation schedules |
 | `get_scheduled_run` | Get a schedule and paginated recent-run history |
@@ -169,6 +175,8 @@ Once connected, you can ask Claude things like:
 > "Create an immutable Python metric draft, preview it on a conversation, and publish it after the preview succeeds."
 > "Show the first 20 rows of my regression report for the task-success metric"
 > "Create a private report comparing these completed runs by agent"
+
+> "Show the linked conversation in my Human Review project. Record my answer as 'Pass', then wait for me to submit the review."
 > "Show my enabled evaluation schedules and the latest runs from the nightly regression"
 > "Create a disabled weekday schedule from my regression run template"
 > "Use `consult_sofia` to analyze my latest failed run and recommend the most useful next test."
