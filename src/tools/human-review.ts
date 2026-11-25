@@ -8,15 +8,15 @@ import {
   GetReviewConversationInputSchema,
   GetReviewProjectInputSchema,
   ListReviewProjectsInputSchema,
+  PROJECT_CONVERSATION_PAGE_SIZE,
+  PROJECT_METRIC_PAGE_SIZE,
+  TRANSCRIPT_PAGE_SIZE,
   UpdateReviewAnnotationInputSchema,
 } from '../schemas/human-review.js';
 import { handleApiError } from '../utils/errors.js';
 import { createErrorResponse, createSuccessResponse } from '../utils/response.js';
 import { readOnlyTool, updateTool } from './annotations.js';
 
-const PROJECT_CONVERSATION_PAGE_SIZE = 30;
-const PROJECT_METRIC_PAGE_SIZE = 25;
-const TRANSCRIPT_PAGE_SIZE = 8000;
 const REVIEW_READ_DEADLINE_MS = 30_000;
 
 const ProjectSummarySchema = z.object({
@@ -43,7 +43,8 @@ const ProjectDetailsSchema = z.object({
 
 const DialogueEntrySchema = z.object({
   role: z.string(),
-  content: z.string(),
+  content: z.string().nullish(),
+  message: z.string().nullish(),
 });
 const DIALOGUE_ROLES = new Set(['agent', 'assistant', 'bot', 'customer', 'persona', 'user']);
 const ConversationSchema = z.object({
@@ -102,9 +103,10 @@ function dialogueText(transcript: unknown[]) {
   return transcript.flatMap((item) => {
     const entry = DialogueEntrySchema.safeParse(item);
     if (!entry.success) return [];
-    const { role, content } = entry.data;
+    const { role, content, message } = entry.data;
     const speaker = role.toLowerCase();
-    return DIALOGUE_ROLES.has(speaker) ? [`${speaker}: ${content}`] : [];
+    const text = content || message;
+    return text && DIALOGUE_ROLES.has(speaker) ? [`${speaker}: ${text}`] : [];
   }).join('\n');
 }
 

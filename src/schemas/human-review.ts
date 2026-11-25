@@ -1,6 +1,10 @@
 import { z } from 'zod';
 import { ResourceIdSchema } from './common.js';
 
+export const PROJECT_CONVERSATION_PAGE_SIZE = 30;
+export const PROJECT_METRIC_PAGE_SIZE = 25;
+export const TRANSCRIPT_PAGE_SIZE = 8000;
+
 const workspaceId = ResourceIdSchema.max(26).optional().describe(
   'Workspace ID. Defaults to the authorized organization’s default workspace.',
 );
@@ -16,9 +20,9 @@ export const ListReviewProjectsInputSchema = z.object({
 export const GetReviewProjectInputSchema = z.object({
   project_id: projectId,
   workspace_id: workspaceId,
-  conversation_offset: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 30).optional()
+  conversation_offset: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - PROJECT_CONVERSATION_PAGE_SIZE).optional()
     .describe('Zero-based offset from next_conversation_offset to read more linked conversation IDs.'),
-  metric_offset: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 25).optional()
+  metric_offset: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - PROJECT_METRIC_PAGE_SIZE).optional()
     .describe('Zero-based offset from next_metric_offset to read more linked metric IDs.'),
 }).strict();
 
@@ -26,7 +30,7 @@ export const GetReviewConversationInputSchema = z.object({
   project_id: projectId,
   simulation_output_id: conversationId,
   workspace_id: workspaceId,
-  transcript_offset: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - 8000).optional()
+  transcript_offset: z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER - TRANSCRIPT_PAGE_SIZE).optional()
     .describe('Character offset from next_transcript_offset to continue reading.'),
 }).strict();
 

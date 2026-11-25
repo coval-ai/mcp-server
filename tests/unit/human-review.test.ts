@@ -127,7 +127,7 @@ describe('Human Review MCP workflow', () => {
       .mockResolvedValueOnce(json({
         uploaded_conversation: {
           conversation_id: input.simulation_output_id,
-          transcript: [{ role: 'user', content: 'Uploaded dialogue.' }],
+          transcript: [{ role: 'user', content: null, message: 'Uploaded dialogue.' }],
         },
       }))
       .mockResolvedValueOnce(json({ review_project: project }))
@@ -158,14 +158,12 @@ describe('Human Review MCP workflow', () => {
       ...input, metric_id: 'metric_1', ground_truth_float_value: 0, ground_truth_json: '{"complete":false}',
     });
     expect(recorded.isError).not.toBe(true);
-    expect(requestAt(0)).toMatchObject({
-      method: 'POST',
-      body: {
-        simulation_output_id: input.simulation_output_id,
-        metric_id: 'metric_1',
-        ground_truth_float_value: 0,
-        ground_truth_json: { complete: false },
-      },
+    expect(requestAt(0).method).toBe('POST');
+    expect(requestAt(0).body).toEqual({
+      simulation_output_id: input.simulation_output_id,
+      metric_id: 'metric_1',
+      ground_truth_float_value: 0,
+      ground_truth_json: { complete: false },
     });
     expect(requestAt(0).url.pathname).toBe('/v1/review-annotations');
     expect(requestAt(0).url.searchParams.get('project_id')).toBe(input.project_id);
