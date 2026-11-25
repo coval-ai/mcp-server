@@ -13,13 +13,13 @@ updates a PR only when coverage actually changes.
 | Metric | Value |
 | --- | ---: |
 | Reconciliation status | PASS |
-| Published operations | 199 |
-| Operations reached by MCP tools | 37 |
-| Reviewed gaps | 162 |
-| Client operations | 38 |
-| Published request fields on covered operations | 98 |
-| Request fields the MCP client sends | 68 |
-| Reviewed request-field gaps | 30 |
+| Published operations | 208 |
+| Operations reached by MCP tools | 43 |
+| Reviewed gaps | 165 |
+| Client operations | 44 |
+| Published request fields on covered operations | 121 |
+| Request fields the MCP client sends | 83 |
+| Reviewed request-field gaps | 38 |
 
 Catalog: https://api.coval.dev/v1/openapi
 
@@ -90,6 +90,10 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /alerts/{alert_id}`
 - `GET /alerts/{alert_id}/events`
 - `GET /api-keys`
+- `GET /clustering-assignments`
+- `GET /clustering-runs`
+- `GET /clustering-runs/latest`
+- `GET /clustering-runs/{run_id}`
 - `GET /conversation-python-analyses/{analysis_id}`
 - `GET /conversations/simulated/{simulation_id}/audio`
 - `GET /conversations/simulated/{conversation_id}/comments`
@@ -97,7 +101,6 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /conversations/simulated/{simulation_id}/metrics`
 - `GET /conversations/simulated/{simulation_id}/metrics/{metric_output_id}`
 - `GET /conversations/uploaded`
-- `GET /conversations/uploaded/{conversation_id}`
 - `GET /conversations/uploaded/{conversation_id}/audio`
 - `GET /conversations/uploaded/{conversation_id}/comments`
 - `GET /conversations/uploaded/{conversation_id}/comments/{comment_id}`
@@ -108,6 +111,8 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /dashboards/{dashboard_id}/widgets`
 - `GET /dashboards/{dashboard_id}/widgets/{widget_id}`
 - `GET /integrations/slack`
+- `GET /metrics/catalog`
+- `GET /metrics/catalog/{entry_id}`
 - `GET /metrics/flows`
 - `GET /metrics/recently-deleted`
 - `GET /metrics/sql-schema`
@@ -120,6 +125,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /metrics/{metric_id}/thresholds`
 - `GET /metrics/{metric_id}/versions`
 - `GET /models/metric`
+- `GET /organization/caller-id`
 - `GET /organization/conversation-metrics`
 - `GET /organization/monitoring-metrics`
 - `GET /organization/users`
@@ -131,8 +137,6 @@ Catalog: https://api.coval.dev/v1/openapi
 - `GET /review-annotations`
 - `GET /review-annotations/metric-health-stats`
 - `GET /review-annotations/{annotation_id}`
-- `GET /review-projects`
-- `GET /review-projects/{project_id}`
 - `GET /review-projects/{project_id}/insights`
 - `GET /review-projects/{project_id}/metric-agreement`
 - `GET /review-projects/{project_id}/progress`
@@ -161,12 +165,12 @@ Catalog: https://api.coval.dev/v1/openapi
 - `PATCH /metrics/{metric_id}`
 - `PATCH /metrics/{metric_id}/baselines/{baseline_id}`
 - `PATCH /metrics/{metric_id}/threshold`
+- `PATCH /organization/caller-id`
 - `PATCH /organization/conversation-metrics`
 - `PATCH /organization/monitoring-metrics`
 - `PATCH /personas/background-sounds/{background_sound_id}`
 - `PATCH /personas/{persona_id}`
 - `PATCH /reports/{report_id}`
-- `PATCH /review-annotations/{annotation_id}`
 - `PATCH /review-projects/{project_id}`
 - `PATCH /run-templates/{run_template_id}`
 - `PATCH /runs/{run_id}`
@@ -189,6 +193,7 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /dashboards/{dashboard_id}/widgets`
 - `POST /integrations/slack/connect`
 - `POST /metrics`
+- `POST /metrics/catalog/{entry_id}/copy`
 - `POST /metrics/flows`
 - `POST /metrics/outputs:batchGet`
 - `POST /metrics/sql:test`
@@ -204,11 +209,9 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /personas/{persona_id}/duplicate`
 - `POST /personas/{persona_id}/versions/{version_id}/revert`
 - `POST /python-metrics:fromAnalysis`
-- `POST /review-annotations`
 - `POST /review-annotations:withMetricOutputs`
 - `POST /review-projects`
 - `POST /review-projects/disagreement-state`
-- `POST /review-projects/{project_id}/complete-conversation`
 - `POST /run-templates`
 - `POST /tags`
 - `POST /test-sets/{test_set_id}/agents:add`
@@ -246,6 +249,9 @@ Catalog: https://api.coval.dev/v1/openapi
 - `PATCH /agents/{id} tags`
 - `PATCH /agents/{id} test_set_ids`
 - `PATCH /agents/{id} workflows`
+- `PATCH /review-annotations/{id} annotations`
+- `PATCH /review-annotations/{id} assignee`
+- `PATCH /review-annotations/{id} priority`
 - `PATCH /test-cases/{id} expected_output_json`
 - `PATCH /test-cases/{id} expected_output_str`
 - `PATCH /test-cases/{id} test_set_id`
@@ -260,6 +266,11 @@ Catalog: https://api.coval.dev/v1/openapi
 - `POST /reports custom_dimensions`
 - `POST /reports simulation_output_ids`
 - `POST /reports source_human_review_project_id`
+- `POST /review-annotations annotations`
+- `POST /review-annotations assignee`
+- `POST /review-annotations assignee_user_id`
+- `POST /review-projects/{id}/complete-conversation assignee`
+- `POST /review-projects/{id}/complete-conversation assignee_user_id`
 - `POST /runs config_overrides`
 - `POST /runs mutation_id`
 - `POST /runs mutation_ids`

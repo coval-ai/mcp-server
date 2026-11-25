@@ -127,6 +127,33 @@ describe('registerAllTools', () => {
       ['list_personas', ['filter', 'order_by', 'page_size', 'page_token']],
       ['get_persona', ['persona_id']],
       ['list_reports', ['page_size', 'page_token']],
+      ['list_review_projects', ['page_size', 'page_token', 'workspace_id']],
+      ['get_review_project', ['conversation_offset', 'metric_offset', 'project_id', 'workspace_id']],
+      ['get_review_conversation', ['project_id', 'simulation_output_id', 'transcript_offset', 'workspace_id']],
+      ['create_review_annotation', [
+        'ground_truth_float_value',
+        'ground_truth_json',
+        'ground_truth_set_value',
+        'ground_truth_string_value',
+        'ground_truth_subvalues_by_timestamp',
+        'metric_id',
+        'project_id',
+        'reviewer_notes',
+        'simulation_output_id',
+        'workspace_id',
+      ]],
+      ['update_review_annotation', [
+        'annotation_id',
+        'ground_truth_float_value',
+        'ground_truth_json',
+        'ground_truth_set_value',
+        'ground_truth_string_value',
+        'ground_truth_subvalues_by_timestamp',
+        'project_id',
+        'reviewer_notes',
+        'workspace_id',
+      ]],
+      ['complete_review_conversation', ['project_id', 'simulation_output_id', 'workspace_id']],
       ['get_report', ['metric_ids', 'page_size', 'page_token', 'report_id']],
       [
         'create_report',
@@ -341,6 +368,12 @@ describe('registerAllTools', () => {
         ['list_reports', readOnlyAnnotations],
         ['get_report', readOnlyAnnotations],
         ['create_report', additiveWriteAnnotations],
+        ['list_review_projects', readOnlyAnnotations],
+        ['get_review_project', readOnlyAnnotations],
+        ['get_review_conversation', readOnlyAnnotations],
+        ['create_review_annotation', destructiveWriteAnnotations],
+        ['update_review_annotation', destructiveWriteAnnotations],
+        ['complete_review_conversation', destructiveWriteAnnotations],
         ['list_run_templates', readOnlyAnnotations],
         ['list_scheduled_runs', readOnlyAnnotations],
         ['get_scheduled_run', readOnlyAnnotations],
@@ -356,7 +389,7 @@ describe('registerAllTools', () => {
       ]);
 
       expect([...toolNames].sort()).toEqual([...expectedAnnotations.keys()].sort());
-      expect(toolNames).toHaveLength(34);
+      expect(toolNames).toHaveLength(40);
 
       for (const [name, expected] of expectedAnnotations) {
         const registration = registrations.get(name);

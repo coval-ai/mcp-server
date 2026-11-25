@@ -25,16 +25,17 @@ authenticated tools.
 - Connect `https://mcp.coval.dev/mcp` for OpenAI and generic MCP review, and
   `https://mcp.coval.dev/claude/mcp` for Claude review, using OAuth.
 - Select a populated Coval test organization during consent.
-- Confirm tool discovery returns exactly 33 tools with a title and correct read/write annotations
-  for every tool. The thirteen write tools (`create_agent`, `create_run`, `create_test_set`,
+- Confirm tool discovery returns exactly 40 tools with a title and correct read/write annotations
+  for every tool. The sixteen write tools (`create_agent`, `create_run`, `create_test_set`,
   `create_test_case`, `create_report`, `create_scheduled_run`, `update_agent`, `update_test_case`,
   `update_scheduled_run`, `create_python_metric_draft`, `create_python_metric_preview`,
-  `cancel_python_metric_preview`, and `publish_python_metric_draft`) must advertise
+  `cancel_python_metric_preview`, `publish_python_metric_draft`, `create_review_annotation`,
+  `update_review_annotation`, and `complete_review_conversation`) must advertise
   `readOnlyHint: false`. On `/mcp`, the additive create tools (`create_agent`, `create_test_set`,
   `create_test_case`, `create_report`, `create_python_metric_draft`, and
-  `create_python_metric_preview`) advertise `destructiveHint: false`; the other seven write
-  tools advertise `destructiveHint: true`, including publication that can revise an existing
-  metric. On `/claude/mcp`, all thirteen write tools advertise `destructiveHint: true`. On both paths,
+  `create_python_metric_preview`) advertise `destructiveHint: false`. The other ten write
+  tools advertise `destructiveHint: true`, including changes to saved review answers.
+  On `/claude/mcp`, all sixteen write tools advertise `destructiveHint: true`. On both paths,
   `create_run`, `create_scheduled_run`, and `update_scheduled_run` advertise
   `openWorldHint: true`; all other tools advertise `openWorldHint: false`.
 - Inspect every input schema discovered from the OpenAI `/mcp` endpoint. No tool may request
@@ -195,7 +196,7 @@ disposable resources after review.
 - Select the verified Coval developer or business identity; do not submit while the portal shows
   `No Identity Selected`.
 - After deploying the exact reviewed server head, run **Scan Tools** again on the submitted app
-  version and confirm the frozen snapshot contains exactly 33 tools with the current schemas and
+  version and confirm the frozen snapshot contains exactly 40 tools with the current schemas and
   annotations.
 - Replace any stale portal description with the client-neutral canonical copy in this repository;
   distinguish Python metric draft workflows from general metric management, and do not claim

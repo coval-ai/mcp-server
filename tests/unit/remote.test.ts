@@ -293,7 +293,7 @@ describe('remote OAuth organization binding', () => {
           toolsByProfile.set(annotationProfile, tools);
           expect(tools.map((tool) => tool.name)).toContain('consult_sofia');
           expect(tools.map((tool) => tool.name)).not.toContain('consult_covi');
-          expect(tools).toHaveLength(34);
+          expect(tools).toHaveLength(40);
           for (const tool of tools) {
             expect(tool.title).toBeTruthy();
             expect(typeof tool.annotations?.readOnlyHint).toBe('boolean');
@@ -365,6 +365,9 @@ describe('remote OAuth organization binding', () => {
         'update_test_case',
         'create_scheduled_run',
         'update_scheduled_run',
+        'create_review_annotation',
+        'update_review_annotation',
+        'complete_review_conversation',
       ]) {
         expect(standardDestructive.get(name)).toBe(true);
         expect(claudeDestructive.get(name)).toBe(true);

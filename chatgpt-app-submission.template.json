@@ -404,6 +404,78 @@
         "destructive_justification": "Overwrites selected schedule fields and can change future evaluation activity and costs."
       }
     },
+    "list_review_projects": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Lists summaries of review projects in the authorized workspace.",
+        "open_world_justification": "Operates within the authorized Coval workspace.",
+        "destructive_justification": "This read leaves the review project and answers unchanged."
+      }
+    },
+    "get_review_project": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Reads applicable project rules and linked conversation and metric IDs.",
+        "open_world_justification": "Operates within the authorized Coval workspace.",
+        "destructive_justification": "This read leaves the review project and answers unchanged."
+      }
+    },
+    "get_review_conversation": {
+      "annotations": {
+        "readOnlyHint": true,
+        "openWorldHint": false,
+        "destructiveHint": false
+      },
+      "justifications": {
+        "read_only_justification": "Reads dialogue from a conversation linked to a review project in the authorized workspace.",
+        "open_world_justification": "Operates within the authorized Coval workspace.",
+        "destructive_justification": "This read leaves the review project and answers unchanged."
+      }
+    },
+    "create_review_annotation": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Records an answer supplied by the signed-in human reviewer.",
+        "open_world_justification": "Operates within the authorized Coval workspace.",
+        "destructive_justification": "Repeating this write can replace an existing review answer."
+      }
+    },
+    "update_review_annotation": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Applies a reviewer-requested correction to a saved answer.",
+        "open_world_justification": "Operates within the authorized Coval workspace.",
+        "destructive_justification": "The reviewer can change or clear saved answers."
+      }
+    },
+    "complete_review_conversation": {
+      "annotations": {
+        "readOnlyHint": false,
+        "openWorldHint": false,
+        "destructiveHint": true
+      },
+      "justifications": {
+        "read_only_justification": "Submits the signed-in reviewer’s work after Coval checks the project requirements.",
+        "open_world_justification": "Operates within the authorized Coval workspace.",
+        "destructive_justification": "The operation changes the conversation review completion status."
+      }
+    },
     "read_transcript_export": {
       "annotations": {
         "readOnlyHint": true,

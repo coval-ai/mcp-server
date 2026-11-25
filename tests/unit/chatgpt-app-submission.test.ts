@@ -56,11 +56,13 @@ describe('ChatGPT app submission artifact', () => {
   it('declares the full production MCP tool catalog', () => {
     expect(Object.keys(submission.tools).sort()).toEqual([
       'cancel_python_metric_preview',
+      'complete_review_conversation',
       'consult_sofia',
       'create_agent',
       'create_python_metric_draft',
       'create_python_metric_preview',
       'create_report',
+      'create_review_annotation',
       'create_run',
       'create_scheduled_run',
       'create_test_case',
@@ -71,6 +73,8 @@ describe('ChatGPT app submission artifact', () => {
       'get_python_metric_draft',
       'get_python_metric_preview',
       'get_report',
+      'get_review_conversation',
+      'get_review_project',
       'get_run',
       'get_scheduled_run',
       'get_test_case',
@@ -79,6 +83,7 @@ describe('ChatGPT app submission artifact', () => {
       'list_metrics',
       'list_personas',
       'list_reports',
+      'list_review_projects',
       'list_run_templates',
       'list_runs',
       'list_scheduled_runs',
@@ -87,6 +92,7 @@ describe('ChatGPT app submission artifact', () => {
       'publish_python_metric_draft',
       'read_transcript_export',
       'update_agent',
+      'update_review_annotation',
       'update_scheduled_run',
       'update_test_case',
     ]);
